@@ -1,0 +1,196 @@
+<!-- app/views/players/show.html.erb -->
+
+<h1>
+  <%= @player.name %> - <%= @team.name %> (<%= @team.abbreviation %>)
+  <%= button_to "Update Stats", update_stats_team_player_path(@team, @player), method: :post, class: "btn btn-primary" %>
+</h1>
+
+<!-- Player Information Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    Player Information
+  </div>
+  <div class="card-body">
+    <p><strong>Uniform Number:</strong> <%= @player.uniform_number %></p>
+    <p><strong>Position:</strong> <%= @player.position %></p>
+    <p><strong>Height:</strong> <%= @player.height %></p>
+    <p><strong>Weight:</strong> <%= @player.weight %> lbs</p>
+    <p><strong>Birth Date:</strong> <%= @player.birth_date.strftime("%B %d, %Y") if @player.birth_date %></p>
+    <p><strong>Country:</strong>               
+      <% if @player.country_of_birth.present? %>
+        <% lower_country, upper_country = @player.country_of_birth.split %>
+        <img src="https://cdn.ssref.net/req/1701182769569-20231028/flags/<%= lower_country %>.svg" alt="<%= upper_country %>" width="20" height="15">
+        <%= upper_country %>
+      <% else %>
+        N/A
+      <% end %>
+    </p>
+    <p><strong>College:</strong> <%= @player.college.presence || "N/A" %></p>
+  </div>
+</div>
+
+<!-- Season Stats Card -->
+<div class="card">
+  <div class="card-header">
+    Season Stats (PER GAME)
+  </div>
+  <div class="card-body">
+    <% if @player_stats.any? %>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Season</th>
+            <th>GP</th>
+            <th>GS</th>
+            <th>MPG</th>
+            <th>FG</th>
+            <th>FGA</th>
+            <th>FG%</th>
+            <th>3P</th>
+            <th>3PA</th>
+            <th>3P %</th>
+            <th>2P</th>
+            <th>2PA</th>
+            <th>2P %</th>
+            <th>FTM</th>
+            <th>FTA</th>
+            <th>FT %</th>
+            <th>OR</th>
+            <th>DR</th>
+            <th>TR</th>
+            <th>A</th>
+            <th>STL</th>
+            <th>B</th>
+            <th>TO</th>
+            <th>PF</th>
+            <th>PPG</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @player_stats.each do |stat| %>
+            <tr>
+              <td><%= stat.season %></td>
+              <td><%= stat.games_played %></td>
+              <td><%= stat.games_started %></td>
+              <td><%= stat.minutes_per_game %></td>
+              <td><%= stat.field_goals_per_game %></td>
+              <td><%= stat.field_goals_attempted_per_game %></td>
+              <td><%= stat.field_goal_percentage %></td>
+              <td><%= stat.three_pointers_per_game %></td>
+              <td><%= stat.three_pointers_attempted_per_game %></td>
+              <td><%= stat.three_point_percentage %></td>
+              <td><%= stat.two_pointers_per_game %></td>
+              <td><%= stat.two_pointers_attempted_per_game %></td>
+              <td><%= stat.two_point_percentage %></td>
+              <td><%= stat.free_throws_per_game %></td>
+              <td><%= stat.free_throws_attempted_per_game %></td>
+              <td><%= stat.free_throw_percentage %></td>
+              <td><%= stat.offensive_rebounds_per_game %></td>
+              <td><%= stat.defensive_rebounds_per_game %></td>
+              <td><%= stat.total_rebounds_per_game %></td>
+              <td><%= stat.assists_per_game %></td>
+              <td><%= stat.steals_per_game %></td>
+              <td><%= stat.blocks_per_game %></td>
+              <td><%= stat.turnovers_per_game %></td>
+              <td><%= stat.personal_fouls_per_game %></td>
+              <td><%= stat.points_per_game %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>No stats available for this player.</p>
+    <% end %>
+  </div>
+</div>
+
+<!-- Game Logs Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    Game Logs
+  </div>
+  <div class="card-body">
+    <% if @game_logs.any? %>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Points</th>
+            <th>Rebounds</th>
+            <th>Assists</th>
+            <th>Minutes</th>
+            <th>FG</th>
+            <th>3P</th>
+            <th>FT</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game_logs.each do |box_score| %>
+            <tr>
+              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
+              <td><%= box_score.game.opponent_for(@player.team).name %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>No game logs available for this player.</p>
+    <% end %>
+  </div>
+</div>
+
+<!-- Last 5 Games Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    Last 5 Games
+  </div>
+  <div class="card-body">
+    <% if @last_five_games.any? %>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Points</th>
+            <th>Rebounds</th>
+            <th>Assists</th>
+            <th>Minutes</th>
+            <th>FG</th>
+            <th>3P</th>
+            <th>FT</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @last_five_games.each do |box_score| %>
+            <tr>
+              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
+              <td><%= box_score.game.opponent_for(@player.team).name %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>No recent games available for this player.</p>
+    <% end %>
+  </div>
+</div>
+

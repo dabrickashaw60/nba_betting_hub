@@ -1,0 +1,152 @@
+# This file is auto-generated from the current state of the database. Instead
+# of editing this file, please use the migrations feature of Active Record to
+# incrementally modify your database, and then regenerate this schema definition.
+#
+# This file is the source Rails uses to define your schema when running `bin/rails
+# db:schema:load`. When creating a new database, `bin/rails db:schema:load` tends to
+# be faster and is potentially less error prone than running all of your
+# migrations from scratch. Old migrations may fail to apply correctly if those
+# migrations use external dependencies or application code.
+#
+# It's strongly recommended that you check this file into your version control system.
+
+ActiveRecord::Schema[7.1].define(version: 2024_11_05_163206) do
+  create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "game_id", null: false
+    t.bigint "team_id", null: false
+    t.bigint "player_id", null: false
+    t.string "minutes_played"
+    t.integer "field_goals"
+    t.integer "field_goals_attempted"
+    t.float "field_goal_percentage"
+    t.integer "three_point_field_goals"
+    t.integer "three_point_field_goals_attempted"
+    t.float "three_point_percentage"
+    t.integer "free_throws"
+    t.integer "free_throws_attempted"
+    t.float "free_throw_percentage"
+    t.integer "offensive_rebounds"
+    t.integer "defensive_rebounds"
+    t.integer "total_rebounds"
+    t.integer "assists"
+    t.integer "steals"
+    t.integer "blocks"
+    t.integer "turnovers"
+    t.integer "personal_fouls"
+    t.integer "points"
+    t.float "game_score"
+    t.float "plus_minus"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["game_id"], name: "index_box_scores_on_game_id"
+    t.index ["player_id"], name: "index_box_scores_on_player_id"
+    t.index ["team_id"], name: "index_box_scores_on_team_id"
+  end
+
+  create_table "games", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.date "date"
+    t.time "time"
+    t.bigint "home_team_id", null: false
+    t.string "location"
+    t.integer "home_score"
+    t.integer "away_score"
+    t.integer "season"
+    t.integer "week"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.time "start_time"
+    t.integer "visitor_pts"
+    t.integer "home_pts"
+    t.integer "attendance"
+    t.string "duration"
+    t.string "notes"
+    t.bigint "visitor_team_id", null: false
+    t.integer "visitor_points"
+    t.integer "home_points"
+    t.string "arena"
+    t.string "game_duration"
+    t.boolean "overtime"
+    t.index ["home_team_id"], name: "index_games_on_home_team_id"
+    t.index ["visitor_team_id"], name: "index_games_on_visitor_team_id"
+  end
+
+  create_table "player_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "player_id"
+    t.integer "season"
+    t.integer "games_played"
+    t.integer "games_started"
+    t.float "minutes_per_game"
+    t.float "field_goals_per_game"
+    t.float "field_goals_attempted_per_game"
+    t.float "field_goal_percentage"
+    t.float "three_pointers_per_game"
+    t.float "three_pointers_attempted_per_game"
+    t.float "three_point_percentage"
+    t.float "two_pointers_per_game"
+    t.float "two_pointers_attempted_per_game"
+    t.float "two_point_percentage"
+    t.float "free_throws_per_game"
+    t.float "free_throws_attempted_per_game"
+    t.float "free_throw_percentage"
+    t.float "offensive_rebounds_per_game"
+    t.float "defensive_rebounds_per_game"
+    t.float "total_rebounds_per_game"
+    t.float "assists_per_game"
+    t.float "steals_per_game"
+    t.float "blocks_per_game"
+    t.float "turnovers_per_game"
+    t.float "personal_fouls_per_game"
+    t.float "points_per_game"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_id"], name: "index_player_stats_on_player_id"
+  end
+
+  create_table "players", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "from_year", null: false
+    t.integer "to_year", null: false
+    t.string "position", null: false
+    t.string "height", null: false
+    t.integer "weight", null: false
+    t.date "birth_date", null: false
+    t.string "college"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "team_id"
+    t.integer "uniform_number"
+    t.string "country_of_birth"
+    t.index ["team_id"], name: "index_players_on_team_id"
+  end
+
+  create_table "standings", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "team_id"
+    t.integer "season"
+    t.integer "wins"
+    t.integer "losses"
+    t.float "win_percentage"
+    t.string "games_behind"
+    t.float "points_per_game"
+    t.float "opponent_points_per_game"
+    t.float "srs"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "conference"
+    t.index ["team_id"], name: "index_standings_on_team_id"
+  end
+
+  create_table "teams", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name"
+    t.string "abbreviation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  add_foreign_key "box_scores", "games"
+  add_foreign_key "box_scores", "players"
+  add_foreign_key "box_scores", "teams"
+  add_foreign_key "games", "teams", column: "home_team_id"
+  add_foreign_key "player_stats", "players"
+  add_foreign_key "players", "teams"
+  add_foreign_key "standings", "teams"
+end

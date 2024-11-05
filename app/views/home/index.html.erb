@@ -1,0 +1,90 @@
+<!-- app/views/home/index.html.erb -->
+
+<h1 class="mb-4 text-center">NBA Betting Hub</h1>
+
+<h2>Update League Schedule</h2>
+<%= form_with url: update_schedule_path, method: :post, local: true do %>
+  <div class="form-group">
+    <label for="month">Select Month:</label>
+    <%= select_tag :month, options_for_select(['October', 'November', 'December', 'January', 'February', 'March', 'April']), class: "form-control" %>
+  </div>
+  <%= submit_tag "Update Schedule", class: "btn btn-primary mt-2" %>
+<% end %>
+
+<h2>Update Box Scores from yesterday</h2>
+<%= button_to "Scrape Previous Day's Games", scrape_previous_day_games_path, method: :post, class: "btn btn-primary" %>
+<%= button_to "Scrape Box Scores from Oct 22 to Nov 3", scrape_date_range_games_path, method: :post, class: "btn btn-primary" %>
+
+
+<!-- Date Navigation and Date Picker -->
+<div class="d-flex justify-content-center my-4">
+  <!-- Left Arrow Button for Previous Day -->
+  <%= link_to "←", root_path(date: @date - 1.day), class: "btn btn-outline-primary mx-2" %>
+
+  <!-- Date Picker Form -->
+  <%= form_with url: root_path, method: :get, local: true, class: "mx-2" do %>
+    <%= date_field_tag :date, @date, class: "form-control", onchange: "this.form.submit();" %>
+  <% end %>
+
+  <!-- Right Arrow Button for Next Day -->
+  <%= link_to "→", root_path(date: @date + 1.day), class: "btn btn-outline-primary mx-2" %>
+</div>
+
+<!-- Today's Games Card -->
+<% if @todays_games.present? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Games for <%= @date.strftime("%B %d, %Y") %></h3>
+    </div>
+    <div class="card-body">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Visitor Team</th>
+            <th>Visitor Points</th>
+            <th>Home Team</th>
+            <th>Home Points</th>
+            <th>Location</th>
+            <th>Time / Box Score</th>
+            <th>More Info</th>
+          </tr>
+        </thead>
+          <tbody>
+            <% @todays_games.each do |game| %>
+              <tr>
+                <td>
+                  <%= link_to team_path(game.visitor_team), class: "text-decoration-none d-flex align-items-center" do %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" alt="<%= game.visitor_team.name %> Logo" width="20" height="20" class="me-2">
+                    <%= game.visitor_team.name %>
+                  <% end %>
+                </td>
+                <td><%= game.visitor_points || "-" %></td>
+                <td>
+                  <%= link_to team_path(game.home_team), class: "text-decoration-none d-flex align-items-center" do %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" alt="<%= game.home_team.name %> Logo" width="20" height="20" class="me-2">
+                    <%= game.home_team.name %>
+                  <% end %>
+                </td>
+                <td><%= game.home_points || "-" %></td>
+                <td><%= game.location %></td>
+                <td>
+                  <% if game.date < Date.today %>
+                    <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
+                    <a href="<%= box_score_url %>" target="_blank">View Box Score</a>
+                  <% else %>
+                    <%= game.time.strftime("%I:%M %p") if game.time.present? %>
+                  <% end %>
+                </td>
+                <td>
+                  <%= link_to "More Info", game_path(game), class: "btn btn-sm btn-secondary" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+
+      </table>
+    </div>
+  </div>
+<% else %>
+  <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
+<% end %>

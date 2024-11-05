@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  from_year: 1
+  to_year: 1
+  position: MyString
+  height: MyString
+  weight: 1
+  birth_date: 2024-10-30
+  college: MyString
+
+two:
+  name: MyString
+  from_year: 1
+  to_year: 1
+  position: MyString
+  height: MyString
+  weight: 1
+  birth_date: 2024-10-30
+  college: MyString
