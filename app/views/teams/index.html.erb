@@ -18,7 +18,6 @@
           <th>Points Per Game</th>
           <th>Rebounds Per Game</th>
           <th>Assists Per Game</th>
-          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -40,12 +39,9 @@
               <% end %>
             </td>
             <td><%= player.college.presence || "N/A" %></td>
-            <td><%= player.player_stat ? player.player_stat.points_per_game : "N/A" %></td>
-            <td><%= player.player_stat ? player.player_stat.total_rebounds_per_game : "N/A" %></td>
-            <td><%= player.player_stat ? player.player_stat.assists_per_game : "N/A" %></td>
-            <td>
-              <%= button_to "Update Stats", update_stats_team_player_path(team, player), method: :post, class: "btn btn-primary" %>
-            </td>
+            <td><%= player.player_stat ? player.player_stat.points : "N/A" %></td>
+            <td><%= player.player_stat ? player.player_stat.total_rebounds : "N/A" %></td>
+            <td><%= player.player_stat ? player.player_stat.assists : "N/A" %></td>
           </tr>
         <% end %>
       </tbody>

@@ -164,9 +164,9 @@
               <% @visitor_team_players.each do |player| %>
                 <tr>
                   <td><%= player.name %></td>
-                  <td><%= player.player_stat&.points_per_game || "N/A" %></td>
-                  <td><%= player.player_stat&.total_rebounds_per_game || "N/A" %></td>
-                  <td><%= player.player_stat&.assists_per_game || "N/A" %></td>
+                  <td><%= player.player_stat&.points || "N/A" %></td>
+                  <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
+                  <td><%= player.player_stat&.assists || "N/A" %></td>
                 </tr>
               <% end %>
             </tbody>
@@ -200,9 +200,9 @@
               <% @home_team_players.each do |player| %>
                 <tr>
                   <td><%= player.name %></td>
-                  <td><%= player.player_stat&.points_per_game || "N/A" %></td>
-                  <td><%= player.player_stat&.total_rebounds_per_game || "N/A" %></td>
-                  <td><%= player.player_stat&.assists_per_game || "N/A" %></td>
+                  <td><%= player.player_stat&.points || "N/A" %></td>
+                  <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
+                  <td><%= player.player_stat&.assists || "N/A" %></td>
                 </tr>
               <% end %>
             </tbody>

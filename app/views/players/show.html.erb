@@ -2,7 +2,6 @@
 
 <h1>
   <%= @player.name %> - <%= @team.name %> (<%= @team.abbreviation %>)
-  <%= button_to "Update Stats", update_stats_team_player_path(@team, @player), method: :post, class: "btn btn-primary" %>
 </h1>
 
 <!-- Player Information Card -->
@@ -30,7 +29,7 @@
 </div>
 
 <!-- Season Stats Card -->
-<div class="card">
+<div class="card mb-4">
   <div class="card-header">
     Season Stats (PER GAME)
   </div>
@@ -41,62 +40,60 @@
           <tr>
             <th>Season</th>
             <th>GP</th>
-            <th>GS</th>
             <th>MPG</th>
             <th>FG</th>
             <th>FGA</th>
             <th>FG%</th>
             <th>3P</th>
             <th>3PA</th>
-            <th>3P %</th>
-            <th>2P</th>
-            <th>2PA</th>
-            <th>2P %</th>
-            <th>FTM</th>
+            <th>3P%</th>
+            <th>FT</th>
             <th>FTA</th>
-            <th>FT %</th>
-            <th>OR</th>
-            <th>DR</th>
-            <th>TR</th>
-            <th>A</th>
+            <th>FT%</th>
+            <th>ORB</th>
+            <th>DRB</th>
+            <th>TRB</th>
+            <th>AST</th>
             <th>STL</th>
-            <th>B</th>
+            <th>BLK</th>
             <th>TO</th>
             <th>PF</th>
-            <th>PPG</th>
+            <th>PTS</th>
+            <th>GmSc</th>
+            <th>+/-</th>
           </tr>
         </thead>
+
         <tbody>
           <% @player_stats.each do |stat| %>
             <tr>
               <td><%= stat.season %></td>
               <td><%= stat.games_played %></td>
-              <td><%= stat.games_started %></td>
-              <td><%= stat.minutes_per_game %></td>
-              <td><%= stat.field_goals_per_game %></td>
-              <td><%= stat.field_goals_attempted_per_game %></td>
+              <td><%= stat.minutes_played %></td>
+              <td><%= stat.field_goals %></td>
+              <td><%= stat.field_goals_attempted %></td>
               <td><%= stat.field_goal_percentage %></td>
-              <td><%= stat.three_pointers_per_game %></td>
-              <td><%= stat.three_pointers_attempted_per_game %></td>
+              <td><%= stat.three_point_field_goals %></td>
+              <td><%= stat.three_point_field_goals_attempted %></td>
               <td><%= stat.three_point_percentage %></td>
-              <td><%= stat.two_pointers_per_game %></td>
-              <td><%= stat.two_pointers_attempted_per_game %></td>
-              <td><%= stat.two_point_percentage %></td>
-              <td><%= stat.free_throws_per_game %></td>
-              <td><%= stat.free_throws_attempted_per_game %></td>
+              <td><%= stat.free_throws %></td>
+              <td><%= stat.free_throws_attempted %></td>
               <td><%= stat.free_throw_percentage %></td>
-              <td><%= stat.offensive_rebounds_per_game %></td>
-              <td><%= stat.defensive_rebounds_per_game %></td>
-              <td><%= stat.total_rebounds_per_game %></td>
-              <td><%= stat.assists_per_game %></td>
-              <td><%= stat.steals_per_game %></td>
-              <td><%= stat.blocks_per_game %></td>
-              <td><%= stat.turnovers_per_game %></td>
-              <td><%= stat.personal_fouls_per_game %></td>
-              <td><%= stat.points_per_game %></td>
+              <td><%= stat.offensive_rebounds %></td>
+              <td><%= stat.defensive_rebounds %></td>
+              <td><%= stat.total_rebounds %></td>
+              <td><%= stat.assists %></td>
+              <td><%= stat.steals %></td>
+              <td><%= stat.blocks %></td>
+              <td><%= stat.turnovers %></td>
+              <td><%= stat.personal_fouls %></td>
+              <td><%= stat.points %></td>
+              <td><%= stat.game_score %></td>
+              <td><%= stat.plus_minus %></td>
             </tr>
           <% end %>
         </tbody>
+
       </table>
     <% else %>
       <p>No stats available for this player.</p>

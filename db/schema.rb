@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_11_05_163206) do
+ActiveRecord::Schema[7.1].define(version: 2024_11_06_030323) do
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
     t.bigint "team_id", null: false
@@ -48,22 +48,17 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_05_163206) do
     t.time "time"
     t.bigint "home_team_id", null: false
     t.string "location"
-    t.integer "home_score"
-    t.integer "away_score"
     t.integer "season"
     t.integer "week"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.time "start_time"
-    t.integer "visitor_pts"
-    t.integer "home_pts"
     t.integer "attendance"
     t.string "duration"
     t.string "notes"
     t.bigint "visitor_team_id", null: false
     t.integer "visitor_points"
     t.integer "home_points"
-    t.string "arena"
     t.string "game_duration"
     t.boolean "overtime"
     t.index ["home_team_id"], name: "index_games_on_home_team_id"
@@ -74,31 +69,32 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_05_163206) do
     t.bigint "player_id"
     t.integer "season"
     t.integer "games_played"
-    t.integer "games_started"
-    t.float "minutes_per_game"
-    t.float "field_goals_per_game"
-    t.float "field_goals_attempted_per_game"
+    t.float "minutes_played"
+    t.float "field_goals"
+    t.float "field_goals_attempted"
     t.float "field_goal_percentage"
-    t.float "three_pointers_per_game"
-    t.float "three_pointers_attempted_per_game"
+    t.float "three_point_field_goals"
+    t.float "three_point_field_goals_attempted"
     t.float "three_point_percentage"
     t.float "two_pointers_per_game"
     t.float "two_pointers_attempted_per_game"
     t.float "two_point_percentage"
-    t.float "free_throws_per_game"
-    t.float "free_throws_attempted_per_game"
+    t.float "free_throws"
+    t.float "free_throws_attempted"
     t.float "free_throw_percentage"
-    t.float "offensive_rebounds_per_game"
-    t.float "defensive_rebounds_per_game"
-    t.float "total_rebounds_per_game"
-    t.float "assists_per_game"
-    t.float "steals_per_game"
-    t.float "blocks_per_game"
-    t.float "turnovers_per_game"
-    t.float "personal_fouls_per_game"
-    t.float "points_per_game"
+    t.float "offensive_rebounds"
+    t.float "defensive_rebounds"
+    t.float "total_rebounds"
+    t.float "assists"
+    t.float "steals"
+    t.float "blocks"
+    t.float "turnovers"
+    t.float "personal_fouls"
+    t.float "points"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.float "game_score"
+    t.float "plus_minus"
     t.index ["player_id"], name: "index_player_stats_on_player_id"
   end
 
