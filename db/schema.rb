@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_11_06_030323) do
+ActiveRecord::Schema[7.1].define(version: 2024_11_06_035707) do
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
     t.bigint "team_id", null: false
@@ -76,9 +76,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_06_030323) do
     t.float "three_point_field_goals"
     t.float "three_point_field_goals_attempted"
     t.float "three_point_percentage"
-    t.float "two_pointers_per_game"
-    t.float "two_pointers_attempted_per_game"
-    t.float "two_point_percentage"
     t.float "free_throws"
     t.float "free_throws_attempted"
     t.float "free_throw_percentage"

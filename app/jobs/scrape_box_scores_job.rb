@@ -12,6 +12,7 @@ class ScrapeBoxScoresJob < ApplicationJob
       puts "Failed to scrape box score for Game ID: #{game.id}"
     end
   end
+  
 end
 
 

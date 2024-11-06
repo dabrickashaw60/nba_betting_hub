@@ -1,20 +1,4 @@
-<!-- app/views/home/index.html.erb -->
-
 <h1 class="mb-4 text-center">NBA Betting Hub</h1>
-
-<h2>Update League Schedule</h2>
-<%= form_with url: update_schedule_path, method: :post, local: true do %>
-  <div class="form-group">
-    <label for="month">Select Month:</label>
-    <%= select_tag :month, options_for_select(['October', 'November', 'December', 'January', 'February', 'March', 'April']), class: "form-control" %>
-  </div>
-  <%= submit_tag "Update Schedule", class: "btn btn-primary mt-2" %>
-<% end %>
-
-<h2>Update Box Scores from yesterday</h2>
-<%= button_to "Scrape Previous Day's Games", scrape_previous_day_games_path, method: :post, class: "btn btn-primary" %>
-<%= button_to "Scrape Box Scores from Oct 22 to Nov 3", scrape_date_range_games_path, method: :post, class: "btn btn-primary" %>
-
 
 <!-- Date Navigation and Date Picker -->
 <div class="d-flex justify-content-center my-4">
@@ -81,10 +65,40 @@
               </tr>
             <% end %>
           </tbody>
-
       </table>
     </div>
   </div>
 <% else %>
   <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
 <% end %>
+
+
+<!-- Collapsible Card for Schedule and Box Score Updates -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h2 style="font-size: 14px;" class="mb-0">Updates</h2>
+    <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#updateSection" aria-expanded="false" aria-controls="updateSection">
+      Toggle Updates
+    </button>
+  </div>
+  <div id="updateSection" class="collapse">
+    <div class="card-body d-flex flex-column align-items-center">
+      <!-- Update League Schedule Form -->
+      <div class="d-flex align-items-center mb-3">
+        <h2 style="font-size: 14px; margin-right: 10px;">Update League Schedule</h2>
+        <%= form_with url: update_schedule_path, method: :post, local: true, class: "d-flex align-items-center" do %>
+          <div class="form-group me-2">
+            <%= select_tag :month, options_for_select(['October', 'November', 'December', 'January', 'February', 'March', 'April']), class: "form-control" %>
+          </div>
+          <%= submit_tag "Update Schedule", class: "btn btn-primary" %>
+        <% end %>
+      </div>
+
+      <!-- Button to Scrape Previous Day's Box Scores -->
+      <div class="d-flex align-items-center">
+        <h2 style="font-size: 14px; margin-right: 10px;">Update Box Scores from Yesterday</h2>
+        <%= button_to "Scrape Previous Day's Games", scrape_previous_day_games_path, method: :post, class: "btn btn-primary" %>
+      </div>
+    </div>
+  </div>
+</div>

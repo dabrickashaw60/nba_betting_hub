@@ -5,7 +5,7 @@ class TeamsController < ApplicationController
 
   def show
     @team = Team.find(params[:id])
-    @players = @team.players
+    @players = @team.players.includes(:player_stats)  # Eager load player stats
 
     # Fetch last 5 games and next 5 games
     @last_five_games = @team.games.where("date < ?", Date.today).order(date: :desc).limit(5)

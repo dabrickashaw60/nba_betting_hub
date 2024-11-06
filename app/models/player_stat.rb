@@ -56,4 +56,22 @@ class PlayerStat < ApplicationRecord
     seconds = total_seconds % 60
     format("%02d:%02d", minutes, seconds)
   end
+
+  before_save :round_stats_to_one_decimal
+
+  private
+
+  def round_stats_to_one_decimal
+    # List of attributes to round to 1 decimal place
+    [:minutes_played, :field_goals, :field_goals_attempted, :field_goal_percentage,
+     :three_point_field_goals, :three_point_field_goals_attempted, :three_point_percentage,
+     :free_throws, :free_throws_attempted, :free_throw_percentage,
+     :offensive_rebounds, :defensive_rebounds, :total_rebounds,
+     :assists, :steals, :blocks, :turnovers, :personal_fouls,
+     :points, :game_score, :plus_minus].each do |attribute|
+      # Round each attribute to 1 decimal place if it's not nil
+      self[attribute] = self[attribute]&.round(1)
+    end
+  end
+
 end
