@@ -1,10 +1,9 @@
-<h1 class="mb-4 text-center">Game Details for <%= @game.date.strftime("%B %d, %Y") %></h1>
+<h1 class="mb-4 text-center">
+  <%= @game.visitor_team.name %> vs. <%= @game.home_team.name %> 
+  </h1>
 
 <div class="container">
   <% if @game.date < Date.today %>
-    <!-- Box Score Section (for past games) -->
-    <%= button_to "Update Box Score", scrape_box_score_game_path(@game), method: :post, class: "btn btn-primary mb-4" %>
-
     <!-- Visitor Team Box Score Card -->
     <div class="card mb-4">
       <div class="card-header">
