@@ -1,192 +1,241 @@
 <!-- app/views/players/show.html.erb -->
 
-<h1>
-  <%= @player.name %> - <%= @team.name %> (<%= @team.abbreviation %>)
+<h1 class="text-center mb-4">
+  <%= @player.name %> - <%= @team.name %><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png" alt="<%= @team.name %> logo" width="50" height="auto" class="me-2">
+
 </h1>
 
-<!-- Player Information Card -->
-<div class="card mb-4">
-  <div class="card-header">
-    Player Information
+<div class="container">
+  <div class="row">
+    <!-- Player Picture and Information -->
+      <div class="col-md-4">
+        <!-- Player Information Card with Picture -->
+        <div class="card mb-4">
+          <div class="card-header">Player Information</div>
+          <div class="card-body d-flex justify-content-between align-items-start">
+            <div class="ml-3">
+              <img src="<%= @player.profile_picture_url %>" alt="<%= @player.name %> Profile Picture" class="img-fluid rounded" style="max-width: 100px;">
+            </div>
+            <!-- Player Information Text -->
+            <div>
+              <p><strong>Uniform Number:</strong> <%= @player.uniform_number %></p>
+              <p><strong>Position:</strong> <%= @player.position %></p>
+              <p><strong>Height:</strong> <%= @player.height %></p>
+              <p><strong>Weight:</strong> <%= @player.weight %> lbs</p>
+              <p><strong>Birth Date:</strong> <%= @player.birth_date.strftime("%B %d, %Y") if @player.birth_date %></p>
+              <p><strong>Country:</strong>               
+                <% if @player.country_of_birth.present? %>
+                  <% lower_country, upper_country = @player.country_of_birth.split %>
+                  <img src="https://cdn.ssref.net/req/1701182769569-20231028/flags/<%= lower_country %>.svg" alt="<%= upper_country %>" width="20" height="15">
+                  <%= upper_country %>
+                <% else %>
+                  N/A
+                <% end %>
+              </p>
+              <p><strong>College:</strong> <%= @player.college.presence || "N/A" %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    <!-- Last 5 Games -->
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header">Last 5 Games</div>
+        <div class="card-body">
+          <% if @last_five_games.any? %>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Opp</th>
+                  <th>Mins</th>                  
+                  <th>P</th>
+                  <th>R</th>
+                  <th>A</th>
+                  <th>FG</th>
+                  <th>3P</th>
+                  <th>FT</th>
+                  <th>+/-</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @last_five_games.each do |box_score| %>
+                  <tr>
+                    <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
+                    <td><%= box_score.game.opponent_for(@player.team).abbreviation %></td>
+                    <td><%= box_score.minutes_played %></td>                    
+                    <td><%= box_score.points %></td>
+                    <td><%= box_score.total_rebounds %></td>
+                    <td><%= box_score.assists %></td>
+                    <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+                    <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+                    <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+                    <td><%= box_score.plus_minus %></td>
+                  </tr>
+                <% end %>
+
+                <!-- Averages Row -->
+                <tr class="table-secondary font-weight-bold">
+                  <td colspan="2">Last 5 Average</td>
+                  <td><%= @last_five_averages[:minutes_played] %></td>
+                  <td><%= number_with_precision(@last_five_averages[:points], precision: 1) %></td>
+                  <td><%= number_with_precision(@last_five_averages[:rebounds], precision: 1) %></td>
+                  <td><%= number_with_precision(@last_five_averages[:assists], precision: 1) %></td>
+                  <td><%= @last_five_averages[:field_goals] %></td>
+                  <td><%= @last_five_averages[:three_pointers] %></td>
+                  <td><%= @last_five_averages[:free_throws] %></td>
+                  <td><%= number_with_precision(@last_five_averages[:plus_minus], precision: 1) %></td>
+                </tr>
+              </tbody>
+            </table>
+          <% else %>
+            <p>No recent games available for this player.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
   </div>
-  <div class="card-body">
-    <p><strong>Uniform Number:</strong> <%= @player.uniform_number %></p>
-    <p><strong>Position:</strong> <%= @player.position %></p>
-    <p><strong>Height:</strong> <%= @player.height %></p>
-    <p><strong>Weight:</strong> <%= @player.weight %> lbs</p>
-    <p><strong>Birth Date:</strong> <%= @player.birth_date.strftime("%B %d, %Y") if @player.birth_date %></p>
-    <p><strong>Country:</strong>               
-      <% if @player.country_of_birth.present? %>
-        <% lower_country, upper_country = @player.country_of_birth.split %>
-        <img src="https://cdn.ssref.net/req/1701182769569-20231028/flags/<%= lower_country %>.svg" alt="<%= upper_country %>" width="20" height="15">
-        <%= upper_country %>
+
+  <div class="card mb-4">
+    <div class="card-header">Betting Info</div>
+    <div class="card-body">
+      <table class="table table-striped text-center">
+        <thead>
+          <tr>
+            <th>Points</th>
+            <th>Assists</th>
+            <th>Rebounds</th>
+            <th>Threes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+            <tr>
+              <td><%= "#{point_threshold}+  (#{@betting_info[:points][i]} / 5)" %></td>
+              <td><%= "#{assist_threshold}+  (#{@betting_info[:assists][i]} / 5)" %></td>
+              <td><%= "#{rebound_threshold}+  (#{@betting_info[:rebounds][i]} / 5)" %></td>
+              <td><%= "#{three_threshold}+  (#{@betting_info[:threes][i]} / 5)" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+
+  <!-- Season Stats -->
+  <div class="card mb-4">
+    <div class="card-header">Season Stats (PER GAME)</div>
+    <div class="card-body">
+      <% if @player_stats.any? %>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>GP</th>
+              <th>MPG</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>ORB</th>
+              <th>DRB</th>
+              <th>TRB</th>
+              <th>AST</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>PTS</th>
+              <th>GmSc</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @player_stats.each do |stat| %>
+              <tr>
+                <td><%= stat.season %></td>
+                <td><%= stat.games_played %></td>
+                <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
+                <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.field_goals_attempted, precision: 1) %></td>
+                <td><%= number_with_precision(stat.field_goal_percentage, precision: 1) %></td>
+                <td><%= number_with_precision(stat.three_point_field_goals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.three_point_field_goals_attempted, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+                <td><%= number_with_precision(stat.free_throws, precision: 1) %></td>
+                <td><%= number_with_precision(stat.free_throws_attempted, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+                <td><%= number_with_precision(stat.offensive_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.defensive_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+                <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+                <td><%= number_with_precision(stat.personal_fouls, precision: 1) %></td>
+                <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+                <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       <% else %>
-        N/A
+        <p>No stats available for this player.</p>
       <% end %>
-    </p>
-    <p><strong>College:</strong> <%= @player.college.presence || "N/A" %></p>
+    </div>
   </div>
-</div>
 
-<!-- Season Stats Card -->
-<div class="card mb-4">
-  <div class="card-header">
-    Season Stats (PER GAME)
-  </div>
-  <div class="card-body">
-    <% if @player_stats.any? %>
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Season</th>
-            <th>GP</th>
-            <th>MPG</th>
-            <th>FG</th>
-            <th>FGA</th>
-            <th>FG%</th>
-            <th>3P</th>
-            <th>3PA</th>
-            <th>3P%</th>
-            <th>FT</th>
-            <th>FTA</th>
-            <th>FT%</th>
-            <th>ORB</th>
-            <th>DRB</th>
-            <th>TRB</th>
-            <th>AST</th>
-            <th>STL</th>
-            <th>BLK</th>
-            <th>TO</th>
-            <th>PF</th>
-            <th>PTS</th>
-            <th>GmSc</th>
-            <th>+/-</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <% @player_stats.each do |stat| %>
+  <!-- Game Logs -->
+  <div class="card mb-4">
+    <div class="card-header">Game Logs</div>
+    <div class="card-body">
+      <% if @game_logs.any? %>
+        <table class="table table-striped">
+          <thead>
             <tr>
-              <td><%= stat.season %></td>
-              <td><%= stat.games_played %></td>
-              <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
-              <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>
-              <td><%= number_with_precision(stat.field_goals_attempted, precision: 1) %></td>
-              <td><%= number_with_precision(stat.field_goal_percentage, precision: 1) %></td>
-              <td><%= number_with_precision(stat.three_point_field_goals, precision: 1) %></td>
-              <td><%= number_with_precision(stat.three_point_field_goals_attempted, precision: 1) %></td>
-              <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
-              <td><%= number_with_precision(stat.free_throws, precision: 1) %></td>
-              <td><%= number_with_precision(stat.free_throws_attempted, precision: 1) %></td>
-              <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
-              <td><%= number_with_precision(stat.offensive_rebounds, precision: 1) %></td>
-              <td><%= number_with_precision(stat.defensive_rebounds, precision: 1) %></td>
-              <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
-              <td><%= number_with_precision(stat.assists, precision: 1) %></td>
-              <td><%= number_with_precision(stat.steals, precision: 1) %></td>
-              <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
-              <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
-              <td><%= number_with_precision(stat.personal_fouls, precision: 1) %></td>
-              <td><%= number_with_precision(stat.points, precision: 1) %></td>
-              <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
-              <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+              <th>Date</th>
+              <th>Opponent</th>
+              <th>Points</th>
+              <th>Rebounds</th>
+              <th>Assists</th>
+              <th>Minutes</th>
+              <th>FG</th>
+              <th>3P</th>
+              <th>FT</th>
+              <th>+/-</th>
             </tr>
-          <% end %>
-        </tbody>
-
-      </table>
-    <% else %>
-      <p>No stats available for this player.</p>
-    <% end %>
-  </div>
-</div>
-
-<!-- Last 5 Games Card -->
-<div class="card mb-4">
-  <div class="card-header">
-    Last 5 Games
-  </div>
-  <div class="card-body">
-    <% if @last_five_games.any? %>
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Opponent</th>
-            <th>Points</th>
-            <th>Rebounds</th>
-            <th>Assists</th>
-            <th>Minutes</th>
-            <th>FG</th>
-            <th>3P</th>
-            <th>FT</th>
-            <th>+/-</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @last_five_games.each do |box_score| %>
-            <tr>
-              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
-              <td><%= box_score.game.opponent_for(@player.team).name %></td>
-              <td><%= box_score.points %></td>
-              <td><%= box_score.total_rebounds %></td>
-              <td><%= box_score.assists %></td>
-              <td><%= box_score.minutes_played %></td>
-              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
-              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
-              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
-              <td><%= box_score.plus_minus %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    <% else %>
-      <p>No recent games available for this player.</p>
-    <% end %>
-  </div>
-</div>
-
-<!-- Game Logs Card -->
-<div class="card mb-4">
-  <div class="card-header">
-    Game Logs
-  </div>
-  <div class="card-body">
-    <% if @game_logs.any? %>
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Opponent</th>
-            <th>Points</th>
-            <th>Rebounds</th>
-            <th>Assists</th>
-            <th>Minutes</th>
-            <th>FG</th>
-            <th>3P</th>
-            <th>FT</th>
-            <th>+/-</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @game_logs.each do |box_score| %>
-            <tr>
-              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
-              <td><%= box_score.game.opponent_for(@player.team).name %></td>
-              <td><%= box_score.points %></td>
-              <td><%= box_score.total_rebounds %></td>
-              <td><%= box_score.assists %></td>
-              <td><%= box_score.minutes_played %></td>
-              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
-              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
-              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
-              <td><%= box_score.plus_minus %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    <% else %>
-      <p>No game logs available for this player.</p>
-    <% end %>
+          </thead>
+          <tbody>
+            <% @game_logs.each do |box_score| %>
+              <tr>
+                <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
+                <td><%= box_score.game.opponent_for(@player.team).name %></td>
+                <td><%= box_score.points %></td>
+                <td><%= box_score.total_rebounds %></td>
+                <td><%= box_score.assists %></td>
+                <td><%= box_score.minutes_played %></td>
+                <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+                <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+                <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+                <td><%= box_score.plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p>No game logs available for this player.</p>
+      <% end %>
+    </div>
   </div>
 </div>
