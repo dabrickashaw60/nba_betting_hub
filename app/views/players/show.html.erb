@@ -69,27 +69,27 @@
             <tr>
               <td><%= stat.season %></td>
               <td><%= stat.games_played %></td>
-              <td><%= stat.minutes_played %></td>
-              <td><%= stat.field_goals %></td>
-              <td><%= stat.field_goals_attempted %></td>
-              <td><%= stat.field_goal_percentage %></td>
-              <td><%= stat.three_point_field_goals %></td>
-              <td><%= stat.three_point_field_goals_attempted %></td>
-              <td><%= stat.three_point_percentage %></td>
-              <td><%= stat.free_throws %></td>
-              <td><%= stat.free_throws_attempted %></td>
-              <td><%= stat.free_throw_percentage %></td>
-              <td><%= stat.offensive_rebounds %></td>
-              <td><%= stat.defensive_rebounds %></td>
-              <td><%= stat.total_rebounds %></td>
-              <td><%= stat.assists %></td>
-              <td><%= stat.steals %></td>
-              <td><%= stat.blocks %></td>
-              <td><%= stat.turnovers %></td>
-              <td><%= stat.personal_fouls %></td>
-              <td><%= stat.points %></td>
-              <td><%= stat.game_score %></td>
-              <td><%= stat.plus_minus %></td>
+              <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
+              <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>
+              <td><%= number_with_precision(stat.field_goals_attempted, precision: 1) %></td>
+              <td><%= number_with_precision(stat.field_goal_percentage, precision: 1) %></td>
+              <td><%= number_with_precision(stat.three_point_field_goals, precision: 1) %></td>
+              <td><%= number_with_precision(stat.three_point_field_goals_attempted, precision: 1) %></td>
+              <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+              <td><%= number_with_precision(stat.free_throws, precision: 1) %></td>
+              <td><%= number_with_precision(stat.free_throws_attempted, precision: 1) %></td>
+              <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+              <td><%= number_with_precision(stat.offensive_rebounds, precision: 1) %></td>
+              <td><%= number_with_precision(stat.defensive_rebounds, precision: 1) %></td>
+              <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+              <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+              <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+              <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+              <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+              <td><%= number_with_precision(stat.personal_fouls, precision: 1) %></td>
+              <td><%= number_with_precision(stat.points, precision: 1) %></td>
+              <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+              <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
             </tr>
           <% end %>
         </tbody>
@@ -97,51 +97,6 @@
       </table>
     <% else %>
       <p>No stats available for this player.</p>
-    <% end %>
-  </div>
-</div>
-
-<!-- Game Logs Card -->
-<div class="card mb-4">
-  <div class="card-header">
-    Game Logs
-  </div>
-  <div class="card-body">
-    <% if @game_logs.any? %>
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Opponent</th>
-            <th>Points</th>
-            <th>Rebounds</th>
-            <th>Assists</th>
-            <th>Minutes</th>
-            <th>FG</th>
-            <th>3P</th>
-            <th>FT</th>
-            <th>+/-</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @game_logs.each do |box_score| %>
-            <tr>
-              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
-              <td><%= box_score.game.opponent_for(@player.team).name %></td>
-              <td><%= box_score.points %></td>
-              <td><%= box_score.total_rebounds %></td>
-              <td><%= box_score.assists %></td>
-              <td><%= box_score.minutes_played %></td>
-              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
-              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
-              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
-              <td><%= box_score.plus_minus %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    <% else %>
-      <p>No game logs available for this player.</p>
     <% end %>
   </div>
 </div>
@@ -191,3 +146,47 @@
   </div>
 </div>
 
+<!-- Game Logs Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    Game Logs
+  </div>
+  <div class="card-body">
+    <% if @game_logs.any? %>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Points</th>
+            <th>Rebounds</th>
+            <th>Assists</th>
+            <th>Minutes</th>
+            <th>FG</th>
+            <th>3P</th>
+            <th>FT</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game_logs.each do |box_score| %>
+            <tr>
+              <td><%= box_score.game.date.strftime("%B %d, %Y") %></td>
+              <td><%= box_score.game.opponent_for(@player.team).name %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+              <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>No game logs available for this player.</p>
+    <% end %>
+  </div>
+</div>

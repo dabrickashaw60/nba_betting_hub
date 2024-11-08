@@ -5,14 +5,13 @@ class PlayersController < ApplicationController
     @team = Team.find(params[:team_id])
     @player = @team.players.find(params[:id])
     @player_stats = @player.player_stats.order(season: :desc) # Assuming there's a `PlayerStat` model
-
-        # Fetch all game logs for the player
+  
+    # Fetch all game logs for the player
     @game_logs = @player.box_scores.includes(:game).order('games.date DESC')
-
+  
     # Fetch the last 5 game logs, most recent first
-    @last_five_games = @game_logs.last(5)
-
-  end
+    @last_five_games = @game_logs.limit(5)
+  end  
 
   def update_stats
     @player = Player.find_by(id: params[:id])

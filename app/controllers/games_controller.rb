@@ -41,7 +41,7 @@ class GamesController < ApplicationController
 
   def scrape_date_range_games
     start_date = Date.parse("2024-10-22")
-    end_date = Date.parse("2024-11-03")
+    end_date = Date.parse("2024-11-06")
 
     ScrapeBoxScoresDateRangeJob.perform_later(start_date, end_date)
     flash[:notice] = "Scheduled box score scrapes for games between #{start_date.strftime('%B %d, %Y')} and #{end_date.strftime('%B %d, %Y')}"

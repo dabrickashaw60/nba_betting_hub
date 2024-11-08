@@ -15,13 +15,16 @@ class PlayerStat < ApplicationRecord
     player_stat.games_played = box_scores.count
     player_stat.field_goals = box_scores.average(:field_goals)
     player_stat.field_goals_attempted = box_scores.average(:field_goals_attempted)
-    player_stat.field_goal_percentage = box_scores.average(:field_goal_percentage)
+    player_stat.field_goal_percentage = player_stat.field_goals_attempted > 0 ? (player_stat.field_goals / player_stat.field_goals_attempted.to_f) : 0
+    
     player_stat.three_point_field_goals = box_scores.average(:three_point_field_goals)
     player_stat.three_point_field_goals_attempted = box_scores.average(:three_point_field_goals_attempted)
-    player_stat.three_point_percentage = box_scores.average(:three_point_percentage)
+    player_stat.three_point_percentage = player_stat.three_point_field_goals_attempted > 0 ? (player_stat.three_point_field_goals / player_stat.three_point_field_goals_attempted.to_f) : 0
+    
     player_stat.free_throws = box_scores.average(:free_throws)
     player_stat.free_throws_attempted = box_scores.average(:free_throws_attempted)
-    player_stat.free_throw_percentage = box_scores.average(:free_throw_percentage)
+    player_stat.free_throw_percentage = player_stat.free_throws_attempted > 0 ? (player_stat.free_throws / player_stat.free_throws_attempted.to_f) : 0
+    
     player_stat.offensive_rebounds = box_scores.average(:offensive_rebounds)
     player_stat.defensive_rebounds = box_scores.average(:defensive_rebounds)
     player_stat.total_rebounds = box_scores.average(:total_rebounds)
@@ -33,6 +36,7 @@ class PlayerStat < ApplicationRecord
     player_stat.points = box_scores.average(:points)
     player_stat.game_score = box_scores.average(:game_score)
     player_stat.plus_minus = box_scores.average(:plus_minus)
+    
 
     # Calculate average minutes per game
     total_seconds = box_scores.sum { |bs| convert_to_seconds(bs.minutes_played) }
@@ -70,7 +74,7 @@ class PlayerStat < ApplicationRecord
      :assists, :steals, :blocks, :turnovers, :personal_fouls,
      :points, :game_score, :plus_minus].each do |attribute|
       # Round each attribute to 1 decimal place if it's not nil
-      self[attribute] = self[attribute]&.round(1)
+      self[attribute] = self[attribute]&.round(3)
     end
   end
 
