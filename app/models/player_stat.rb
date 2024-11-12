@@ -37,7 +37,6 @@ class PlayerStat < ApplicationRecord
     player_stat.game_score = box_scores.average(:game_score)
     player_stat.plus_minus = box_scores.average(:plus_minus)
     
-
     # Calculate average minutes per game
     total_seconds = box_scores.sum { |bs| convert_to_seconds(bs.minutes_played) }
     average_seconds = total_seconds / box_scores.count
@@ -66,8 +65,8 @@ class PlayerStat < ApplicationRecord
   private
 
   def round_stats_to_one_decimal
-    # List of attributes to round to 1 decimal place
-    [:minutes_played, :field_goals, :field_goals_attempted, :field_goal_percentage,
+    # List of attributes to round to 1 decimal place, excluding minutes_played
+    [:field_goals, :field_goals_attempted, :field_goal_percentage,
      :three_point_field_goals, :three_point_field_goals_attempted, :three_point_percentage,
      :free_throws, :free_throws_attempted, :free_throw_percentage,
      :offensive_rebounds, :defensive_rebounds, :total_rebounds,
@@ -77,5 +76,4 @@ class PlayerStat < ApplicationRecord
       self[attribute] = self[attribute]&.round(3)
     end
   end
-
 end
