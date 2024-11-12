@@ -9,8 +9,41 @@ class GamesController < ApplicationController
     @game = Game.find(params[:id])
     @visitor_team = @game.visitor_team
     @home_team = @game.home_team
-    @visitor_team_players = @visitor_team.players.includes(:player_stat) # Assuming players and player_stats associations
-    @home_team_players = @home_team.players.includes(:player_stat) # Assuming players and player_stats associations
+    @visitor_team_players = @visitor_team.players.includes(:box_scores)
+    @home_team_players = @home_team.players.includes(:box_scores)
+
+    # Calculate last five-game averages for each player in both teams
+    [@visitor_team_players, @home_team_players].each do |team_players|
+      team_players.each do |player|
+        last_five_games = player.box_scores.joins(:game).order('games.date DESC').limit(5)
+
+        last_five_averages = {
+          minutes_played: calculate_average_minutes(last_five_games),
+          points: average_stat(last_five_games, :points),
+          rebounds: average_stat(last_five_games, :total_rebounds),
+          assists: average_stat(last_five_games, :assists),
+          field_goals: average_stat(last_five_games, :field_goals),
+          field_goals_attempted: average_stat(last_five_games, :field_goals_attempted),
+          field_goal_percentage: average_percentage(last_five_games, :field_goals, :field_goals_attempted),
+          three_point_field_goals: average_stat(last_five_games, :three_point_field_goals),
+          three_point_field_goals_attempted: average_stat(last_five_games, :three_point_field_goals_attempted),
+          three_point_percentage: average_percentage(last_five_games, :three_point_field_goals, :three_point_field_goals_attempted),
+          free_throws: average_stat(last_five_games, :free_throws),
+          free_throws_attempted: average_stat(last_five_games, :free_throws_attempted),
+          free_throw_percentage: average_percentage(last_five_games, :free_throws, :free_throws_attempted),
+          steals: average_stat(last_five_games, :steals),
+          blocks: average_stat(last_five_games, :blocks),
+          turnovers: average_stat(last_five_games, :turnovers),
+          personal_fouls: average_stat(last_five_games, :personal_fouls),
+          plus_minus: average_stat(last_five_games, :plus_minus)
+        }
+
+        # Define the last_five_average as a singleton method on each player
+        player.define_singleton_method(:last_five_average) do
+          last_five_averages
+        end
+      end
+    end
   end
 
 
@@ -40,8 +73,8 @@ class GamesController < ApplicationController
   end
 
   def scrape_date_range_games
-    start_date = Date.parse("2024-10-22")
-    end_date = Date.parse("2024-11-06")
+    start_date = Date.parse("2024-11-08")
+    end_date = Date.parse("2024-11-11")
 
     ScrapeBoxScoresDateRangeJob.perform_later(start_date, end_date)
     flash[:notice] = "Scheduled box score scrapes for games between #{start_date.strftime('%B %d, %Y')} and #{end_date.strftime('%B %d, %Y')}"
@@ -55,5 +88,35 @@ class GamesController < ApplicationController
     @game = Game.find(params[:id])
   end
 
+  def average_stat(games, stat)
+    return 0 if games.empty?
+    games.sum(&stat).to_f / games.size
+  end
+
+  def calculate_average_minutes(games)
+    total_seconds = games.sum do |game|
+      if game.minutes_played.present?
+        minutes, seconds = game.minutes_played.split(":").map(&:to_i)
+        (minutes * 60) + seconds
+      else
+        0 # If minutes_played is nil, add 0 seconds to the total
+      end
+    end
+  
+    return "00:00" if games.empty?
+  
+    average_seconds = total_seconds / games.size
+    minutes = average_seconds / 60
+    seconds = average_seconds % 60
+    format("%02d:%02d", minutes, seconds)
+  end
+  
+
+  def average_percentage(games, made_stat, attempted_stat)
+    total_made = games.sum(&made_stat)
+    total_attempted = games.sum(&attempted_stat)
+    return 0.0 if total_attempted.zero?
+    (total_made.to_f / total_attempted).round(3)
+  end
 
 end

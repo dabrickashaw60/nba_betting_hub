@@ -40,7 +40,7 @@
           <tbody>
             <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
               <tr>
-                <td><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player) %></td>
+                <td><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player) %> (<%= box_score.player.position %>)</td>
                 <td><%= box_score.minutes_played %></td>
                 <td><%= box_score.field_goals %></td>
                 <td><%= box_score.field_goals_attempted %></td>
@@ -105,7 +105,7 @@
           <tbody>
             <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
               <tr>
-                <td><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player) %></td>
+                <td><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player) %> (<%= box_score.player.position %>)</td>
                 <td><%= box_score.minutes_played %></td>
                 <td><%= box_score.field_goals %></td>
                 <td><%= box_score.field_goals_attempted %></td>
@@ -136,77 +136,297 @@
   <% else %>
     <!-- Game Details Section (only shown if no box scores are available) -->
     <div class="row">
-      <!-- Visitor Team Card -->
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h3><%= @visitor_team.name %> (Visitor)</h3>
-          </div>
-          <div class="card-body">
-            <p><strong>Points:</strong> <%= @game.visitor_points %></p>
-            <p><strong>Location:</strong> <%= @game.location %></p>
-            <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
+<!-- Visitor Team Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h3><%= @visitor_team.name %> (Visitor)</h3>
+  </div>
+  <div class="card-body">
+    <p><strong>Points:</strong> <%= @game.visitor_points %></p>
+    <p><strong>Location:</strong> <%= @game.location %></p>
+    <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
 
-            <h4>Player Stats</h4>
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Points</th>
-                  <th>Rebounds</th>
-                  <th>Assists</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @visitor_team_players.each do |player| %>
-                  <tr>
-                    <td><%= player.name %></td>
-                    <td><%= player.player_stat&.points || "N/A" %></td>
-                    <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
-                    <td><%= player.player_stat&.assists || "N/A" %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="visitor-stats-tab" data-toggle="tab" href="#visitor-stats" role="tab">Player Stats</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="visitor-last5-tab" data-toggle="tab" href="#visitor-last5" role="tab">Last 5 Games Averages</a>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Player Stats Tab -->
+      <div class="tab-pane fade show active" id="visitor-stats" role="tabpanel">
+        <h4>Player Stats</h4>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Points</th>
+              <th>Rebounds</th>
+              <th>Assists</th>
+              <th>Minutes</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @visitor_team_players.each do |player| %>
+              <tr>
+                <td><%= player.name %></td>
+                <td><%= player.player_stat&.points || "N/A" %></td>
+                <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
+                <td><%= player.player_stat&.assists || "N/A" %></td>
+                <td><%= player.player_stat&.minutes_played || "N/A" %></td>
+                <td><%= player.player_stat&.field_goals || "N/A" %></td>
+                <td><%= player.player_stat&.field_goals_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.field_goal_percentage.present? ? number_to_percentage(player.player_stat.field_goal_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.three_point_field_goals || "N/A" %></td>
+                <td><%= player.player_stat&.three_point_field_goals_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.three_point_percentage.present? ? number_to_percentage(player.player_stat.three_point_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.free_throws || "N/A" %></td>
+                <td><%= player.player_stat&.free_throws_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.free_throw_percentage.present? ? number_to_percentage(player.player_stat.free_throw_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.steals || "N/A" %></td>
+                <td><%= player.player_stat&.blocks || "N/A" %></td>
+                <td><%= player.player_stat&.turnovers || "N/A" %></td>
+                <td><%= player.player_stat&.personal_fouls || "N/A" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Home Team Card -->
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h3><%= @home_team.name %> (Home)</h3>
-          </div>
-          <div class="card-body">
-            <p><strong>Points:</strong> <%= @game.home_points %></p>
-            <p><strong>Location:</strong> <%= @game.location %></p>
-            <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
-
-            <h4>Player Stats</h4>
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Points</th>
-                  <th>Rebounds</th>
-                  <th>Assists</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @home_team_players.each do |player| %>
-                  <tr>
-                    <td><%= player.name %></td>
-                    <td><%= player.player_stat&.points || "N/A" %></td>
-                    <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
-                    <td><%= player.player_stat&.assists || "N/A" %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <!-- Last 5 Games Averages Tab -->
+      <div class="tab-pane fade" id="visitor-last5" role="tabpanel">
+        <h4>Last 5 Games Averages</h4>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Points</th>
+              <th>Rebounds</th>
+              <th>Assists</th>
+              <th>Minutes</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @visitor_team_players.each do |player| %>
+              <tr>
+                <td><%= player.name %></td>
+                <td><%= player.last_five_average[:points].round(1) %></td>
+                <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                <td><%= player.last_five_average[:assists].round(1) %></td>
+                <td><%= player.last_five_average[:minutes_played] %></td>
+                <td><%= player.last_five_average[:field_goals] %></td>
+                <td><%= player.last_five_average[:field_goals_attempted] %></td>
+                <td><%= player.last_five_average[:field_goal_percentage] %></td>
+                <td><%= player.last_five_average[:three_pointers] %></td>
+                <td><%= player.last_five_average[:three_point_field_goals_attempted] %></td>
+                <td><%= player.last_five_average[:three_point_percentage] %></td>
+                <td><%= player.last_five_average[:free_throws] %></td>
+                <td><%= player.last_five_average[:free_throws_attempted] %></td>
+                <td><%= player.last_five_average[:free_throw_percentage] %></td>
+                <td><%= player.last_five_average[:steals].round(1) %></td>
+                <td><%= player.last_five_average[:blocks].round(1) %></td>
+                <td><%= player.last_five_average[:turnovers].round(1) %></td>
+                <td><%= player.last_five_average[:personal_fouls].round(1) %></td>
+                <td><%= player.last_five_average[:plus_minus].round(1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Home Team Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h3><%= @home_team.name %> (Home)</h3>
+  </div>
+  <div class="card-body">
+    <p><strong>Points:</strong> <%= @game.home_points %></p>
+    <p><strong>Location:</strong> <%= @game.location %></p>
+    <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
+
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="home-stats-tab" data-toggle="tab" href="#home-stats" role="tab">Player Stats</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="home-last5-tab" data-toggle="tab" href="#home-last5" role="tab">Last 5 Games Averages</a>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Player Stats Tab -->
+      <div class="tab-pane fade show active" id="home-stats" role="tabpanel">
+        <h4>Player Stats</h4>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Points</th>
+              <th>Rebounds</th>
+              <th>Assists</th>
+              <th>Minutes</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @home_team_players.each do |player| %>
+              <tr>
+                <td><%= player.name %></td>
+                <td><%= player.player_stat&.points || "N/A" %></td>
+                <td><%= player.player_stat&.total_rebounds || "N/A" %></td>
+                <td><%= player.player_stat&.assists || "N/A" %></td>
+                <td><%= player.player_stat&.minutes_played || "N/A" %></td>
+                <td><%= player.player_stat&.field_goals || "N/A" %></td>
+                <td><%= player.player_stat&.field_goals_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.field_goal_percentage.present? ? number_to_percentage(player.player_stat.field_goal_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.three_point_field_goals || "N/A" %></td>
+                <td><%= player.player_stat&.three_point_field_goals_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.three_point_percentage.present? ? number_to_percentage(player.player_stat.three_point_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.free_throws || "N/A" %></td>
+                <td><%= player.player_stat&.free_throws_attempted || "N/A" %></td>
+                <td><%= player.player_stat&.free_throw_percentage.present? ? number_to_percentage(player.player_stat.free_throw_percentage * 100, precision: 1) : "N/A" %></td>
+                <td><%= player.player_stat&.steals || "N/A" %></td>
+                <td><%= player.player_stat&.blocks || "N/A" %></td>
+                <td><%= player.player_stat&.turnovers || "N/A" %></td>
+                <td><%= player.player_stat&.personal_fouls || "N/A" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Last 5 Games Averages Tab -->
+      <div class="tab-pane fade" id="home-last5" role="tabpanel">
+        <h4>Last 5 Games Averages</h4>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Points</th>
+              <th>Rebounds</th>
+              <th>Assists</th>
+              <th>Minutes</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @home_team_players.each do |player| %>
+              <tr>
+                <td><%= player.name %></td>
+                <td><%= player.last_five_average[:points].round(1) %></td>
+                <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                <td><%= player.last_five_average[:assists].round(1) %></td>
+                <td><%= player.last_five_average[:minutes_played] %></td>
+                <td><%= player.last_five_average[:field_goals] %></td>
+                <td><%= player.last_five_average[:field_goals_attempted] %></td>
+                <td><%= player.last_five_average[:field_goal_percentage] %></td>
+                <td><%= player.last_five_average[:three_pointers] %></td>
+                <td><%= player.last_five_average[:three_point_field_goals_attempted] %></td>
+                <td><%= player.last_five_average[:three_point_percentage] %></td>
+                <td><%= player.last_five_average[:free_throws] %></td>
+                <td><%= player.last_five_average[:free_throws_attempted] %></td>
+                <td><%= player.last_five_average[:free_throw_percentage] %></td>
+                <td><%= player.last_five_average[:steals].round(1) %></td>
+                <td><%= player.last_five_average[:blocks].round(1) %></td>
+                <td><%= player.last_five_average[:turnovers].round(1) %></td>
+                <td><%= player.last_five_average[:personal_fouls].round(1) %></td>
+                <td><%= player.last_five_average[:plus_minus].round(1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
     </div>
   <% end %>
 </div>
+
+<script>
+  // JavaScript to handle tab switching with Turbo
+document.addEventListener("turbo:load", () => {
+  // Ensure that tabs work with Turbo by adding event listeners for tab clicks
+  const tabLinks = document.querySelectorAll('[data-toggle="tab"]');
+  
+  tabLinks.forEach(tab => {
+    tab.addEventListener("click", (event) => {
+      event.preventDefault();
+      
+      const target = document.querySelector(tab.getAttribute("href"));
+      
+      // Remove active class from all tab links and content
+      tabLinks.forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(content => content.classList.remove("show", "active"));
+      
+      // Activate the clicked tab and the corresponding content
+      tab.classList.add("active");
+      target.classList.add("show", "active");
+    });
+  });
+});
+</script>

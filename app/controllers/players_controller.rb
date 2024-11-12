@@ -21,7 +21,11 @@ class PlayersController < ApplicationController
       field_goals: average_ratio(@last_five_games, :field_goals, :field_goals_attempted),
       three_pointers: average_ratio(@last_five_games, :three_point_field_goals, :three_point_field_goals_attempted),
       free_throws: average_ratio(@last_five_games, :free_throws, :free_throws_attempted),
-      plus_minus: average_stat(@last_five_games, :plus_minus)
+      plus_minus: average_stat(@last_five_games, :plus_minus),
+      steals: average_stat(@last_five_games, :steals),
+      blocks: average_stat(@last_five_games, :blocks),
+      turnovers: average_stat(@last_five_games, :turnovers),
+      personal_fouls: average_stat(@last_five_games, :personal_fouls)      
     }
 
       # Betting info calculation

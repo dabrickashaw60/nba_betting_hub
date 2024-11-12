@@ -17,9 +17,15 @@ Rails.application.routes.draw do
 
   resources :games, only: [:show] do
     member do
-      post 'scrape_box_score'
+      post 'scrape_box_score' # This is a member route, acting on a specific game
+    end
+    collection do
+      post 'scrape_date_range_games' # This is a collection route, acting on the entire resource
     end
   end
+  
+
+
 
   # Standings routes
   get 'standings', to: 'standings#index', as: 'standings'
