@@ -1,25 +1,114 @@
-<h1 class="mb-4 text-center"><%= @team.name %> (<%= @team.abbreviation %>)</h1>
+<h1 class="mb-4 text-center"><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png" alt="<%= @team.name %> logo" width="50" height="auto" class="me-2"><%= @team.name %> (<%= @team.abbreviation %>)</h1>
 
 <div class="container">
   <!-- Bootstrap Tabs -->
   <ul class="nav nav-tabs" id="teamTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="roster-tab" data-bs-toggle="tab" data-bs-target="#roster" type="button" role="tab" aria-controls="roster" aria-selected="true">Roster</button>
+      <button class="nav-link active" id="player-stats-tab" data-bs-toggle="tab" data-bs-target="#player-stats" type="button" role="tab" aria-controls="player-stats" aria-selected="true">Player Stats</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="player-stats-tab" data-bs-toggle="tab" data-bs-target="#player-stats" type="button" role="tab" aria-controls="player-stats" aria-selected="false">Player Stats</button>
+      <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule" aria-selected="false">Schedule</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="upcoming-schedule-tab" data-bs-toggle="tab" data-bs-target="#upcoming-schedule" type="button" role="tab" aria-controls="upcoming-schedule" aria-selected="false">Upcoming Schedule</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="past-games-tab" data-bs-toggle="tab" data-bs-target="#past-games" type="button" role="tab" aria-controls="past-games" aria-selected="false">Past Games</button>
+      <button class="nav-link" id="roster-tab" data-bs-toggle="tab" data-bs-target="#roster" type="button" role="tab" aria-controls="roster" aria-selected="false">Roster</button>
     </li>
   </ul>
 
   <div class="tab-content" id="teamTabsContent">
+    <!-- Player Stats Tab -->
+    <div class="tab-pane fade show active" id="player-stats" role="tabpanel" aria-labelledby="player-stats-tab">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3>Player Stats</h3>
+        </div>
+        <div class="card-body">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>GP</th>
+                <th>MP</th>
+                <th>FG%</th>
+                <th>3P%</th>
+                <th>FT%</th>
+                <th>R</th>
+                <th>A</th>
+                <th>STL</th>
+                <th>BLK</th>
+                <th>TO</th>
+                <th>PTS</th>
+                <th data-bs-toggle="tooltip" title="Basketball Reference Game Score">GS</th>
+                <th>+/-</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @player_stats.each do |stat| %>
+                <tr>
+                  <td>
+                    <img src="<%= stat.player.profile_picture_url %>" width="auto" height="25">
+                    <%= stat.player.name %>
+                  </td>
+                  <td><%= stat.games_played %></td>
+                  <td><%= stat.minutes_played %></td>
+                  <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
+                  <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+                  <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Tab -->
+    <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3>Full Schedule</h3>
+        </div>
+        <div class="card-body">
+          <% if @team_schedule.any? %>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Visitor Team</th>
+                  <th>Home Team</th>
+                  <th>Location</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @team_schedule.each do |game| %>
+                  <tr>
+                    <td><%= game.date.strftime("%b %d, %Y") %></td>
+                    <td><%= game.visitor_team.name %></td>
+                    <td><%= game.home_team.name %></td>
+                    <td><%= game.location %></td>
+                    <td><%= game.time.strftime("%I:%M %p") if game.time.present? %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% else %>
+            <p>No scheduled games available for this team.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
     <!-- Roster Tab -->
-    <div class="tab-pane fade show active" id="roster" role="tabpanel" aria-labelledby="roster-tab">
+    <div class="tab-pane fade" id="roster" role="tabpanel" aria-labelledby="roster-tab">
       <div class="card mt-4">
         <div class="card-header">
           <h3>Roster</h3>
@@ -42,7 +131,10 @@
               <% @players.each do |player| %>
                 <tr>
                   <td><%= player.uniform_number %></td>
-                  <td><%= link_to player.name, team_player_path(@team, player) %></td>
+                  <td>
+                    <img src="<%= player.profile_picture_url %>" width="auto" height="25">
+                    <%= link_to player.name, team_player_path(@team, player) %>
+                  </td>
                   <td><%= player.position %></td>
                   <td><%= player.height %></td>
                   <td><%= player.weight %> lbs</td>
@@ -64,123 +156,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Player Stats Tab -->
-    <div class="tab-pane fade" id="player-stats" role="tabpanel" aria-labelledby="player-stats-tab">
-      <div class="card mt-4">
-        <div class="card-header">
-          <h3>Player Stats</h3>
-        </div>
-        <div class="card-body">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Position</th>
-                <th>Points Per Game</th>
-                <th>Total Rebounds Per Game</th>
-                <th>Assists Per Game</th>
-                <th>College</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @players.each do |player| %>
-                <tr>
-                  <td><%= link_to player.name, team_player_path(@team, player) %></td>
-                  <td><%= player.position %></td>
-                  <td><%= player.player_stat ? player.player_stat.points : "N/A" %></td>
-                  <td><%= player.player_stat ? player.player_stat.total_rebounds : "N/A" %></td>
-                  <td><%= player.player_stat ? player.player_stat.assists : "N/A" %></td>
-                  <td><%= player.college.presence || "N/A" %></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- Upcoming Schedule Tab -->
-    <div class="tab-pane fade" id="upcoming-schedule" role="tabpanel" aria-labelledby="upcoming-schedule-tab">
-      <div class="card mt-4">
-        <div class="card-header">
-          <h3>Next 5 Games</h3>
-        </div>
-        <div class="card-body">
-          <% if @next_five_games.any? %>
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Visitor Team</th>
-                  <th>Home Team</th>
-                  <th>Location</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @next_five_games.each do |game| %>
-                  <tr>
-                    <td><%= game.date.strftime("%b %d, %Y") %></td>
-                    <td><%= game.visitor_team.name %></td>
-                    <td><%= game.home_team.name %></td>
-                    <td><%= game.location %></td>
-                    <td><%= game.time.strftime("%I:%M %p") if game.time.present? %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          <% else %>
-            <p>No upcoming games available for this team.</p>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Past Games Tab -->
-    <div class="tab-pane fade" id="past-games" role="tabpanel" aria-labelledby="past-games-tab">
-      <div class="card mt-4">
-        <div class="card-header">
-          <h3>Last 5 Games</h3>
-        </div>
-        <div class="card-body">
-          <% if @last_five_games.any? %>
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Visitor Team</th>
-                  <th>Visitor Points</th>
-                  <th>Home Team</th>
-                  <th>Home Points</th>
-                  <th>Location</th>
-                  <th>Box Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @last_five_games.each do |game| %>
-                  <tr>
-                    <td><%= game.date.strftime("%b %d, %Y") %></td>
-                    <td><%= game.visitor_team.name %></td>
-                    <td><%= game.visitor_points.presence || "-" %></td>
-                    <td><%= game.home_team.name %></td>
-                    <td><%= game.home_points.presence || "-" %></td>
-                    <td><%= game.location %></td>
-                    <td>
-                      <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
-                      <a href="<%= box_score_url %>" target="_blank">View Box Score</a>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          <% else %>
-            <p>No recent games available for this team.</p>
-          <% end %>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -194,5 +169,12 @@
         tabTrigger.show()
       })
     })
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+      new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
   });
+
 </script>

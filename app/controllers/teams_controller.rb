@@ -5,11 +5,11 @@ class TeamsController < ApplicationController
 
   def show
     @team = Team.find(params[:id])
-    @players = @team.players.includes(:player_stats)  # Eager load player stats
+    @players = @team.players.includes(:player_stat) # Load players with their stats
+    @player_stats = @players.map(&:player_stat).compact # Get player stats, excluding nils for players without stats
 
-    # Fetch last 5 games and next 5 games
-    @last_five_games = @team.games.where("date < ?", Date.today).order(date: :desc).limit(5)
-    @next_five_games = @team.games.where("date >= ?", Date.today).order(date: :asc).limit(5)
+    # Load the team's full schedule
+    @team_schedule = @team.games.order(:date) # Ensure the games are ordered by date
   end
 
 end
