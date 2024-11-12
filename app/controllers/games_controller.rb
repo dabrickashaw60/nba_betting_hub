@@ -94,18 +94,15 @@ class GamesController < ApplicationController
   end
 
   def calculate_average_minutes(games)
-    total_seconds = games.sum do |game|
-      if game.minutes_played.present?
-        minutes, seconds = game.minutes_played.split(":").map(&:to_i)
-        (minutes * 60) + seconds
-      else
-        0 # If minutes_played is nil, add 0 seconds to the total
-      end
+    valid_games = games.select { |game| game.minutes_played.present? }
+    return "00:00" if valid_games.empty?
+  
+    total_seconds = valid_games.sum do |game|
+      minutes, seconds = game.minutes_played.split(":").map(&:to_i)
+      (minutes * 60) + seconds
     end
   
-    return "00:00" if games.empty?
-  
-    average_seconds = total_seconds / games.size
+    average_seconds = total_seconds / valid_games.size
     minutes = average_seconds / 60
     seconds = average_seconds % 60
     format("%02d:%02d", minutes, seconds)

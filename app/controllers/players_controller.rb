@@ -66,8 +66,15 @@ class PlayersController < ApplicationController
 
   # Helper method to calculate the average minutes in "MM:SS" format
   def calculate_average_minutes(games)
-    total_seconds = games.sum { |game| game.minutes_played.split(":").first.to_i * 60 + game.minutes_played.split(":").last.to_i }
-    average_seconds = total_seconds / games.size
+    valid_games = games.select { |game| game.minutes_played.present? }
+    return "00:00" if valid_games.empty?
+  
+    total_seconds = valid_games.sum do |game|
+      minutes, seconds = game.minutes_played.split(":").map(&:to_i)
+      (minutes * 60) + seconds
+    end
+  
+    average_seconds = total_seconds / valid_games.size
     minutes = average_seconds / 60
     seconds = average_seconds % 60
     format("%02d:%02d", minutes, seconds)

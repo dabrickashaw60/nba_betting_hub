@@ -168,7 +168,7 @@
                 <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
                 <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>
                 <td><%= number_with_precision(stat.field_goals_attempted, precision: 1) %></td>
-                <td><%= number_with_precision(stat.field_goal_percentage, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
                 <td><%= number_with_precision(stat.three_point_field_goals, precision: 1) %></td>
                 <td><%= number_with_precision(stat.three_point_field_goals_attempted, precision: 1) %></td>
                 <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
