@@ -46,7 +46,7 @@
                 <tr>
                   <td>
                     <img src="<%= stat.player.profile_picture_url %>" width="auto" height="25">
-                    <%= stat.player.name %>
+                    <%= link_to stat.player.name, team_player_path(@team, stat.player) %>
                   </td>
                   <td><%= stat.games_played %></td>
                   <td><%= stat.minutes_played %></td>
