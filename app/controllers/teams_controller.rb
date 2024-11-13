@@ -12,4 +12,16 @@ class TeamsController < ApplicationController
     @team_schedule = @team.games.order(:date) # Ensure the games are ordered by date
   end
 
+# app/controllers/teams_controller.rb
+def defense_vs_position
+  @teams = Team.all
+  @position = params[:position] || "PG" # Default to "PG" if no position is specified
+
+  respond_to do |format|
+    format.html # for initial page load
+    format.turbo_stream { render turbo_stream: turbo_stream.replace("defense_table", partial: "teams/defense_table", locals: { teams: @teams, position: @position }) }
+  end
+end
+
+
 end

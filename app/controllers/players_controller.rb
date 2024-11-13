@@ -35,6 +35,19 @@ class PlayersController < ApplicationController
         rebounds: count_thresholds(@last_five_games, :total_rebounds, [2, 4, 6, 8, 10]),
         assists: count_thresholds(@last_five_games, :assists, [2, 4, 6, 8, 10])
       }
+
+      @next_game = Game.where("date >= ?", Date.today)
+      .where("visitor_team_id = ? OR home_team_id = ?", @team.id, @team.id)
+      .order(:date)
+      .first
+
+      if @next_game
+      # Determine the opponent and get their defense vs position stats
+      opponent_team_id = @next_game.visitor_team_id == @team.id ? @next_game.home_team_id : @next_game.visitor_team_id
+      @opponent_team = Team.find(opponent_team_id)
+      @defense_vs_position = @opponent_team.defense_vs_position
+    end
+
   end
 
   def update_stats

@@ -2,10 +2,19 @@ Rails.application.routes.draw do
   root 'home#index' # This is your main landing page
 
   resources :teams, only: [:index, :show] do
-    resources :players, only: [:show] do
-      post 'update_stats', on: :member
+    member do
+      post 'update_stats' # for individual team stats update
     end
-    post 'update_stats', on: :member
+  
+    resources :players, only: [:show] do
+      member do
+        post 'update_stats' # for individual player stats update
+      end
+    end
+  
+    collection do
+      get 'defense_vs_position' # view for all teams' defense vs position
+    end
   end
   
   # Route to update schedule (handled by HomeController)

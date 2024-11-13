@@ -11,5 +11,8 @@ class ScrapeBoxScoresDateRangeJob < ApplicationJob
         ScrapeBoxScoresJob.set(wait: index * 20.seconds).perform_later(game.id)
       end
     end
+
+    Team.update_defense_averages
+
   end
 end

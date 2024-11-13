@@ -99,6 +99,57 @@
 
   </div>
 
+<!-- Next Game Card -->
+<% if @next_game && @defense_vs_position %>
+  <div class="card mb-4">
+    <div class="card-header">Next Game</div>
+    <div class="card-body d-flex">
+      <!-- Game Info Section -->
+      <div class="me-4">
+        <h5><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png" alt="<%= @team.name %> logo" width="50" height="auto" class="me-2"><%= @team.name %> vs. <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @opponent_team.abbreviation %>-2025.png" alt="<%= @opponent_team.name %> logo" width="50" height="auto" class="me-2"><%= @opponent_team.name %></h5>
+        <p><strong>Date:</strong> <%= @next_game.date.strftime("%B %d, %Y") %></p>
+        <p><strong>Location:</strong> <%= @next_game.location %></p>     
+      </div>
+
+      <!-- Opponent Defense vs Position Table -->
+      <div>
+        <h6>Opponent Defense vs Position</h6>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Avg Points Allowed Rank</th>
+                <th>Avg Rebounds Allowed Rank</th>
+                <th>Avg Assists Allowed Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% relevant_positions = case @player.position %>
+                <% when "PG" then ["PG", "G"] %>
+                <% when "SG" then ["SG", "G"] %>
+                <% when "SF" then ["SF", "F"] %>
+                <% when "PF" then ["PF", "F"] %>
+                <% when "C" then ["C"] %>
+              <% end %>
+
+              <% @defense_vs_position.each do |position, stats| %>
+                <% if relevant_positions.include?(position) %>
+                  <tr>
+                    <td><%= position %></td>
+                    <td class="<%= rank_color_class(stats["points_rank"]) %>"><%= stats["points_rank"] %></td>
+                    <td class="<%= rank_color_class(stats["rebounds_rank"]) %>"><%= stats["rebounds_rank"] %></td>
+                    <td class="<%= rank_color_class(stats["assists_rank"]) %>"><%= stats["assists_rank"] %></td>
+                  </tr>
+                <% end %>
+              <% end %>
+            </tbody>
+          </table>
+
+      </div>
+    </div>
+  </div>
+<% end %>
+
   <div class="card mb-4">
     <div class="card-header">Hit Rates</div>
     <div class="card-body">

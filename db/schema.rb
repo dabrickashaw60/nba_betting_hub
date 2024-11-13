@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_11_06_035707) do
+ActiveRecord::Schema[7.1].define(version: 2024_11_13_023048) do
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
     t.bigint "team_id", null: false
@@ -133,6 +133,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_06_035707) do
     t.string "abbreviation"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "defense_vs_position"
   end
 
   add_foreign_key "box_scores", "games"

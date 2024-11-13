@@ -17,5 +17,8 @@ class ScrapeBoxScoresJob < ApplicationJob
       Rails.logger.error "Error scraping box score for Game ID: #{game.id}: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
     end
+
+    Team.update_defense_averages
+
   end
 end
