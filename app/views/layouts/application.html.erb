@@ -7,10 +7,21 @@
   <%= csp_meta_tag %>
   <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <%= javascript_include_tag 'search', 'data-turbo-track': 'reload' %>
 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+   <!-- DataTables CSS (Bootstrap 5 version) -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/bs5/1.12.1/css/dataTables.bootstrap5.min.css">
+
   <%= favicon_link_tag 'basketball.ico' %>
+
+ <!-- DataTables JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/bs5/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+
 
 </head>
 
@@ -114,5 +125,12 @@
       });
     });
   </script>
+
+    <script>
+    $(document).ready(function() {
+      $('.table').DataTable();  // Initializes DataTables for all tables with class "table"
+    });
+  </script>
+  
 </body>
 </html>
