@@ -58,6 +58,13 @@ class PlayersController < ApplicationController
 
   end
 
+  def live_search
+    query = params[:query]
+    @players = Player.joins(:team).where("players.name LIKE ?", "%#{query}%").limit(5)
+    render json: @players.as_json(include: { team: { only: [:id, :name, :abbreviation] } })
+  end
+  
+  
   private
 
   def average_stat(games, stat)

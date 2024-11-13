@@ -9,13 +9,18 @@ class Player < ApplicationRecord
   validates :name, presence: true
   validates :from_year, :to_year, :position, :height, :weight, :birth_date, presence: true
 
+  def team_name
+    team.name
+  end
+
   def profile_picture_url
 
   # Define a hash of specific URLs for players with unique headshot formats
   exceptions = {
     "Jaren Jackson Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/jacksja02.jpg",
     "Scotty Pippen Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/pippesc02.jpg",
-    "Brandon Miller" => "https://www.basketball-reference.com/req/202106291/images/headshots/millebr02.jpg"
+    "Brandon Miller" => "https://www.basketball-reference.com/req/202106291/images/headshots/millebr02.jpg",
+    "Luka Dončić" => "https://www.basketball-reference.com/req/202106291/images/headshots/doncilu01.jpg"
   }
 
   # If the player's name matches an exception, return the specific URL
