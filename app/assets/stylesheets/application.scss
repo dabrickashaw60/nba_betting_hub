@@ -25,3 +25,25 @@
 .bg-success {
   background-color: #28a745 !important;
 } 
+
+// HOME PAGE
+.team img {
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+.team .score {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+#game-card{
+  .card-body{
+    box-shadow: 2px 2px 2px 2px #8888;
+    transition: all .2s;
+  }
+  .card-body:hover{
+    box-shadow: 2px 2px 4px 4px #8888;
+  }
+  
+
+}

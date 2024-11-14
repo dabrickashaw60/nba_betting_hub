@@ -19,7 +19,7 @@
     <div class="card-header">
       <h3>Games for <%= @date.strftime("%B %d, %Y") %></h3>
     </div>
-    <div class="card-body">
+    <div class="card-body" id="game-card">
 <div class="container">
   <div class="row">
     <% @todays_games.each do |game| %>
@@ -42,7 +42,7 @@
             </div>
 
             <!-- Game Time / Box Score -->
-            <div class="game-time mt-3">
+            <div class="game-time mb-3">
               <% if game.date < Date.today %>
                 <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
                 <a href="<%= box_score_url %>" target="_blank">Basketball Reference</a>
@@ -50,11 +50,6 @@
                 <%= game.time.strftime("%I:%M %p") if game.time.present? %>
               <% end %>
             </div>
-
-          </div>
-
-          <!-- More Info Button -->
-          <div class="card-footer">
             <%= link_to "More Info", game_path(game), class: "btn btn-sm btn-secondary" %>
           </div>
         </div>

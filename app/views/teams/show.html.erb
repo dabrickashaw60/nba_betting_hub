@@ -21,51 +21,51 @@
         <div class="card-header">
           <h3>Player Stats</h3>
         </div>
-<div class="card-body">
-  <table class="table table-hover" id="player-stats-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>GP</th>
-        <th>MP</th>
-        <th>FG%</th>
-        <th>3P%</th>
-        <th>FT%</th>
-        <th>R</th>
-        <th>A</th>
-        <th>STL</th>
-        <th>BLK</th>
-        <th>TO</th>
-        <th>PTS</th>
-        <th data-bs-toggle="tooltip" title="Basketball Reference Game Score">GS</th>
-        <th>+/-</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @player_stats.each do |stat| %>
-        <tr>
-          <td>
-            <img src="<%= stat.player.profile_picture_url %>" width="auto" height="25">
-            <%= link_to stat.player.name, team_player_path(@team, stat.player) %>
-          </td>
-          <td><%= stat.games_played %></td>
-          <td><%= stat.minutes_played %></td>
-          <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
-          <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
-          <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
-          <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
-          <td><%= number_with_precision(stat.assists, precision: 1) %></td>
-          <td><%= number_with_precision(stat.steals, precision: 1) %></td>
-          <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
-          <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
-          <td><%= number_with_precision(stat.points, precision: 1) %></td>
-          <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
-          <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+          <div class="card-body">
+            <table class="table table-hover" id="player-stats-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>GP</th>
+                  <th>MP</th>
+                  <th>FG%</th>
+                  <th>3P%</th>
+                  <th>FT%</th>
+                  <th>R</th>
+                  <th>A</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                  <th>TO</th>
+                  <th>PTS</th>
+                  <th data-bs-toggle="tooltip" title="Basketball Reference Game Score">GS</th>
+                  <th>+/-</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @player_stats.each do |stat| %>
+                  <tr>
+                    <td>
+                      <img src="<%= stat.player.profile_picture_url %>" width="auto" height="25">
+                      <%= link_to stat.player.name, team_player_path(@team, stat.player) %>
+                    </td>
+                    <td><%= stat.games_played %></td>
+                    <td><%= stat.minutes_played %></td>
+                    <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
+                    <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+                    <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
 
 
       </div>

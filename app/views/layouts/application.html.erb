@@ -100,31 +100,51 @@
   <!-- Include Bootstrap JS (from CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Turbo Load Script for Dropdown Hover -->
-  <script>
-    document.addEventListener("turbo:load", function() {
-      const dropdown = document.querySelector(".navbar .dropdown");
-      
-      // Trigger dropdown on hover
-      dropdown.addEventListener("mouseenter", function() {
-        const dropdownMenu = new bootstrap.Dropdown(dropdown.querySelector(".dropdown-toggle"));
-        dropdownMenu.show();
-      });
+<script>
+  document.addEventListener("turbo:load", function() {
+    const dropdownToggle = document.getElementById("teamsDropdown");
+    const dropdownMenu = dropdownToggle.nextElementSibling;
 
-      dropdown.addEventListener("mouseleave", function() {
-        const dropdownMenu = new bootstrap.Dropdown(dropdown.querySelector(".dropdown-toggle"));
-        dropdownMenu.hide();
-      });
+    // Show the dropdown when hovering over the toggle or menu
+    function showDropdown() {
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.show();
+    }
 
-      // Also keep support for click, in case hover isn't preferred
-      document.querySelectorAll('.dropdown-toggle').forEach(item => {
-        item.addEventListener('click', function(event) {
-          const dropdown = new bootstrap.Dropdown(this);
-          dropdown.toggle();
-        });
-      });
+    // Hide the dropdown when not hovering over the toggle or menu
+    function hideDropdown() {
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.hide();
+    }
+
+    // Add event listeners for hover functionality
+    dropdownToggle.addEventListener("mouseenter", showDropdown);
+    dropdownMenu.addEventListener("mouseenter", showDropdown);
+    dropdownToggle.addEventListener("mouseleave", function(event) {
+      // Delay hiding to allow moving to menu
+      setTimeout(() => {
+        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+          hideDropdown();
+        }
+      }, 100);
     });
-  </script>
+    dropdownMenu.addEventListener("mouseleave", function(event) {
+      setTimeout(() => {
+        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+          hideDropdown();
+        }
+      }, 100);
+    });
+
+    // Support for toggle on click (for touch devices or click-based access)
+    dropdownToggle.addEventListener('click', function(event) {
+      event.preventDefault(); // Prevent default navigation
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.toggle();
+    });
+  });
+</script>
+
   
 </body>
 </html>
