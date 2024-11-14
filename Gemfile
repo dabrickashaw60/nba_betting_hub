@@ -28,7 +28,7 @@ gem "jbuilder"
 
 gem 'nokogiri'
 gem 'httparty'
-
+gem 'sassc-rails'
 gem 'sidekiq'
 
 
