@@ -1,5 +1,9 @@
 <h1 class="mb-4 text-center">
-  <%= @game.visitor_team.name %> vs. <%= @game.home_team.name %> 
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.visitor_team.abbreviation %>-2025.png" alt="<%= @game.visitor_team.name %> logo" width="50" height="auto" class="me-2">
+  <%= @game.visitor_team.name %>
+   vs. 
+  <%= @game.home_team.name %> 
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.home_team.abbreviation %>-2025.png" alt="<%= @game.home_team.name %> logo" width="50" height="auto" class="me-2"> 
   </h1>
 
 <div class="container">
@@ -139,7 +143,6 @@
 
 
 <% else %>
-  
   <!-- GAME PREVIEW SECTION -->
   
   <div class="container">
@@ -148,77 +151,42 @@
       <div class="col-md-6 mb-4">
         <div class="card h-100">
           <div class="card-header">
-            <h3><%= @game.visitor_team.name %> (Visitor)</h3>
+            <h3><%= @game.visitor_team.name %> (Away)</h3>
           </div>
           <div class="card-body">
             <p><strong>Points:</strong> <%= @game.visitor_points %></p>
             <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
 
-            <!-- Tab Navigation for Visitor Team -->
-            <ul class="nav nav-tabs" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link active" id="visitor-last5-tab" data-bs-toggle="tab" href="#visitor-last5" role="tab">Last 5</a>
-              </li>              
-              <li class="nav-item">
-                <a class="nav-link" id="visitor-stats-tab" data-bs-toggle="tab" href="#visitor-stats" role="tab">Player Stats</a>
-              </li>
-            </ul>
-
-            <div class="tab-content mt-3">
-              <!-- Last 5 Games Averages Tab -->
-              <div class="tab-pane fade show active" id="visitor-last5" role="tabpanel">
-                <table class="table table-hover" id="visitor-last5-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>MP</th>
-                      <th>P</th>
-                      <th>R</th>
-                      <th>A</th>
-                      <!-- Additional stats columns -->
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @visitor_team_players.each do |player| %>
-                      <tr>
-                        <td><img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle"><%= player.name %></td>
-                        <td><%= player.last_five_average[:minutes_played] %></td>
-                        <td><%= player.last_five_average[:points].round(1) %></td>
-                        <td><%= player.last_five_average[:rebounds].round(1) %></td>
-                        <td><%= player.last_five_average[:assists].round(1) %></td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Player Stats Tab -->
-              <div class="tab-pane fade" id="visitor-stats" role="tabpanel">
-                <table class="table table-hover" id="visitor-stats-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>MP</th>
-                      <th>P</th>
-                      <th>R</th>
-                      <th>A</th>
-                      <!-- Additional stats columns -->
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @visitor_team_players.each do |player| %>
-                      <tr>
-                        <td><img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle"><%= player.name %></td>
-                        <td><%= player.player_stat&.minutes_played || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.points, precision: 1) || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.total_rebounds, precision: 1) || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.assists, precision: 1) || "N/A" %></td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <!-- Last 5 Games Averages Table for Visitor Team -->
+            <h4>Last 5 Games Averages</h4>
+            <table class="table table-hover" id="visitor-last5-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>MP</th>
+                  <th>P</th>
+                  <th>R</th>
+                  <th>A</th>
+                  <!-- Additional stats columns -->
+                </tr>
+              </thead>
+              <tbody>
+                <% @visitor_team_players.each do |player| %>
+                  <tr>
+                    <td>
+                      <%= link_to team_player_path(@game.visitor_team, player) do %>
+                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= player.name %>
+                      <% end %>
+                    </td>
+                    <td><%= player.last_five_average[:minutes_played] %></td>
+                    <td><%= player.last_five_average[:points].round(1) %></td>
+                    <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                    <td><%= player.last_five_average[:assists].round(1) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -233,78 +201,43 @@
             <p><strong>Points:</strong> <%= @game.home_points %></p>
             <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
 
-            <!-- Tab Navigation for Home Team -->
-            <ul class="nav nav-tabs" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link active" id="home-last5-tab" data-bs-toggle="tab" href="#home-last5" role="tab">Last 5</a>
-              </li>              
-              <li class="nav-item">
-                <a class="nav-link" id="home-stats-tab" data-bs-toggle="tab" href="#home-stats" role="tab">Player Stats</a>
-              </li>
-            </ul>
-
-            <!-- Tab Content for Home Team -->
-            <div class="tab-content mt-3">
-              <!-- Last 5 Games Averages Tab -->
-              <div class="tab-pane fade show active" id="home-last5" role="tabpanel">
-                <table class="table table-hover" id="home-last5-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>MP</th>
-                      <th>P</th>
-                      <th>R</th>
-                      <th>A</th>
-                      <!-- Additional stats columns -->
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @home_team_players.each do |player| %>
-                      <tr>
-                        <td><img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle"><%= player.name %></td>
-                        <td><%= player.last_five_average[:minutes_played] %></td>
-                        <td><%= player.last_five_average[:points].round(1) %></td>
-                        <td><%= player.last_five_average[:rebounds].round(1) %></td>
-                        <td><%= player.last_five_average[:assists].round(1) %></td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Player Stats Tab -->
-              <div class="tab-pane fade" id="home-stats" role="tabpanel">
-                <table class="table table-hover" id="home-stats-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>MP</th>
-                      <th>P</th>
-                      <th>R</th>
-                      <th>A</th>
-                      <!-- Additional stats columns -->
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @home_team_players.each do |player| %>
-                      <tr>
-                        <td><img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle"><%= player.name %></td>
-                        <td><%= player.player_stat&.minutes_played || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.points, precision: 1) || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.total_rebounds, precision: 1) || "N/A" %></td>
-                        <td><%= number_with_precision(player.player_stat&.assists, precision: 1) || "N/A" %></td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <!-- Last 5 Games Averages Table for Home Team -->
+            <h4>Last 5 Games Averages</h4>
+            <table class="table table-hover" id="home-last5-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>MP</th>
+                  <th>P</th>
+                  <th>R</th>
+                  <th>A</th>
+                  <!-- Additional stats columns -->
+                </tr>
+              </thead>
+              <tbody>
+                <% @home_team_players.each do |player| %>
+                  <tr>
+                    <td>
+                      <%= link_to team_player_path(@game.home_team, player) do %>
+                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= player.name %>
+                      <% end %>
+                    </td>
+                    <td><%= player.last_five_average[:minutes_played] %></td>
+                    <td><%= player.last_five_average[:points].round(1) %></td>
+                    <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                    <td><%= player.last_five_average[:assists].round(1) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
   </div>
 <% end %>
+
 
 
 </div>
