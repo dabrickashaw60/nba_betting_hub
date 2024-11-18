@@ -13,48 +13,6 @@
   <%= link_to "→", root_path(date: @date + 1.day), class: "btn btn-outline-primary mx-2" %>
 </div>
 
-<% if @players_over_15_minutes.any? %>
-  <div class="card mb-4">
-    <div class="card-header">
-      <h3>Players with 15+ Average Minutes Played (Last 5 Games)</h3>
-    </div>
-    <div class="card-body">
-      <table class="table table-hover" id="players-over-15-minutes-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Team</th>
-            <th>Minutes Played</th>
-            <th>Points</th>
-            <th>Rebounds</th>
-            <th>Assists</th>
-            <th>3P Made</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @players_over_15_minutes.each do |data| %>
-            <% player = data[:player] %>
-            <% averages = data[:averages] %>
-            <tr>
-              <td>
-                <%= link_to team_player_path(player.team, player) do %>
-                  <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                  <%= player.name %>
-                <% end %>
-              </td>
-              <td><%= player.team.name %></td>
-              <td><%= averages[:minutes_played].round(2) %></td>
-              <td><%= averages[:points].round(1) %></td>
-              <td><%= averages[:rebounds].round(1) %></td>
-              <td><%= averages[:assists].round(1) %></td>
-              <td><%= averages[:three_point_field_goals].round(1) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  </div>
-<% end %>
 
 <!-- Today's Games Card -->
 <% if @todays_games.present? %>
@@ -107,6 +65,48 @@
   <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
 <% end %>
 
+<% if @players_over_15_minutes.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Players with 15+ Average Minutes Played (Last 5 Games)</h3>
+    </div>
+    <div class="card-body">
+      <table class="table table-hover" id="players-over-15-minutes-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Minutes Played</th>
+            <th>Points</th>
+            <th>Rebounds</th>
+            <th>Assists</th>
+            <th>3P Made</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @players_over_15_minutes.each do |data| %>
+            <% player = data[:player] %>
+            <% averages = data[:averages] %>
+            <tr>
+              <td>
+                <%= link_to team_player_path(player.team, player) do %>
+                  <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                  <%= player.name %>
+                <% end %>
+              </td>
+              <td><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" alt="<%= player.team.name %> logo" width="20" height="auto" class="me-2"><%= player.team.name %></td>
+              <td><%= averages[:minutes_played].round(2) %></td>
+              <td><%= averages[:points].round(1) %></td>
+              <td><%= averages[:rebounds].round(1) %></td>
+              <td><%= averages[:assists].round(1) %></td>
+              <td><%= averages[:three_point_field_goals].round(1) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
 
 <!-- Collapsible Card for Schedule and Box Score Updates -->
 <div class="card mb-4">
