@@ -250,36 +250,38 @@
               <h3><%= @game.visitor_team.name %> (Away)</h3>
             </div>
             <div class="card-body">
-              <% @visitor_team_players.sort_by { |player| player.last_five_average[:minutes_played] }.each do |player| %>
-                <div class="player-hit-rates">
-                  <h4>
-                    <%= link_to team_player_path(@game.visitor_team, player) do %>
-                      <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                      <%= player.name %>
-                    <% end %>
-                  </h4>
-                  <table class="table table-striped text-center mb-4">
-                    <thead>
-                      <tr>
-                        <th>Points</th>
-                        <th>Assists</th>
-                        <th>Rebounds</th>
-                        <th>Threes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
-                        <tr>
-                          <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
-                          <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
-                          <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
-                          <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
-                        </tr>
+              <div class="player-hit-rates" id="visitor-hit-rates-container">
+                <% @visitor_team_players.each do |player| %>
+                  <div class="player-hit-rates-entry" data-minutes="<%= player.last_five_average[:minutes_played] %>">
+                    <h4>
+                      <%= link_to team_player_path(@game.visitor_team, player) do %>
+                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= player.name %>
                       <% end %>
-                    </tbody>
-                  </table>
-                </div>
-              <% end %>
+                    </h4>
+                    <table class="table table-striped text-center mb-4">
+                      <thead>
+                        <tr>
+                          <th>Points</th>
+                          <th>Assists</th>
+                          <th>Rebounds</th>
+                          <th>Threes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                          <tr>
+                            <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
+                            <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
+                            <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
+                            <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
@@ -291,42 +293,43 @@
               <h3><%= @game.home_team.name %> (Home)</h3>
             </div>
             <div class="card-body">
-              <% @home_team_players.sort_by { |player| player.last_five_average[:minutes_played] }.each do |player| %>
-                <div class="player-hit-rates">
-                  <h4>
-                    <%= link_to team_player_path(@game.home_team, player) do %>
-                      <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                      <%= player.name %>
-                    <% end %>
-                  </h4>
-                  <table class="table table-striped text-center mb-4">
-                    <thead>
-                      <tr>
-                        <th>Points</th>
-                        <th>Assists</th>
-                        <th>Rebounds</th>
-                        <th>Threes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
-                        <tr>
-                          <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
-                          <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
-                          <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
-                          <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
-                        </tr>
+              <div class="player-hit-rates" id="home-hit-rates-container">
+                <% @home_team_players.each do |player| %>
+                  <div class="player-hit-rates-entry" data-minutes="<%= player.last_five_average[:minutes_played] %>">
+                    <h4>
+                      <%= link_to team_player_path(@game.home_team, player) do %>
+                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= player.name %>
                       <% end %>
-                    </tbody>
-                  </table>
-                </div>
-              <% end %>
+                    </h4>
+                    <table class="table table-striped text-center mb-4">
+                      <thead>
+                        <tr>
+                          <th>Points</th>
+                          <th>Assists</th>
+                          <th>Rebounds</th>
+                          <th>Threes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                          <tr>
+                            <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
+                            <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
+                            <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
+                            <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-
 
   </div>
 </div>
@@ -335,3 +338,53 @@
 <% end %>
 
 </div>
+
+<script>
+  document.addEventListener('turbo:load', () => {
+    const sortHitRates = (containerId) => {
+      const container = document.querySelector(containerId);
+      if (container) {
+        const entries = Array.from(container.querySelectorAll('.player-hit-rates-entry'));
+        entries.sort((a, b) => {
+          const minutesA = parseFloat(a.getAttribute('data-minutes')) || 0;
+          const minutesB = parseFloat(b.getAttribute('data-minutes')) || 0;
+          return minutesB - minutesA; // Descending order
+        });
+        entries.forEach(entry => container.appendChild(entry));
+      }
+    };
+
+    // Sort visitor and home hit rates by minutes played in descending order
+    sortHitRates('#visitor-hit-rates-container');
+    sortHitRates('#home-hit-rates-container');
+
+
+  console.log("Turbo:load triggered - Initializing Last 5 Games DataTables...");
+
+  function initializeLast5Table(tableId) {
+    const tableElement = document.querySelector(tableId);
+    if (tableElement) {
+      if (!$.fn.DataTable.isDataTable(tableElement)) {
+        $(tableElement).DataTable({
+          order: [[1, "desc"]], 
+          paging: false,       
+          searching: false,   
+          info: false,        
+          lengthChange: false, 
+        });
+        console.log(`DataTable initialized for ${tableId}`);
+      } else {
+        console.log(`DataTable for ${tableId} is already initialized.`);
+      }
+    } else {
+      console.warn(`Table with ID ${tableId} not found.`);
+    }
+  }
+
+  // Initialize DataTables for visitor and home last 5 tables
+  initializeLast5Table("#visitor-last5-table");
+  initializeLast5Table("#home-last5-table");
+
+
+  });
+</script>

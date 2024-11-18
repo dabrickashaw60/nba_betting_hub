@@ -10,15 +10,14 @@ class GamesController < ApplicationController
     @visitor_team = @game.visitor_team
     @home_team = @game.home_team
     @visitor_team_players = @visitor_team.players.includes(:box_scores).sort_by do |player|
-      (player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f
+      -((player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f)
     end
     
     @home_team_players = @home_team.players.includes(:box_scores).sort_by do |player|
-      (player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f
+      -((player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f)
     end
     
-    
-  
+ 
     # Initialize the betting info hash
     @betting_info = {}
   

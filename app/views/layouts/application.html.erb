@@ -142,70 +142,70 @@
     });
 
 
-document.addEventListener("turbo:load", function () {
-  console.log("Turbo:load triggered - Forcing DataTables reload...");
+    document.addEventListener("turbo:load", function () {
+      console.log("Turbo:load triggered - Forcing DataTables reload...");
 
-  function initializeDataTable(tableId, options = {}) {
-    // Ensure the table exists
-    const tableElement = document.querySelector(tableId);
-    if (tableElement) {
-      // Destroy any existing DataTable instance
-      if ($.fn.DataTable.isDataTable(tableElement)) {
-        console.log(`Destroying existing DataTable for ${tableId}...`);
-        $(tableElement).DataTable().destroy();
+      function initializeDataTable(tableId, options = {}) {
+        // Ensure the table exists
+        const tableElement = document.querySelector(tableId);
+        if (tableElement) {
+          // Destroy any existing DataTable instance
+          if ($.fn.DataTable.isDataTable(tableElement)) {
+            console.log(`Destroying existing DataTable for ${tableId}...`);
+            $(tableElement).DataTable().destroy();
+          }
+
+          console.log(`Initializing DataTable for ${tableId}...`);
+
+          // Default options
+          const defaultOptions = {
+            order: [[1, "desc"]],
+            pageLength: -1,
+            lengthChange: false,
+            searching: false,
+            paging: false,
+          };
+
+          // Merge default options with custom options
+          const finalOptions = Object.assign({}, defaultOptions, options);
+
+          // Initialize the DataTable
+          $(tableElement).DataTable(finalOptions);
+
+          console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
+        } else {
+          console.warn(`Table with ID ${tableId} not found on the page.`);
+        }
       }
 
-      console.log(`Initializing DataTable for ${tableId}...`);
+      // Force reload and initialize DataTables for specific tables
+      initializeDataTable('#visitor-last5-table');
+      initializeDataTable('#home-last5-table');
+      initializeDataTable('#player-stats-table', {
+        order: [[2, "desc"]], // Custom sort order for this table
+      });
 
-      // Default options
-      const defaultOptions = {
-        order: [[1, "desc"]],
-        pageLength: -1,
-        lengthChange: false,
-        searching: false,
-        paging: false,
-      };
+      // Debugging to check if DataTables are active
+      console.log("Active DataTables on the page:");
+      $('table.dataTable').each(function () {
+        if ($.fn.DataTable.isDataTable(this)) {
+          console.log(`DataTable found for table ID: ${this.id}`);
+        } else {
+          console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
+        }
+      });
+    });
 
-      // Merge default options with custom options
-      const finalOptions = Object.assign({}, defaultOptions, options);
-
-      // Initialize the DataTable
-      $(tableElement).DataTable(finalOptions);
-
-      console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
-    } else {
-      console.warn(`Table with ID ${tableId} not found on the page.`);
-    }
-  }
-
-  // Force reload and initialize DataTables for specific tables
-  initializeDataTable('#visitor-last5-table');
-  initializeDataTable('#home-last5-table');
-  initializeDataTable('#player-stats-table', {
-    order: [[2, "desc"]], // Custom sort order for this table
-  });
-
-  // Debugging to check if DataTables are active
-  console.log("Active DataTables on the page:");
-  $('table.dataTable').each(function () {
-    if ($.fn.DataTable.isDataTable(this)) {
-      console.log(`DataTable found for table ID: ${this.id}`);
-    } else {
-      console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
-    }
-  });
-});
-
-document.addEventListener("turbo:before-cache", function () {
-  console.log("Turbo:before-cache - Destroying all DataTables...");
-  // Find all tables with initialized DataTables and destroy them
-  $('table.dataTable').each(function () {
-    if ($.fn.DataTable.isDataTable(this)) {
-      console.log(`Destroying DataTable for table ID: ${this.id}`);
-      $(this).DataTable().destroy();
-    }
-  });
-});
+    document.addEventListener("turbo:before-cache", function () {
+      console.log("Turbo:before-cache - Destroying all DataTables...");
+      // Find all tables with initialized DataTables and destroy them
+      $('table.dataTable').each(function () {
+        if ($.fn.DataTable.isDataTable(this)) {
+          console.log(`Destroying DataTable for table ID: ${this.id}`);
+          $(this).DataTable().destroy();
+        }
+      });
+    });
 
 
   });

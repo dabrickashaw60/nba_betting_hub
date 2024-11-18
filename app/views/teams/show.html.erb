@@ -176,6 +176,29 @@
       new bootstrap.Tooltip(tooltipTriggerEl)
     })
 
+  console.log("Turbo:load triggered - Initializing player-stats-table DataTables...");
+
+  function initializePlayerStatsTable(tableId) {
+    const tableElement = document.querySelector(tableId);
+    if (tableElement) {
+      if (!$.fn.DataTable.isDataTable(tableElement)) {
+        $(tableElement).DataTable({
+          order: [[2, "desc"]], 
+          paging: false,    
+          searching: false,   
+          info: false,       
+          lengthChange: false, 
+        });
+        console.log(`DataTable initialized for ${tableId}`);
+      } else {
+        console.log(`DataTable for ${tableId} is already initialized.`);
+      }
+    } else {
+      console.warn(`Table with ID ${tableId} not found.`);
+    }
+  }
+
+  initializePlayerStatsTable("#player-stats-table");
 
   });
 
