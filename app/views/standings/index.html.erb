@@ -7,7 +7,7 @@
 <div class="row">
   <div class="col-md-6">
     <h3>Eastern Conference</h3>
-    <table class="table table-striped">
+    <table class="table table-hover">
       <thead>
         <tr>
           <th>Rank</th>
@@ -26,7 +26,10 @@
           <% @eastern_standings.each_with_index do |standing, index| %>
             <tr>
               <td><%= index + 1 %></td> <!-- Rank column -->
-              <td><%= link_to standing.team.name, team_path(standing.team) %></td>
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= standing.team.abbreviation %>-2025.png" alt="<%= standing.team.name %> logo" width="25" height="auto" class="me-2"> 
+                <%= link_to standing.team.name, team_path(standing.team) %>
+              </td>
               <td><%= standing.wins %></td>
               <td><%= standing.losses %></td>
               <td><%= standing.win_percentage %></td>
@@ -47,7 +50,7 @@
 
   <div class="col-md-6">
     <h3>Western Conference</h3>
-    <table class="table table-striped">
+    <table class="table table-hover">
       <thead>
         <tr>
           <th>Rank</th>
@@ -66,7 +69,10 @@
           <% @western_standings.each_with_index do |standing, index| %>
             <tr>
               <td><%= index + 1 %></td> <!-- Rank column -->
-              <td><%= link_to standing.team.name, team_path(standing.team) %></td>
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= standing.team.abbreviation %>-2025.png" alt="<%= standing.team.name %> logo" width="25" height="auto" class="me-2">
+                <%= link_to standing.team.name, team_path(standing.team) %>
+              </td>
               <td><%= standing.wins %></td>
               <td><%= standing.losses %></td>
               <td><%= standing.win_percentage %></td>

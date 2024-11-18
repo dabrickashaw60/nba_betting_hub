@@ -9,14 +9,25 @@ class GamesController < ApplicationController
     @game = Game.find(params[:id])
     @visitor_team = @game.visitor_team
     @home_team = @game.home_team
-    @visitor_team_players = @visitor_team.players.includes(:box_scores)
-    @home_team_players = @home_team.players.includes(:box_scores)
-
-    # Calculate last five-game averages for each player in both teams
+    @visitor_team_players = @visitor_team.players.includes(:box_scores).sort_by do |player|
+      (player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f
+    end
+    
+    @home_team_players = @home_team.players.includes(:box_scores).sort_by do |player|
+      (player.try(:last_five_average) || { minutes_played: 0 })[:minutes_played].to_f
+    end
+    
+    
+  
+    # Initialize the betting info hash
+    @betting_info = {}
+  
+    # Calculate last five-game averages and betting info for each player in both teams
     [@visitor_team_players, @home_team_players].each do |team_players|
       team_players.each do |player|
         last_five_games = player.box_scores.joins(:game).order('games.date DESC').limit(5)
-
+  
+        # Store last five averages on each player
         last_five_averages = {
           minutes_played: calculate_average_minutes(last_five_games),
           points: average_stat(last_five_games, :points),
@@ -37,14 +48,23 @@ class GamesController < ApplicationController
           personal_fouls: average_stat(last_five_games, :personal_fouls),
           plus_minus: average_stat(last_five_games, :plus_minus)
         }
-
-        # Define the last_five_average as a singleton method on each player
+  
+        # Define last five averages as a singleton method on the player
         player.define_singleton_method(:last_five_average) do
           last_five_averages
         end
+  
+        # Betting info calculation for each player
+        @betting_info[player.id] = {
+          points: count_thresholds(last_five_games, :points, [10, 15, 20, 25, 30]),
+          threes: count_thresholds(last_five_games, :three_point_field_goals, [1, 2, 3, 4, 5]),
+          rebounds: count_thresholds(last_five_games, :total_rebounds, [2, 4, 6, 8, 10]),
+          assists: count_thresholds(last_five_games, :assists, [2, 4, 6, 8, 10])
+        }
       end
     end
   end
+  
 
 
   def scrape_box_score
@@ -73,8 +93,8 @@ class GamesController < ApplicationController
   end
 
   def scrape_date_range_games
-    start_date = Date.parse("2024-11-08")
-    end_date = Date.parse("2024-11-11")
+    start_date = Date.parse("2024-11-15")
+    end_date = Date.parse("2024-11-16")
 
     ScrapeBoxScoresDateRangeJob.perform_later(start_date, end_date)
     flash[:notice] = "Scheduled box score scrapes for games between #{start_date.strftime('%B %d, %Y')} and #{end_date.strftime('%B %d, %Y')}"
@@ -114,6 +134,12 @@ class GamesController < ApplicationController
     total_attempted = games.sum(&attempted_stat)
     return 0.0 if total_attempted.zero?
     (total_made.to_f / total_attempted).round(3)
+  end
+
+  def count_thresholds(games, stat, thresholds)
+    thresholds.map do |threshold|
+      games.count { |game| game.send(stat) >= threshold }
+    end
   end
 
 end

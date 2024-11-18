@@ -10,18 +10,16 @@
   <%= javascript_include_tag 'search', 'data-turbo-track': 'reload' %>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-   <!-- DataTables CSS (Bootstrap 5 version) -->
+
   <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/bs5/1.12.1/css/dataTables.bootstrap5.min.css">
 
   <%= favicon_link_tag 'basketball.ico' %>
 
- <!-- DataTables JS -->
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/bs5/1.12.1/js/dataTables.bootstrap5.min.js"></script>
-
-
 
 </head>
 
@@ -97,7 +95,7 @@
 
   <%= yield %>
 
-  <!-- Include Bootstrap JS (from CDN) -->
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -142,6 +140,74 @@
       const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
       bootstrapDropdown.toggle();
     });
+
+
+document.addEventListener("turbo:load", function () {
+  console.log("Turbo:load triggered - Forcing DataTables reload...");
+
+  function initializeDataTable(tableId, options = {}) {
+    // Ensure the table exists
+    const tableElement = document.querySelector(tableId);
+    if (tableElement) {
+      // Destroy any existing DataTable instance
+      if ($.fn.DataTable.isDataTable(tableElement)) {
+        console.log(`Destroying existing DataTable for ${tableId}...`);
+        $(tableElement).DataTable().destroy();
+      }
+
+      console.log(`Initializing DataTable for ${tableId}...`);
+
+      // Default options
+      const defaultOptions = {
+        order: [[1, "desc"]],
+        pageLength: -1,
+        lengthChange: false,
+        searching: false,
+        paging: false,
+      };
+
+      // Merge default options with custom options
+      const finalOptions = Object.assign({}, defaultOptions, options);
+
+      // Initialize the DataTable
+      $(tableElement).DataTable(finalOptions);
+
+      console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
+    } else {
+      console.warn(`Table with ID ${tableId} not found on the page.`);
+    }
+  }
+
+  // Force reload and initialize DataTables for specific tables
+  initializeDataTable('#visitor-last5-table');
+  initializeDataTable('#home-last5-table');
+  initializeDataTable('#player-stats-table', {
+    order: [[2, "desc"]], // Custom sort order for this table
+  });
+
+  // Debugging to check if DataTables are active
+  console.log("Active DataTables on the page:");
+  $('table.dataTable').each(function () {
+    if ($.fn.DataTable.isDataTable(this)) {
+      console.log(`DataTable found for table ID: ${this.id}`);
+    } else {
+      console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
+    }
+  });
+});
+
+document.addEventListener("turbo:before-cache", function () {
+  console.log("Turbo:before-cache - Destroying all DataTables...");
+  // Find all tables with initialized DataTables and destroy them
+  $('table.dataTable').each(function () {
+    if ($.fn.DataTable.isDataTable(this)) {
+      console.log(`Destroying DataTable for table ID: ${this.id}`);
+      $(this).DataTable().destroy();
+    }
+  });
+});
+
+
   });
 </script>
 

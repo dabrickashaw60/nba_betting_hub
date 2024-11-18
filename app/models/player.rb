@@ -21,7 +21,10 @@ class Player < ApplicationRecord
     "Scotty Pippen Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/pippesc02.jpg",
     "Brandon Miller" => "https://www.basketball-reference.com/req/202106291/images/headshots/millebr02.jpg",
     "Luka Dončić" => "https://www.basketball-reference.com/req/202106291/images/headshots/doncilu01.jpg",
-    "Jalen Johnson" => "https://www.basketball-reference.com/req/202106291/images/headshots/johnsja05.jpg"
+    "Jalen Johnson" => "https://www.basketball-reference.com/req/202106291/images/headshots/johnsja05.jpg",
+    "Jaylen Brown" => "https://www.basketball-reference.com/req/202106291/images/headshots/brownja02.jpg",
+    "Clint Capela" => "https://www.basketball-reference.com/req/202106291/images/headshots/capelca01.jpg",
+    "Cam Thomas" => "https://www.basketball-reference.com/req/202106291/images/headshots/thomaca02.jpg"
   }
 
   # If the player's name matches an exception, return the specific URL

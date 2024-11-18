@@ -4,297 +4,334 @@
    vs. 
   <%= @game.home_team.name %> 
   <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.home_team.abbreviation %>-2025.png" alt="<%= @game.home_team.name %> logo" width="50" height="auto" class="me-2"> 
-  </h1>
+</h1>
 
 <div class="container">
 
 <!-- BOX SCORE SECTION -->
 
-  <% if @game.date < Date.today %>
-    <!-- Visitor Team Box Score Card -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3><%= @game.visitor_team.name %> Box Score</h3>
-      </div>
-      <div class="card-body">
-        <table class="table table-hover" id="visitor-box-score-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>MP</th>
-              <th>FG</th>
-              <th>FGA</th>
-              <th>FG%</th>
-              <th>3P</th>
-              <th>3PA</th>
-              <th>3P%</th>
-              <th>FT</th>
-              <th>FTA</th>
-              <th>FT%</th>
-              <th>ORB</th>
-              <th>DRB</th>
-              <th>TRB</th>
-              <th>AST</th>
-              <th>STL</th>
-              <th>BLK</th>
-              <th>TO</th>
-              <th>PF</th>
-              <th>PTS</th>
-              <th>GmSc</th>
-              <th>+/-</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
-              <tr>
-                <td><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player) %> (<%= box_score.player.position %>)</td>
-                <td><%= box_score.minutes_played %></td>
-                <td><%= box_score.field_goals %></td>
-                <td><%= box_score.field_goals_attempted %></td>
-                <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.three_point_field_goals %></td>
-                <td><%= box_score.three_point_field_goals_attempted %></td>
-                <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.free_throws %></td>
-                <td><%= box_score.free_throws_attempted %></td>
-                <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.offensive_rebounds %></td>
-                <td><%= box_score.defensive_rebounds %></td>
-                <td><%= box_score.total_rebounds %></td>
-                <td><%= box_score.assists %></td>
-                <td><%= box_score.steals %></td>
-                <td><%= box_score.blocks %></td>
-                <td><%= box_score.turnovers %></td>
-                <td><%= box_score.personal_fouls %></td>
-                <td><%= box_score.points %></td>
-                <td><%= box_score.game_score %></td>
-                <td><%= box_score.plus_minus %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
+<% if @game.date < Date.today %>
+  <!-- Visitor Team Box Score Card -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3><%= @game.visitor_team.name %> Box Score</h3>
     </div>
-
-    <!-- Home Team Box Score Card -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3><%= @game.home_team.name %> Box Score</h3>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped" id="home-box-score-table">
-          <thead>
+    <div class="card-body">
+      <table class="table table-hover" id="visitor-box-score-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>MP</th>
+            <th>FG</th>
+            <th>FGA</th>
+            <th>FG%</th>
+            <th>3P</th>
+            <th>3PA</th>
+            <th>3P%</th>
+            <th>FT</th>
+            <th>FTA</th>
+            <th>FT%</th>
+            <th>ORB</th>
+            <th>DRB</th>
+            <th>TRB</th>
+            <th>AST</th>
+            <th>STL</th>
+            <th>BLK</th>
+            <th>TO</th>
+            <th>PF</th>
+            <th>PTS</th>
+            <th>GmSc</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
             <tr>
-              <th>Player</th>
-              <th>MP</th>
-              <th>FG</th>
-              <th>FGA</th>
-              <th>FG%</th>
-              <th>3P</th>
-              <th>3PA</th>
-              <th>3P%</th>
-              <th>FT</th>
-              <th>FTA</th>
-              <th>FT%</th>
-              <th>ORB</th>
-              <th>DRB</th>
-              <th>TRB</th>
-              <th>AST</th>
-              <th>STL</th>
-              <th>BLK</th>
-              <th>TO</th>
-              <th>PF</th>
-              <th>PTS</th>
-              <th>GmSc</th>
-              <th>+/-</th>
+              <td><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player) %> (<%= box_score.player.position %>)</td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %></td>
+              <td><%= box_score.field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.three_point_field_goals %></td>
+              <td><%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.free_throws %></td>
+              <td><%= box_score.free_throws_attempted %></td>
+              <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.offensive_rebounds %></td>
+              <td><%= box_score.defensive_rebounds %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.steals %></td>
+              <td><%= box_score.blocks %></td>
+              <td><%= box_score.turnovers %></td>
+              <td><%= box_score.personal_fouls %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.game_score %></td>
+              <td><%= box_score.plus_minus %></td>
             </tr>
-          </thead>
-          <tbody>
-            <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
-              <tr>
-                <td><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player) %> (<%= box_score.player.position %>)</td>
-                <td><%= box_score.minutes_played %></td>
-                <td><%= box_score.field_goals %></td>
-                <td><%= box_score.field_goals_attempted %></td>
-                <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.three_point_field_goals %></td>
-                <td><%= box_score.three_point_field_goals_attempted %></td>
-                <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.free_throws %></td>
-                <td><%= box_score.free_throws_attempted %></td>
-                 <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
-                <td><%= box_score.offensive_rebounds %></td>
-                <td><%= box_score.defensive_rebounds %></td>
-                <td><%= box_score.total_rebounds %></td>
-                <td><%= box_score.assists %></td>
-                <td><%= box_score.steals %></td>
-                <td><%= box_score.blocks %></td>
-                <td><%= box_score.turnovers %></td>
-                <td><%= box_score.personal_fouls %></td>
-                <td><%= box_score.points %></td>
-                <td><%= box_score.game_score %></td>
-                <td><%= box_score.plus_minus %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-
-<% else %>
-  <!-- GAME PREVIEW SECTION -->
-  
-  <div class="container">
-    <div class="row">
-      <!-- Visitor Team Card -->
-      <div class="col-md-6 mb-4">
-        <div class="card h-100">
-          <div class="card-header">
-            <h3><%= @game.visitor_team.name %> (Away)</h3>
-          </div>
-          <div class="card-body">
-            <p><strong>Points:</strong> <%= @game.visitor_points %></p>
-            <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
-
-            <!-- Last 5 Games Averages Table for Visitor Team -->
-            <h4>Last 5 Games Averages</h4>
-            <table class="table table-hover" id="visitor-last5-table">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>MP</th>
-                  <th>P</th>
-                  <th>R</th>
-                  <th>A</th>
-                  <!-- Additional stats columns -->
-                </tr>
-              </thead>
-              <tbody>
-                <% @visitor_team_players.each do |player| %>
-                  <tr>
-                    <td>
-                      <%= link_to team_player_path(@game.visitor_team, player) do %>
-                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                        <%= player.name %>
-                      <% end %>
-                    </td>
-                    <td><%= player.last_five_average[:minutes_played] %></td>
-                    <td><%= player.last_five_average[:points].round(1) %></td>
-                    <td><%= player.last_five_average[:rebounds].round(1) %></td>
-                    <td><%= player.last_five_average[:assists].round(1) %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Home Team Card -->
-      <div class="col-md-6 mb-4">
-        <div class="card h-100">
-          <div class="card-header">
-            <h3><%= @game.home_team.name %> (Home)</h3>
-          </div>
-          <div class="card-body">
-            <p><strong>Points:</strong> <%= @game.home_points %></p>
-            <p><strong>Time:</strong> <%= @game.time.strftime("%I:%M %p") %></p>
-
-            <!-- Last 5 Games Averages Table for Home Team -->
-            <h4>Last 5 Games Averages</h4>
-            <table class="table table-hover" id="home-last5-table">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>MP</th>
-                  <th>P</th>
-                  <th>R</th>
-                  <th>A</th>
-                  <!-- Additional stats columns -->
-                </tr>
-              </thead>
-              <tbody>
-                <% @home_team_players.each do |player| %>
-                  <tr>
-                    <td>
-                      <%= link_to team_player_path(@game.home_team, player) do %>
-                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                        <%= player.name %>
-                      <% end %>
-                    </td>
-                    <td><%= player.last_five_average[:minutes_played] %></td>
-                    <td><%= player.last_five_average[:points].round(1) %></td>
-                    <td><%= player.last_five_average[:rebounds].round(1) %></td>
-                    <td><%= player.last_five_average[:assists].round(1) %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+          <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
-<% end %>
+
+  <!-- Home Team Box Score Card -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3><%= @game.home_team.name %> Box Score</h3>
+    </div>
+    <div class="card-body">
+      <table class="table table-striped" id="home-box-score-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>MP</th>
+            <th>FG</th>
+            <th>FGA</th>
+            <th>FG%</th>
+            <th>3P</th>
+            <th>3PA</th>
+            <th>3P%</th>
+            <th>FT</th>
+            <th>FTA</th>
+            <th>FT%</th>
+            <th>ORB</th>
+            <th>DRB</th>
+            <th>TRB</th>
+            <th>AST</th>
+            <th>STL</th>
+            <th>BLK</th>
+            <th>TO</th>
+            <th>PF</th>
+            <th>PTS</th>
+            <th>GmSc</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
+            <tr>
+              <td><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player) %> (<%= box_score.player.position %>)</td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %></td>
+              <td><%= box_score.field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.three_point_field_goals %></td>
+              <td><%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.free_throws %></td>
+              <td><%= box_score.free_throws_attempted %></td>
+              <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.offensive_rebounds %></td>
+              <td><%= box_score.defensive_rebounds %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.steals %></td>
+              <td><%= box_score.blocks %></td>
+              <td><%= box_score.turnovers %></td>
+              <td><%= box_score.personal_fouls %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.game_score %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<% else %>
+
+<div class="container">
+  <!-- Bootstrap Tabs -->
+  <ul class="nav nav-tabs" id="gameTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="last5-tab" data-bs-toggle="tab" data-bs-target="#last5" type="button" role="tab" aria-controls="last5" aria-selected="true">Last 5 Games</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="hit-rates-tab" data-bs-toggle="tab" data-bs-target="#hit-rates" type="button" role="tab" aria-controls="hit-rates" aria-selected="false">Hit Rates</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="gameTabsContent">
+    <!-- Last 5 Games Tab -->
+    <div class="tab-pane fade show active" id="last5" role="tabpanel" aria-labelledby="last5-tab">
+      <div class="row">
+        <!-- Visitor Team Last 5 Games -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.visitor_team.name %> (Away)</h3>
+            </div>
+            <div class="card-body">
+              <table class="table table-hover" id="visitor-last5-table">
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>MP</th>
+                    <th>P</th>
+                    <th>R</th>
+                    <th>A</th>
+                    <th>3s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @visitor_team_players.each do |player| %>
+                    <tr>
+                      <td>
+                        <%= link_to team_player_path(@game.visitor_team, player) do %>
+                          <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                          <%= player.name %>
+                        <% end %>
+                      </td>
+                      <td><%= player.last_five_average[:minutes_played] %></td>
+                      <td><%= player.last_five_average[:points].round(1) %></td>
+                      <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                      <td><%= player.last_five_average[:assists].round(1) %></td>
+                      <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Team Last 5 Games -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.home_team.name %> (Home)</h3>
+            </div>
+            <div class="card-body">
+              <table class="table table-hover" id="home-last5-table">
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>MP</th>
+                    <th>P</th>
+                    <th>R</th>
+                    <th>A</th>
+                    <th>3s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @home_team_players.each do |player| %>
+                    <tr>
+                      <td>
+                        <%= link_to team_player_path(@game.home_team, player) do %>
+                          <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                          <%= player.name %>
+                        <% end %>
+                      </td>
+                      <td><%= player.last_five_average[:minutes_played] %></td>
+                      <td><%= player.last_five_average[:points].round(1) %></td>
+                      <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                      <td><%= player.last_five_average[:assists].round(1) %></td>
+                      <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hit Rates Tab -->
+    <div class="tab-pane fade" id="hit-rates" role="tabpanel" aria-labelledby="hit-rates-tab">
+      <div class="row">
+        <!-- Visitor Team Hit Rates -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.visitor_team.name %> (Away)</h3>
+            </div>
+            <div class="card-body">
+              <% @visitor_team_players.sort_by { |player| player.last_five_average[:minutes_played] }.each do |player| %>
+                <div class="player-hit-rates">
+                  <h4>
+                    <%= link_to team_player_path(@game.visitor_team, player) do %>
+                      <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                      <%= player.name %>
+                    <% end %>
+                  </h4>
+                  <table class="table table-striped text-center mb-4">
+                    <thead>
+                      <tr>
+                        <th>Points</th>
+                        <th>Assists</th>
+                        <th>Rebounds</th>
+                        <th>Threes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                        <tr>
+                          <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
+                          <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
+                          <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
+                          <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Team Hit Rates -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.home_team.name %> (Home)</h3>
+            </div>
+            <div class="card-body">
+              <% @home_team_players.sort_by { |player| player.last_five_average[:minutes_played] }.each do |player| %>
+                <div class="player-hit-rates">
+                  <h4>
+                    <%= link_to team_player_path(@game.home_team, player) do %>
+                      <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                      <%= player.name %>
+                    <% end %>
+                  </h4>
+                  <table class="table table-striped text-center mb-4">
+                    <thead>
+                      <tr>
+                        <th>Points</th>
+                        <th>Assists</th>
+                        <th>Rebounds</th>
+                        <th>Threes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                        <tr>
+                          <td><%= "#{point_threshold}+ (#{@betting_info[player.id][:points][i]} / 5)" %></td>
+                          <td><%= "#{assist_threshold}+ (#{@betting_info[player.id][:assists][i]} / 5)" %></td>
+                          <td><%= "#{rebound_threshold}+ (#{@betting_info[player.id][:rebounds][i]} / 5)" %></td>
+                          <td><%= "#{three_threshold}+ (#{@betting_info[player.id][:threes][i]} / 5)" %></td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
-
+  </div>
 </div>
 
-<script>
-  // JavaScript to handle tab switching with Turbo
-document.addEventListener("turbo:load", () => {
-  // Ensure that tabs work with Turbo by adding event listeners for tab clicks
-  const tabLinks = document.querySelectorAll('[data-toggle="tab"]');
-  
-  tabLinks.forEach(tab => {
-    tab.addEventListener("click", (event) => {
-      event.preventDefault();
-      
-      const target = document.querySelector(tab.getAttribute("href"));
-      
-      // Remove active class from all tab links and content
-      tabLinks.forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-pane").forEach(content => content.classList.remove("show", "active"));
-      
-      // Activate the clicked tab and the corresponding content
-      tab.classList.add("active");
-      target.classList.add("show", "active");
-    });
-  });
 
-    $('#visitor-stats-table').DataTable({
-      "order": [[1, "desc"]],
-      "pageLength": -1,
-      "lengthChange": false,
-      "searching": false,
-      "paging": false       
-    });
+<% end %>
 
-    $('#visitor-last5-table').DataTable({
-      "order": [[1, "desc"]],
-      "pageLength": -1,
-      "lengthChange": false,
-      "searching": false,
-      "paging": false    
-    });
-
-    $('#home-stats-table').DataTable({
-      "order": [[1, "desc"]],
-      "pageLength": -1,
-      "lengthChange": false,
-      "searching": false,
-      "paging": false    
-    });
-
-    $('#home-last5-table').DataTable({
-      "order": [[1, "desc"]],
-      "pageLength": -1,
-      "lengthChange": false,
-      "searching": false,
-      "paging": false    
-    });
-
-});
-</script>
+</div>
