@@ -68,7 +68,7 @@
 <% if @players_over_15_minutes.any? %>
   <div class="card mb-4">
     <div class="card-header">
-      <h3>Players with 15+ Average Minutes Played (Last 5 Games)</h3>
+      <h3>Today's Players (15+ mins played last 5)</h3>
     </div>
     <div class="card-body">
       <table class="table table-hover" id="players-over-15-minutes-table">
@@ -77,6 +77,9 @@
             <th>Player</th>
             <th>Team</th>
             <th>Opponent</th>
+            <th>PtsA</th>
+            <th>RbsA</th>
+            <th>AstA</th>
             <th>Minutes Played</th>
             <th>Points</th>
             <th>Rebounds</th>
@@ -94,6 +97,20 @@
                           elsif next_game&.visitor_team_id == player.team_id
                             next_game.home_team
                           end %>
+            <% opponent_defense = opponent&.defense_vs_position || {} %>
+            <% relevant_positions = case player.position %>
+              <% when "PG" then ["PG", "G"] %>
+              <% when "SG" then ["SG", "G"] %>
+              <% when "SF" then ["SF", "F"] %>
+              <% when "PF" then ["PF", "F"] %>
+              <% when "C" then ["C"] %>
+            <% end %>
+
+            <% opponent_stats = opponent_defense.slice(*relevant_positions) %>
+            <% points_against = opponent_stats.values.sum { |stats| stats["points_rank"] } / opponent_stats.size if opponent_stats.present? %>
+            <% rebounds_against = opponent_stats.values.sum { |stats| stats["rebounds_rank"] } / opponent_stats.size if opponent_stats.present? %>
+            <% assists_against = opponent_stats.values.sum { |stats| stats["assists_rank"] } / opponent_stats.size if opponent_stats.present? %>
+
             <tr>
               <td>
                 <%= link_to team_player_path(player.team, player) do %>
@@ -113,6 +130,9 @@
                   <em>No upcoming game</em>
                 <% end %>
               </td>
+              <td class="<%= rank_color_class(points_against) %>"><%= points_against&.round(1) || "N/A" %></td>
+              <td class="<%= rank_color_class(rebounds_against) %>"><%= rebounds_against&.round(1) || "N/A" %></td>
+              <td class="<%= rank_color_class(assists_against) %>"><%= assists_against&.round(1) || "N/A" %></td>
               <td><%= averages[:minutes_played].round(2) %></td>
               <td><%= averages[:points].round(1) %></td>
               <td><%= averages[:rebounds].round(1) %></td>
@@ -122,6 +142,7 @@
           <% end %>
         </tbody>
       </table>
+
 
     </div>
   </div>
@@ -172,7 +193,7 @@
     if (tableElement) {
       if (!$.fn.DataTable.isDataTable(tableId)) {
         $(tableId).DataTable({
-          "order": [[3, "desc"]], // Default sort by Minutes Played in descending order
+          "order": [[6, "desc"]], // Default sort by Minutes Played in descending order
           "pageLength": 25,      // Show 10 players per page by default
           "lengthChange": true,  // Allow users to change page length
           "searching": true,     // Enable search functionality
