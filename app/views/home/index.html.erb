@@ -76,6 +76,7 @@
           <tr>
             <th>Player</th>
             <th>Team</th>
+            <th>Opponent</th>
             <th>Minutes Played</th>
             <th>Points</th>
             <th>Rebounds</th>
@@ -87,6 +88,12 @@
           <% @players_over_15_minutes.each do |data| %>
             <% player = data[:player] %>
             <% averages = data[:averages] %>
+            <% next_game = player.team.games.where("date >= ?", Date.today).order(:date).first %>
+            <% opponent = if next_game&.home_team_id == player.team_id
+                            next_game.visitor_team
+                          elsif next_game&.visitor_team_id == player.team_id
+                            next_game.home_team
+                          end %>
             <tr>
               <td>
                 <%= link_to team_player_path(player.team, player) do %>
@@ -94,7 +101,18 @@
                   <%= player.name %>
                 <% end %>
               </td>
-              <td><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" alt="<%= player.team.name %> logo" width="20" height="auto" class="me-2"><%= player.team.name %></td>
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" alt="<%= player.team.name %> logo" width="20" height="auto" class="me-2">
+                <%= player.team.name.split.last %>
+              </td>
+              <td>
+                <% if opponent %>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" alt="<%= opponent.name %> logo" width="20" height="auto" class="me-2">
+                  <%= opponent.name.split.last %>
+                <% else %>
+                  <em>No upcoming game</em>
+                <% end %>
+              </td>
               <td><%= averages[:minutes_played].round(2) %></td>
               <td><%= averages[:points].round(1) %></td>
               <td><%= averages[:rebounds].round(1) %></td>
@@ -104,6 +122,7 @@
           <% end %>
         </tbody>
       </table>
+
     </div>
   </div>
 <% end %>
@@ -153,8 +172,8 @@
     if (tableElement) {
       if (!$.fn.DataTable.isDataTable(tableId)) {
         $(tableId).DataTable({
-          "order": [[2, "desc"]], // Default sort by Minutes Played in descending order
-          "pageLength": 10,      // Show 10 players per page by default
+          "order": [[3, "desc"]], // Default sort by Minutes Played in descending order
+          "pageLength": 25,      // Show 10 players per page by default
           "lengthChange": true,  // Allow users to change page length
           "searching": true,     // Enable search functionality
           "paging": true         // Enable pagination
