@@ -23,6 +23,16 @@ class HomeController < ApplicationController
     redirect_to root_path, notice: "#{month} schedule updated successfully."
   end
 
+  def average_combined_stat(games, stats)
+    return 0 if games.empty?
+  
+    total = games.sum do |game|
+      stats.sum { |stat| game.send(stat).to_f }
+    end
+  
+    total / games.size
+  end
+
   private
 
   def calculate_last_five_averages(player)
@@ -37,7 +47,12 @@ class HomeController < ApplicationController
       field_goals: average_ratio(last_five_games, :field_goals, :field_goals_attempted),
       three_pointers: average_ratio(last_five_games, :three_point_field_goals, :three_point_field_goals_attempted),
       free_throws: average_ratio(last_five_games, :free_throws, :free_throws_attempted),
-      plus_minus: average_stat(last_five_games, :plus_minus)
+      plus_minus: average_stat(last_five_games, :plus_minus),
+      points_plus_assists: average_combined_stat(last_five_games, [:points, :assists]),
+      points_plus_rebounds: average_combined_stat(last_five_games, [:points, :total_rebounds]),
+      rebounds_plus_assists: average_combined_stat(last_five_games, [:total_rebounds, :assists]),
+      points_rebounds_plus_assists: average_combined_stat(last_five_games, [:points, :total_rebounds, :assists])
+
     }
   end
 

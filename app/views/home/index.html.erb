@@ -68,7 +68,7 @@
 <% if @players_over_15_minutes.any? %>
   <div class="card mb-4">
     <div class="card-header">
-      <h3>Today's Players (15+ mins played last 5)</h3>
+      <h3>Today's Players Last 5 Stats (15+ mins played last 5)</h3>
     </div>
     <div class="card-body">
       <table class="table table-hover" id="players-over-15-minutes-table">
@@ -76,15 +76,19 @@
           <tr>
             <th>Player</th>
             <th>Team</th>
-            <th>Opponent</th>
+            <th>Vs.</th>
             <th>PtsA</th>
             <th>RbsA</th>
             <th>AstA</th>
-            <th>Minutes Played</th>
-            <th>Points</th>
-            <th>Rebounds</th>
-            <th>Assists</th>
-            <th>3P Made</th>
+            <th>MP</th>
+            <th>P</th>
+            <th>R</th>
+            <th>A</th>
+            <th>3s</th>
+            <th>P+A</th>
+            <th>P+R</th>
+            <th>R+A</th>
+            <th>P+R+A</th>
           </tr>
         </thead>
         <tbody>
@@ -120,12 +124,10 @@
               </td>
               <td>
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" alt="<%= player.team.name %> logo" width="20" height="auto" class="me-2">
-                <%= player.team.name.split.last %>
               </td>
               <td>
                 <% if opponent %>
                   <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" alt="<%= opponent.name %> logo" width="20" height="auto" class="me-2">
-                  <%= opponent.name.split.last %>
                 <% else %>
                   <em>No upcoming game</em>
                 <% end %>
@@ -138,6 +140,10 @@
               <td><%= averages[:rebounds].round(1) %></td>
               <td><%= averages[:assists].round(1) %></td>
               <td><%= averages[:three_point_field_goals].round(1) %></td>
+              <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
+              <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>
+              <td><%= (averages[:rebounds] + averages[:assists]).round(1) %></td>
+              <td><%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %></td>
             </tr>
           <% end %>
         </tbody>
