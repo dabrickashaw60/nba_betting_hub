@@ -67,8 +67,33 @@
 
 <% if @players_over_15_minutes.any? %>
   <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <h3>Today's Players Last 5 Stats (15+ mins played last 5)</h3>
+      <div>
+        <!-- Filter Dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="gameFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            Filter by Game
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="gameFilterDropdown" style="text-align: center">
+            <li>
+              <input type="checkbox" class="form-check-input game-filter" id="select-all-games" checked>
+              <label for="select-all-games" class="form-check-label">Select All</label>
+            </li>
+            <hr>
+            <% @todays_games.each do |game| %>
+              <li>
+                <input type="checkbox" class="form-check-input game-filter" id="game-<%= game.id %>" value="<%= game.id %>" checked>
+                <label for="game-<%= game.id %>" class="form-check-label">
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" width="30" height="auto" alt="<%= game.visitor_team.name %>">
+                   vs. 
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" width="30" height="auto" alt="<%= game.home_team.name %>">
+                </label>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
     </div>
     <div class="card-body">
       <table class="table table-hover" id="players-over-15-minutes-table">
@@ -115,7 +140,7 @@
             <% rebounds_against = opponent_stats.values.sum { |stats| stats["rebounds_rank"] } / opponent_stats.size if opponent_stats.present? %>
             <% assists_against = opponent_stats.values.sum { |stats| stats["assists_rank"] } / opponent_stats.size if opponent_stats.present? %>
 
-            <tr>
+            <tr data-game-id="<%= next_game&.id %>">
               <td>
                 <%= link_to team_player_path(player.team, player) do %>
                   <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
@@ -135,7 +160,12 @@
               <td class="<%= rank_color_class(points_against) %>"><%= points_against&.round(1) || "N/A" %></td>
               <td class="<%= rank_color_class(rebounds_against) %>"><%= rebounds_against&.round(1) || "N/A" %></td>
               <td class="<%= rank_color_class(assists_against) %>"><%= assists_against&.round(1) || "N/A" %></td>
-              <td><%= averages[:minutes_played].round(2) %></td>
+              <td>
+                <% minutes = averages[:minutes_played].to_i %>
+                <% fractional_minutes = averages[:minutes_played] - minutes %>
+                <% seconds = (fractional_minutes * 60).to_i %>
+                <%= format("%02d:%02d", minutes, seconds) %>
+              </td>
               <td><%= averages[:points].round(1) %></td>
               <td><%= averages[:rebounds].round(1) %></td>
               <td><%= averages[:assists].round(1) %></td>
@@ -148,11 +178,10 @@
           <% end %>
         </tbody>
       </table>
-
-
     </div>
   </div>
 <% end %>
+
 
 <!-- Collapsible Card for Schedule and Box Score Updates -->
 <div class="card mb-4">
@@ -190,35 +219,95 @@
 </div>
 
 <script>
-  document.addEventListener("turbo:load", function () {
-    console.log("Initializing DataTable for players over 15 minutes...");
-    
-    const tableId = "#players-over-15-minutes-table";
-    const tableElement = document.querySelector(tableId);
+document.addEventListener("turbo:load", function () {
+  console.log("Initializing DataTable for players over 15 minutes...");
+  
+  const tableId = "#players-over-15-minutes-table";
+  const tableElement = document.querySelector(tableId);
 
-    if (tableElement) {
-      if (!$.fn.DataTable.isDataTable(tableId)) {
-        $(tableId).DataTable({
-          "order": [[6, "desc"]], // Default sort by Minutes Played in descending order
-          "pageLength": 25,      // Show 10 players per page by default
-          "lengthChange": true,  // Allow users to change page length
-          "searching": true,     // Enable search functionality
-          "paging": true         // Enable pagination
-        });
-        console.log("DataTable initialized for players over 15 minutes.");
-      } else {
-        console.log("DataTable already initialized for players over 15 minutes.");
-      }
+  // Initialize the DataTable
+  let dataTable;
+  if (tableElement) {
+    if (!$.fn.DataTable.isDataTable(tableId)) {
+      dataTable = $(tableId).DataTable({
+        "order": [[6, "desc"]], // Default sort by Minutes Played in descending order
+        "pageLength": 25,      // Show 25 players per page by default
+        "lengthChange": true,  // Allow users to change page length
+        "searching": true,     // Enable search functionality
+        "paging": true         // Enable pagination
+      });
+      console.log("DataTable initialized for players over 15 minutes.");
     } else {
-      console.warn("Table not found for players over 15 minutes.");
+      dataTable = $(tableId).DataTable();
+      console.log("DataTable already initialized for players over 15 minutes.");
     }
+  } else {
+    console.warn("Table not found for players over 15 minutes.");
+    return; // Exit if the table element is not found
+  }
+
+  // Custom filtering logic for games
+  $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+    // Get the selected games from the filters
+    const selectedGames = Array.from(document.querySelectorAll(".game-filter:checked"))
+      .filter((input) => input.id !== "select-all-games")
+      .map((input) => input.value);
+
+    // If no specific game is selected, include all rows
+    if (selectedGames.length === 0) {
+      return true;
+    }
+
+    // Get the game ID from the row's data attribute
+    const gameId = dataTable.row(dataIndex).node().dataset.gameId;
+
+    // Include the row if its game ID matches the selected games
+    return selectedGames.includes(gameId);
   });
 
-  document.addEventListener("turbo:before-cache", function () {
-    const tableId = "#players-over-15-minutes-table";
-    if ($.fn.DataTable.isDataTable(tableId)) {
-      console.log("Destroying DataTable before Turbo caches the page...");
-      $(tableId).DataTable().destroy();
+  // Function to reinitialize the event listeners
+  function initializeFilters() {
+    // Listen for filter changes
+    const gameFilters = document.querySelectorAll(".game-filter");
+    gameFilters.forEach((filter) => {
+      filter.removeEventListener("change", filterChangeHandler); // Prevent duplicate handlers
+      filter.addEventListener("change", filterChangeHandler);
+    });
+
+    // "Select All" logic
+    const selectAllCheckbox = document.getElementById("select-all-games");
+    if (selectAllCheckbox) {
+      selectAllCheckbox.removeEventListener("change", selectAllChangeHandler); // Prevent duplicate handlers
+      selectAllCheckbox.addEventListener("change", selectAllChangeHandler);
     }
-  });
+  }
+
+  // Filter change handler
+  function filterChangeHandler() {
+    // Redraw the DataTable to apply the new filter
+    console.log("Filter changed. Redrawing table...");
+    dataTable.draw();
+  }
+
+  // Select All change handler
+  function selectAllChangeHandler() {
+    const allChecked = this.checked;
+    const gameFilters = document.querySelectorAll(".game-filter");
+    gameFilters.forEach((filter) => (filter.checked = allChecked));
+    // Redraw the DataTable to show all rows
+    console.log("Select All changed. Redrawing table...");
+    dataTable.draw();
+  }
+
+  // Initialize filters every time Turbo loads the page
+  initializeFilters();
+});
+
+document.addEventListener("turbo:before-cache", function () {
+  const tableId = "#players-over-15-minutes-table";
+  if ($.fn.DataTable.isDataTable(tableId)) {
+    console.log("Destroying DataTable before Turbo caches the page...");
+    $(tableId).DataTable().destroy();
+  }
+});
 </script>
