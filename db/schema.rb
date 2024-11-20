@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_11_13_023048) do
+ActiveRecord::Schema[7.1].define(version: 2024_11_19_025551) do
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
     t.bigint "team_id", null: false
@@ -63,6 +63,16 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_13_023048) do
     t.boolean "overtime"
     t.index ["home_team_id"], name: "index_games_on_home_team_id"
     t.index ["visitor_team_id"], name: "index_games_on_visitor_team_id"
+  end
+
+  create_table "healths", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "player_id", null: false
+    t.string "status"
+    t.text "description"
+    t.date "last_update"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_id"], name: "index_healths_on_player_id"
   end
 
   create_table "player_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -140,6 +150,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_11_13_023048) do
   add_foreign_key "box_scores", "players"
   add_foreign_key "box_scores", "teams"
   add_foreign_key "games", "teams", column: "home_team_id"
+  add_foreign_key "healths", "players"
   add_foreign_key "player_stats", "players"
   add_foreign_key "players", "teams"
   add_foreign_key "standings", "teams"

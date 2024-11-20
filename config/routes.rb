@@ -17,8 +17,11 @@ Rails.application.routes.draw do
     end
   end
   
-  # Route to update schedule (handled by HomeController)
+
   post 'update_schedule', to: 'home#update_schedule'
+
+  post 'update_injuries', to: 'home#update_injuries'
+
 
   resources :players, only: [] do
     post 'update_stats', on: :member

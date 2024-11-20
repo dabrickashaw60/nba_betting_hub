@@ -141,12 +141,19 @@
             <% assists_against = opponent_stats.values.sum { |stats| stats["assists_rank"] } / opponent_stats.size if opponent_stats.present? %>
 
             <tr data-game-id="<%= next_game&.id %>">
-              <td>
-                <%= link_to team_player_path(player.team, player) do %>
-                  <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                  <%= player.name %>
+            <td>
+              <%= link_to team_player_path(player.team, player) do %>
+                <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                <%= player.name %>
+                <% if player.health.present? && player.health.status != "Healthy" %>
+                  <% status_display = case player.health.status %>
+                    <% when "Out", "Out For Season" then "O" %>
+                    <% when "Day To Day" then "DTD" %>
+                  <% end %>
+                  (<%= status_display %>)
                 <% end %>
-              </td>
+              <% end %>
+            </td>
               <td>
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" alt="<%= player.team.name %> logo" width="20" height="auto" class="me-2">
               </td>
@@ -193,7 +200,6 @@
   </div>
   <div id="updateSection" class="collapse">
     <div class="card-body d-flex flex-column align-items-center">
-      <!-- Update League Schedule Form -->
       <div class="d-flex align-items-center mb-3">
         <h2 style="font-size: 14px; margin-right: 10px;">Update League Schedule</h2>
         <%= form_with url: update_schedule_path, method: :post, local: true, class: "d-flex align-items-center" do %>
@@ -204,7 +210,6 @@
         <% end %>
       </div>
 
-      <!-- Button to Scrape Previous Day's Box Scores -->
       <div class="d-flex align-items-center mb-3">
         <h2 style="font-size: 14px; margin-right: 10px;">Update Box Scores from Yesterday</h2>
         <%= button_to "Scrape Previous Day's Games", scrape_previous_day_games_path, method: :post, class: "btn btn-primary" %>
@@ -214,6 +219,12 @@
           <%= submit_tag "Schedule Box Score Scrapes", class: "btn btn-primary" %>
         <% end %>
      </div>
+
+    <div class="d-flex align-items-center mb-3">
+      <h2 style="font-size: 14px; margin-right: 10px;">Update Player Injuries</h2>
+      <%= button_to "Run Injury Scraper", update_injuries_path, method: :post, class: "btn btn-primary" %>
+    </div>
+
     </div>
   </div>
 </div>

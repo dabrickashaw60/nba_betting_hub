@@ -2,6 +2,7 @@ class Player < ApplicationRecord
   belongs_to :team, optional: true
   has_many :player_stats, dependent: :destroy
   has_many :box_scores
+  has_one :health, dependent: :destroy
 
 
   has_one :player_stat, -> { where(season: PlayerStat::SEASON) }
@@ -35,29 +36,23 @@ class Player < ApplicationRecord
     "Jalen Smith" => "https://www.basketball-reference.com/req/202106291/images/headshots/smithja04.jpg",
     "Tim Hardaway Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/hardati02.jpg",
     "Wendell Moore Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/moorewe01.jpg",
-    "Nikola Jović" => "",
-    "Jaime Jaquez Jr." => "",
-    "KJ Martin" => "",
-    "Ricky Council IV" => "",
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
-    "" => "", 
+    "Nikola Jokić" => "https://www.basketball-reference.com/req/202106291/images/headshots/jokicni01.jpg",
+    "Michael Porter Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/portemi01.jpg",
+    "Brandon Boston Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/bostobr01.jpg",
+    "Dennis Schröder" => "https://www.basketball-reference.com/req/202106291/images/headshots/schrode01.jpg",
+    "Dario Šarić" => "https://www.basketball-reference.com/req/202106291/images/headshots/saricda01.jpg",
+    "Vince Williams Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/willivi01.jpg",
+    "D'Angelo Russell" => "https://www.basketball-reference.com/req/202106291/images/headshots/russeda01.jpg",
+    "P.J. Washington" => "https://www.basketball-reference.com/req/202106291/images/headshots/washipj01.jpg",
+    "Jaden Hardy" => "https://www.basketball-reference.com/req/202106291/images/headshots/hardyja02.jpg",
+    "Cody Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willico04.jpg",
+    "Jalen Wilson" => "https://www.basketball-reference.com/req/202106291/images/headshots/wilsoja03.jpg",
+    "Trey Murphy III" => "https://www.basketball-reference.com/req/202106291/images/headshots/murphtr02.jpg",
+    "Dereck Lively II" => "https://www.basketball-reference.com/req/202106291/images/headshots/livelde01.jpg",
+    "Harrison Barnes" => "https://www.basketball-reference.com/req/202106291/images/headshots/barneha02.jpg",
+    "Keldon Johnson" => "https://www.basketball-reference.com/req/202106291/images/headshots/johnske04.jpg",
+    "Jalen Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willija06.jpg"
+
 
   }
 

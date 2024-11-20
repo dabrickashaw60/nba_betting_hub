@@ -33,6 +33,11 @@ class HomeController < ApplicationController
     total / games.size
   end
 
+  def update_injuries
+    Scrapers::InjuryScraper.scrape_and_update_injuries
+    redirect_to root_path, notice: "Player injuries updated successfully."
+  end
+
   private
 
   def calculate_last_five_averages(player)
