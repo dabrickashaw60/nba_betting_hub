@@ -51,7 +51,10 @@ class Player < ApplicationRecord
     "Dereck Lively II" => "https://www.basketball-reference.com/req/202106291/images/headshots/livelde01.jpg",
     "Harrison Barnes" => "https://www.basketball-reference.com/req/202106291/images/headshots/barneha02.jpg",
     "Keldon Johnson" => "https://www.basketball-reference.com/req/202106291/images/headshots/johnske04.jpg",
-    "Jalen Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willija06.jpg"
+    "Jalen Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willija06.jpg",
+    "Miles Bridges" => "https://www.basketball-reference.com/req/202106291/images/headshots/bridgmi02.jpg",
+    "Anthony Davis" => "https://www.basketball-reference.com/req/202106291/images/headshots/davisan02.jpg",
+    "Wendell Carter Jr." => "https://www.basketball-reference.com/req/202106291/images/headshots/cartewe01.jpg"
 
 
   }
