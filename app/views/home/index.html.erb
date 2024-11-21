@@ -240,13 +240,23 @@ document.addEventListener("turbo:load", function () {
   let dataTable;
   if (tableElement) {
     if (!$.fn.DataTable.isDataTable(tableId)) {
-      dataTable = $(tableId).DataTable({
-        "order": [[6, "desc"]], // Default sort by Minutes Played in descending order
-        "pageLength": 25,      // Show 25 players per page by default
-        "lengthChange": true,  // Allow users to change page length
-        "searching": true,     // Enable search functionality
-        "paging": true         // Enable pagination
-      });
+    dataTable = $(tableId).DataTable({
+      "order": [[6, "desc"]],
+      "pageLength": 25,
+      "lengthChange": true,
+      "searching": true,
+      "paging": true,
+      "columnDefs": [
+        {
+          "targets": "_all", // Apply to all columns
+          "className": "text-center" // Add text-center to all cells
+        },
+        {
+          "targets": 0, // Exclude the first column
+          "className": "" // Do not apply text-center here
+        }
+      ]
+    });
       console.log("DataTable initialized for players over 15 minutes.");
     } else {
       dataTable = $(tableId).DataTable();
