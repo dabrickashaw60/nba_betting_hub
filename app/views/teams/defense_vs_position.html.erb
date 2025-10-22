@@ -1,0 +1,94 @@
+<h1 class="text-center mb-4">Defense vs Position</h1>
+
+<!-- Position Buttons -->
+<div class="d-flex justify-content-center mb-4">
+  <div class="btn-group" role="group">
+    <button class="btn btn-primary" onclick="showTable('pg')">PG</button>
+    <button class="btn btn-primary" onclick="showTable('sg')">SG</button>
+    <button class="btn btn-primary" onclick="showTable('sf')">SF</button>
+    <button class="btn btn-primary" onclick="showTable('pf')">PF</button>
+    <button class="btn btn-primary" onclick="showTable('c')">C</button>
+    <button class="btn btn-primary" onclick="showTable('g')">G</button>
+    <button class="btn btn-primary" onclick="showTable('f')">F</button>  
+  </div>
+</div>
+
+<% positions = ["PG", "SG", "SF", "PF", "C", "G", "F"] %>
+
+<% positions.each do |position| %>
+  <!-- Position Table for <%= position %> -->
+  <div id="<%= position.downcase %>" class="position-table" style="<%= 'display: block;' if position == 'PG' %>">
+    <h2>Defense vs <%= position %></h2>
+    <table class="table table-bordered" id="<%= position.downcase %>Table">
+      <thead>
+        <tr>
+          <th onclick="sortTable('<%= position.downcase %>Table', 0)">Team</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 1)">Rank</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 2)">Points Allowed</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 3)">Rank</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 4)">Rebounds Allowed</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 5)">Rank</th>
+          <th onclick="sortTable('<%= position.downcase %>Table', 6)">Assists Allowed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @teams.each do |team| %>
+          <tr>
+            <td>
+              <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png" alt="<%= team.name %> logo" width="25" height="auto" class="me-2">
+              <%= team.name %>
+            </td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "points_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "points") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "rebounds_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "rebounds") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "assists_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position.dig(position, "assists") || "-" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<!-- JavaScript to toggle visibility and sort table -->
+<script>
+  function showTable(position) {
+    // Hide all tables
+    const tables = document.querySelectorAll('.position-table');
+    tables.forEach(table => {
+      table.style.display = 'none';
+    });
+
+    // Show the selected table
+    document.getElementById(position).style.display = 'block';
+  }
+
+  const sortOrder = {};
+
+  function sortTable(tableId, columnIndex) {
+    const table = document.getElementById(tableId);
+    const rows = Array.from(table.querySelector("tbody").rows);
+
+    // Toggle the sort order for the column
+    if (!sortOrder[tableId]) sortOrder[tableId] = {};
+    sortOrder[tableId][columnIndex] = !sortOrder[tableId][columnIndex];
+    const ascending = sortOrder[tableId][columnIndex];
+
+    // Sort rows based on the specified column and sort order
+    rows.sort((rowA, rowB) => {
+      const cellA = rowA.cells[columnIndex].textContent.trim();
+      const cellB = rowB.cells[columnIndex].textContent.trim();
+
+      const valueA = cellA === "-" ? Infinity : parseFloat(cellA);
+      const valueB = cellB === "-" ? Infinity : parseFloat(cellB);
+
+      return ascending ? valueA - valueB : valueB - valueA;
+    });
+
+    // Clear the table body and append sorted rows
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = "";
+    rows.forEach(row => tbody.appendChild(row));
+  }
+</script>

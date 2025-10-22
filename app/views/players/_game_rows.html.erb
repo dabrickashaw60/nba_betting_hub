@@ -1,0 +1,29 @@
+<% if defined?(filtered_teammate) && filtered_teammate.present? %>
+  <tr>
+    <td colspan="10" class="table-info text-center">
+      Last 5 games for <%= @player.name %> when <%= filtered_teammate.name %> is out.
+    </td>
+  </tr>
+<% end %>
+
+<% games.each do |box_score| %>
+  <% player_team_at_game_time = box_score.team %>
+  <% opponent_team = box_score.game.visitor_team_id == player_team_at_game_time.id ? box_score.game.home_team : box_score.game.visitor_team %>
+
+  <tr>
+    <td><%= link_to box_score.game.date.strftime("%m/%d/%y"), game_path(box_score.game), class: "text-decoration-none" %></td>
+    <td>
+      <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent_team.abbreviation %>-2025.png" 
+           alt="<%= opponent_team.name %> logo" 
+           width="20" height="auto" class="me-2">
+    </td>
+    <td><%= box_score.minutes_played %></td>
+    <td><%= box_score.points %></td>
+    <td><%= box_score.total_rebounds %></td>
+    <td><%= box_score.assists %></td>
+    <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+    <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+    <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+    <td><%= box_score.plus_minus %></td>
+  </tr>
+<% end %>

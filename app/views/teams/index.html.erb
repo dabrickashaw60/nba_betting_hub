@@ -1,0 +1,52 @@
+<h1>NBA Teams and Rosters</h1>
+
+<% @teams.each do |team| %>
+  <h2><%= link_to team.name, team_path(team) %></h2> <!-- Link to the team's show page -->
+
+  <% if team.players.any? %>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Uniform Number</th>
+          <th>Player Name</th>
+          <th>Position</th>
+          <th>Height</th>
+          <th>Weight</th>
+          <th>Birth Date</th>
+          <th>Country</th>
+          <th>College</th>
+          <th>Points Per Game</th>
+          <th>Rebounds Per Game</th>
+          <th>Assists Per Game</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% team.players.each do |player| %>
+          <tr>
+            <td><%= player.uniform_number %></td>
+            <td><%= link_to player.name, team_player_path(team, player) %></td>
+            <td><%= player.position %></td>
+            <td><%= player.height %></td>
+            <td><%= player.weight %> lbs</td>
+            <td><%= player.birth_date.strftime("%B %d, %Y") if player.birth_date %></td>
+            <td>
+              <% if player.country_of_birth.present? %>
+                <% lower_country, upper_country = player.country_of_birth.split %>
+                <img src="https://cdn.ssref.net/req/1701182769569-20231028/flags/<%= lower_country %>.svg" alt="<%= upper_country %>" width="20" height="15">
+                <%= upper_country %>
+              <% else %>
+                N/A
+              <% end %>
+            </td>
+            <td><%= player.college.presence || "N/A" %></td>
+            <td><%= player.player_stat ? player.player_stat.points : "N/A" %></td>
+            <td><%= player.player_stat ? player.player_stat.total_rebounds : "N/A" %></td>
+            <td><%= player.player_stat ? player.player_stat.assists : "N/A" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p>No players available for this team.</p>
+  <% end %>
+<% end %>

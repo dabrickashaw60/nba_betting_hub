@@ -1,0 +1,1056 @@
+<h1 class="mb-2 text-center">
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.visitor_team.abbreviation %>-2025.png" alt="<%= @game.visitor_team.name %> logo" width="50" height="auto" class="me-2">
+  <%= @game.visitor_team.name.split(' ').last %>
+   vs. 
+  <%= @game.home_team.name.split(' ').last  %> 
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.home_team.abbreviation %>-2025.png" alt="<%= @game.home_team.name %> logo" width="50" height="auto" class="me-2"> 
+</h1>
+
+<% if @game.visitor_points > 0 || @game.home_points > 0 %>
+  <h4 class="mb-2 text-center">
+    <span><%= @game.visitor_points %></span>
+    -
+    <span><%= @game.home_points %></span>
+  </h4>
+<% end %>
+
+<h6 class="text-center">
+  <%= @game.date.strftime("%m/%d/%y") %>
+</h6>
+
+<div class="container" id="game-preview-container">
+
+<!-- BOX SCORE SECTION -->
+
+<% if @game.date < Date.today %>
+  <!-- Visitor Team Box Score Card -->
+  <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header">
+      <h3><%= @game.visitor_team.name %> Box Score</h3>
+    </div>
+    <div class="card-body" id="pd-left-none">
+      <table class="table table-hover" id="visitor-box-score-table">
+        <thead>
+          <tr>
+            <th class="sticky-col">Player</th>
+            <th>MP</th>
+            <th>FG</th>
+            <th>FGA</th>
+            <th>FG%</th>
+            <th>3P</th>
+            <th>3PA</th>
+            <th>3P%</th>
+            <th>FT</th>
+            <th>FTA</th>
+            <th>FT%</th>
+            <th>ORB</th>
+            <th>DRB</th>
+            <th>TRB</th>
+            <th>AST</th>
+            <th>STL</th>
+            <th>BLK</th>
+            <th>TO</th>
+            <th>PF</th>
+            <th>PTS</th>
+            <th>GmSc</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
+            <tr>
+              <td class="sticky-col"><img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle"><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player), data: { turbo: false }  %> (<%= box_score.player.position %>)</td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %></td>
+              <td><%= box_score.field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.three_point_field_goals %></td>
+              <td><%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.free_throws %></td>
+              <td><%= box_score.free_throws_attempted %></td>
+              <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.offensive_rebounds %></td>
+              <td><%= box_score.defensive_rebounds %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.steals %></td>
+              <td><%= box_score.blocks %></td>
+              <td><%= box_score.turnovers %></td>
+              <td><%= box_score.personal_fouls %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.game_score %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Home Team Box Score Card -->
+  <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header">
+      <h3><%= @game.home_team.name %> Box Score</h3>
+    </div>
+    <div class="card-body" id="pd-left-none">
+      <table class="table table-hover" id="home-box-score-table">
+        <thead>
+          <tr>
+            <th class="sticky-col">Player</th>
+            <th>MP</th>
+            <th>FG</th>
+            <th>FGA</th>
+            <th>FG%</th>
+            <th>3P</th>
+            <th>3PA</th>
+            <th>3P%</th>
+            <th>FT</th>
+            <th>FTA</th>
+            <th>FT%</th>
+            <th>ORB</th>
+            <th>DRB</th>
+            <th>TRB</th>
+            <th>AST</th>
+            <th>STL</th>
+            <th>BLK</th>
+            <th>TO</th>
+            <th>PF</th>
+            <th>PTS</th>
+            <th>GmSc</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
+            <tr>
+              <td class="sticky-col"><img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle"><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player), data: { turbo: false }  %> (<%= box_score.player.position %>)</td>
+              <td><%= box_score.minutes_played %></td>
+              <td><%= box_score.field_goals %></td>
+              <td><%= box_score.field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.three_point_field_goals %></td>
+              <td><%= box_score.three_point_field_goals_attempted %></td>
+              <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.free_throws %></td>
+              <td><%= box_score.free_throws_attempted %></td>
+              <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+              <td><%= box_score.offensive_rebounds %></td>
+              <td><%= box_score.defensive_rebounds %></td>
+              <td><%= box_score.total_rebounds %></td>
+              <td><%= box_score.assists %></td>
+              <td><%= box_score.steals %></td>
+              <td><%= box_score.blocks %></td>
+              <td><%= box_score.turnovers %></td>
+              <td><%= box_score.personal_fouls %></td>
+              <td><%= box_score.points %></td>
+              <td><%= box_score.game_score %></td>
+              <td><%= box_score.plus_minus %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<% else %>
+
+  <div class="card mt-4 mb-3">
+    <div class="card-header text-center">
+      <h3>Team Defense vs Position</h3>
+    </div>
+    <div class="card-body" id="pd-sides-none">
+      <div class="row">
+        <!-- Visitor Team Section -->
+        <div class="col-md-6">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th colspan="4" class="text-center">  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.visitor_team.abbreviation %>-2025.png" alt="<%= @game.visitor_team.name %> logo" width="30" height="auto" class="me-2"> 
+Defense</th>
+                <th colspan="9" class="text-center">  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.home_team.abbreviation %>-2025.png" alt="<%= @game.home_team.name %> logo" width="30" height="auto" class="me-2"> 
+ Players (L5 games)</th>
+              </tr>
+              <tr>
+                <th class="sticky-col" style="width: 50px !important;">Pos</th>
+                <th class="sticky-col" style="width: 50px !important;">pA</th>
+                <th class="sticky-col" style="width: 50px !important;">rA</th>
+                <th class="sticky-col" style="width: 50px !important;">aA</th>
+                <th class="sticky-col" style="width: 50px !important;">Player</th>
+                <th>P</th>
+                <th>R</th>
+                <th>A</th>
+                <th>3s</th>
+                <th>P+A</th>
+                <th>P+R</th>
+                <th>R+A</th>
+                <th>P+R+A</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% shown_players = Set.new %> <!-- Track players already shown -->
+
+              <!-- Visitor Team -->
+              <% ["PG", "SG", "SF", "PF", "C", "G", "F"].each do |position| %>
+                <% 
+                  # Fetch defense data for the current position
+                  defense_stats = JSON.parse(@game.visitor_team.defense_vs_position || "{}").fetch(position, {})
+                  points_rank = defense_stats["points_rank"]
+                  rebounds_rank = defense_stats["rebounds_rank"]
+                  assists_rank = defense_stats["assists_rank"]
+
+                  # Determine the relevant positions for combined categories (G, F)
+                  relevant_positions = case position
+                                      when "G" then ["PG", "SG"]
+                                      when "F" then ["SF", "PF"]
+                                      else [position]
+                                      end
+
+                  # Exclude already shown players
+                  opposing_players = @home_team_players
+                                    .select { |player| relevant_positions.include?(player.position) && !shown_players.include?(player.id) }
+                  top_player = opposing_players.max_by { |player| player.last_five_average[:minutes_played].to_f }
+                %>
+                <tr>
+                    <td class="sticky-col" style="width: 50px !important;"><%= position %></td>
+                    <td style="<%= rank_color_class(points_rank) %>; width: 50px !important;" class="sticky-col"><%= points_rank || "N/A" %></td>
+                    <td style="<%= rank_color_class(rebounds_rank) %>; width: 50px !important;" class="sticky-col"><%= rebounds_rank || "N/A" %></td>
+                    <td style="<%= rank_color_class(assists_rank) %>; width: 50px !important;" class="sticky-col"><%= assists_rank || "N/A" %></td>
+                  <% if top_player %>
+                    <% shown_players.add(top_player.id) %> <!-- Add player to the shown set -->
+                    <td class="sticky-col">
+                      <%= link_to team_player_path(@game.home_team, top_player), data: { turbo: false } do %>
+                        <img src="<%= top_player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= "#{top_player.name.split(' ').first[0]}.#{top_player.name.split(' ')[1..].join(' ')}" %>
+                      <% end %>
+                    </td>
+                    <td><%= top_player.last_five_average[:points].round(1) %></td>
+                    <td><%= top_player.last_five_average[:rebounds].round(1) %></td>
+                    <td><%= top_player.last_five_average[:assists].round(1) %></td>
+                    <td><%= top_player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:assists]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:rebounds]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:rebounds] + top_player.last_five_average[:assists]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:rebounds] + top_player.last_five_average[:assists]).round(1) %></td>
+                  <% else %>
+                    <td colspan="9">No player available</td>
+                  <% end %>
+                </tr>
+              <% end %>
+
+              <% shown_players.clear %> <!-- Reset for the next table -->
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Home Team Section -->
+        <div class="col-md-6">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th colspan="4" class="text-center">  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.home_team.abbreviation %>-2025.png" alt="<%= @game.home_team.name %> logo" width="30" height="auto" class="me-2"> 
+ Defense</th>
+                <th colspan="9" class="text-center">  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @game.visitor_team.abbreviation %>-2025.png" alt="<%= @game.visitor_team.name %> logo" width="30" height="auto" class="me-2"> 
+ Players (L5 games)</th>
+              </tr>
+              <tr>
+                <th class="sticky-col" style="width: 50px !important;">Pos</th>
+                <th class="sticky-col" style="width: 50px !important;">pA</th>
+                <th class="sticky-col" style="width: 50px !important;">rA</th>
+                <th class="sticky-col" style="width: 50px !important;">aA</th>
+                <th class="sticky-col" style="width: 50px !important;">Player</th>
+                <th>P</th>
+                <th>R</th>
+                <th>A</th>
+                <th>3s</th>
+                <th>P+A</th>
+                <th>P+R</th>
+                <th>R+A</th>
+                <th>P+R+A</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ["PG", "SG", "SF", "PF", "C", "G", "F"].each do |position| %>
+                <% 
+                  # Fetch defense data for the current position
+                  defense_stats = JSON.parse(@game.home_team.defense_vs_position || "{}").fetch(position, {})
+                  points_rank = defense_stats["points_rank"]
+                  rebounds_rank = defense_stats["rebounds_rank"]
+                  assists_rank = defense_stats["assists_rank"]
+
+                  # Determine the relevant positions for combined categories (G, F)
+                  relevant_positions = case position
+                                      when "G" then ["PG", "SG"]
+                                      when "F" then ["SF", "PF"]
+                                      else [position]
+                                      end
+
+                  # Exclude already shown players
+                  opposing_players = @visitor_team_players
+                                    .select { |player| relevant_positions.include?(player.position) && !shown_players.include?(player.id) }
+                  top_player = opposing_players.max_by { |player| player.last_five_average[:minutes_played].to_f }
+                %>
+                <tr>
+                  <td class="sticky-col" style="width: 50px !important;"><%= position %></td>
+                  <td class="<%= rank_color_class(points_rank) %> sticky-col" style="width: 50px !important;"><%= points_rank || "N/A" %></td>
+                  <td class="<%= rank_color_class(rebounds_rank) %> sticky-col" style="width: 50px !important;"><%= rebounds_rank || "N/A" %></td>
+                  <td class="<%= rank_color_class(assists_rank) %> sticky-col" style="width: 50px !important;"><%= assists_rank || "N/A" %></td>
+                  <% if top_player %>
+                    <% shown_players.add(top_player.id) %> <!-- Add player to the shown set -->
+                    <td class="sticky-col">
+                      <%= link_to team_player_path(@game.visitor_team, top_player), data: { turbo: false } do %>
+                        <img src="<%= top_player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= "#{top_player.name.split(' ').first[0]}.#{top_player.name.split(' ')[1..].join(' ')}" %>
+                      <% end %>
+                    </td>
+                    <td><%= top_player.last_five_average[:points].round(1) %></td>
+                    <td><%= top_player.last_five_average[:rebounds].round(1) %></td>
+                    <td><%= top_player.last_five_average[:assists].round(1) %></td>
+                    <td><%= top_player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:assists]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:rebounds]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:rebounds] + top_player.last_five_average[:assists]).round(1) %></td>
+                    <td><%= (top_player.last_five_average[:points] + top_player.last_five_average[:rebounds] + top_player.last_five_average[:assists]).round(1) %></td>
+                  <% else %>
+                    <td colspan="9">No player available</td>
+                  <% end %>
+                </tr>
+              <% end %>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center mb-0">
+      <!-- Player Dropdown -->
+      <select id="player-dropdown" class="form-select me-2" style="width: auto;">
+        <% (@visitor_team_players + @home_team_players).each do |player| %>
+          <option value="<%= player.id %>">
+            <img src="<%= player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle">
+            <%= player.name %> (<%= player.team.abbreviation %>)
+          </option>
+        <% end %>
+      </select> 
+
+      <!-- Game Range Dropdown -->
+      <select id="game-range-dropdown" class="form-select mb-0">
+        <option value="last5">Last 5 Games</option>
+        <option value="last10" selected>Last 10 Games</option>
+        <option value="all">Season Long</option>
+      </select>
+
+      <!-- Stat Dropdown -->
+      <select id="stat-dropdown" class="form-select me-2" style="width: auto;">
+        <option value="points">P</option>
+        <option value="rebounds">R</option>
+        <option value="assists">A</option>
+        <option value="threes">3s</option>
+        <option value="points_assists">P+A</option>
+        <option value="points_rebounds">P+R</option>
+        <option value="rebounds_assists">R+A</option>
+        <option value="points_rebounds_assists">P+R+A</option>
+      </select>
+
+      <!-- Threshold Input -->
+      <input
+        type="number"
+        id="threshold-input"
+        class="form-control"
+        style="width: 50%;"
+        placeholder="Threshold"
+      />
+    </div>
+  </div>
+  <div class="card-body" id="pd-sides-none">
+    <canvas id="game-player-chart" style="height: 300px;"></canvas>
+    <p class="mt-2 text-center" id="hit-rate-summary"></p>
+  </div>
+</div>
+
+<div class="container" id="game-preview-container">
+  <!-- Bootstrap Tabs -->
+  <ul class="nav nav-tabs" id="gameTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="last5-tab" data-bs-toggle="tab" data-bs-target="#last5" type="button" role="tab" aria-controls="last5" aria-selected="true">Last 5 Games</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="hit-rates-tab" data-bs-toggle="tab" data-bs-target="#hit-rates" type="button" role="tab" aria-controls="hit-rates" aria-selected="false">Hit Rates</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="gameTabsContent">
+    <!-- Last 5 Games Tab -->
+    <div class="tab-pane fade show active" id="last5" role="tabpanel" aria-labelledby="last5-tab">
+      <div class="row">
+        <!-- Visitor Team Last 5 Games -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.visitor_team.name %> (Away)</h3>
+            </div>
+            <div class="card-body" id="pd-left-none">
+              <table class="table table-hover" id="visitor-last5-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Player</th>
+                    <th>MP</th>
+                    <th>P</th>
+                    <th>R</th>
+                    <th>A</th>
+                    <th>3s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @visitor_team_players.each do |player| %>
+                    <tr>
+                      <td class="sticky-col">
+                        <%= link_to team_player_path(@game.visitor_team, player), data: { turbo: false }  do %>
+                          <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                          <%= "#{player.name.split(' ').first[0]}.#{player.name.split(' ')[1..].join(' ')}" %>
+                          <% if player.health.present? && player.health.status != "Healthy" %>
+                            <% status_display = case player.health.status %>
+                              <% when "Out", "Out For Season" then "O" %>
+                              <% when "Day-To-Day" then "DTD" %>
+                            <% end %>
+                            (<%= status_display %>)
+                          <% end %>
+                        <% end %>
+                      </td>
+                      <td><%= player.last_five_average[:minutes_played] %></td>
+                      <td><%= player.last_five_average[:points].round(1) %></td>
+                      <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                      <td><%= player.last_five_average[:assists].round(1) %></td>
+                      <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Team Last 5 Games -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.home_team.name %> (Home)</h3>
+            </div>
+            <div class="card-body" id="pd-left-none">
+              <table class="table table-hover" id="home-last5-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Player</th>
+                    <th>MP</th>
+                    <th>P</th>
+                    <th>R</th>
+                    <th>A</th>
+                    <th>3s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @home_team_players.each do |player| %>
+                    <tr>
+                      <td class="sticky-col">
+                        <%= link_to team_player_path(@game.home_team, player), data: { turbo: false }  do %>
+                          <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                          <%= "#{player.name.split(' ').first[0]}.#{player.name.split(' ')[1..].join(' ')}" %>
+                          <% if player.health.present? && player.health.status != "Healthy" %>
+                            <% status_display = case player.health.status %>
+                              <% when "Out", "Out For Season" then "O" %>
+                              <% when "Day-To-Day" then "DTD" %>
+                            <% end %>
+                            (<%= status_display %>)
+                          <% end %>
+                        <% end %>
+                      </td>
+                      <td><%= player.last_five_average[:minutes_played] %></td>
+                      <td><%= player.last_five_average[:points].round(1) %></td>
+                      <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                      <td><%= player.last_five_average[:assists].round(1) %></td>
+                      <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hit Rates Tab -->
+    <div class="tab-pane fade" id="hit-rates" role="tabpanel" aria-labelledby="hit-rates-tab">
+      <div class="row">
+        <!-- Visitor Team Hit Rates -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.visitor_team.name %> (Away)</h3>
+            </div>
+            <div class="card-body" id="pd-sides-none">
+              <div class="player-hit-rates" id="visitor-hit-rates-container">
+                <% @visitor_team_players.each do |player| %>
+                  <div class="player-hit-rates-entry" data-minutes="<%= player.last_five_average[:minutes_played] %>">
+                    <div class="text-center mb-3">
+                      <!-- Player Info -->
+                      <h4 class="mb-2" style="padding-top: 10px">
+                        <%= link_to team_player_path(player.team, player), data: { turbo: false }  do %>
+                          <img src="<%= player.profile_picture_url %>" width="40" height="auto" class="me-2 rounded-circle">
+                          <%= "#{player.name.split(' ').first[0]}.#{player.name.split(' ')[1..].join(' ')}" %>
+                          <% if player.health.present? && player.health.status != "Healthy" %>
+                            <% status_display = case player.health.status %>
+                              <% when "Out", "Out For Season" then "O" %>
+                              <% when "Day-To-Day" then "DTD" %>
+                            <% end %>
+                            (<%= status_display %>)
+                          <% end %>
+                        <% end %>
+                      </h4>
+                    </div>
+
+                    <div class="d-flex justify-content-evenly align-items-start">
+                      <!-- Player Last 5 Averages -->
+                      <div class="text-center">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead>
+                            <tr>
+                              <th>M</th>
+                              <th>P</th>
+                              <th>R</th>
+                              <th>A</th>
+                              <th>3s</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td><%= player.last_five_average[:minutes_played] %></td>
+                              <td><%= player.last_five_average[:points].round(1) %></td>
+                              <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                              <td><%= player.last_five_average[:assists].round(1) %></td>
+                              <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <!-- Opponent Defense -->
+                      <div class="text-end">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead>
+                            <tr>
+                              <th>Pos</th>
+                              <th>P</th>
+                              <th>R</th>
+                              <th>A</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% relevant_positions = case player.position %>
+                              <% when "PG" then ["PG", "G"] %>
+                              <% when "SG" then ["SG", "G"] %>
+                              <% when "SF" then ["SF", "F"] %>
+                              <% when "PF" then ["PF", "F"] %>
+                              <% when "C" then ["C"] %>
+                              <% else [] %>
+                            <% end %>
+
+                            <% opponent = if @game.home_team_id == player.team_id
+                                            @game.visitor_team
+                                          elsif @game.visitor_team_id == player.team_id
+                                            @game.home_team
+                                          end %>
+                            <% opponent_defense = opponent&.defense_vs_position || {} %>
+
+                            <% if opponent_defense.present? %>
+                              <% parsed_opponent_defense = JSON.parse(opponent_defense) rescue {} %>
+                              <% Rails.logger.debug("Parsed Opponent Defense: #{parsed_opponent_defense.inspect}") %>
+
+                              <% opponent_stats = parsed_opponent_defense.slice(*relevant_positions) %>
+                              <% Rails.logger.debug("Opponent Stats: #{opponent_stats.inspect}") %>
+
+                              <% points_against = opponent_stats.values.sum { |stats| stats["points_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                              <% rebounds_against = opponent_stats.values.sum { |stats| stats["rebounds_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                              <% assists_against = opponent_stats.values.sum { |stats| stats["assists_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                            <% else %>
+                              <% points_against = rebounds_against = assists_against = nil %>
+                            <% end %>
+
+                            <tr>
+                              <td><%= player.position %></td>
+                              <td class="<%= rank_color_class(points_against) %>"><%= points_against&.round(1) || "N/A" %></td>
+                              <td class="<%= rank_color_class(rebounds_against) %>"><%= rebounds_against&.round(1) || "N/A" %></td>
+                              <td class="<%= rank_color_class(assists_against) %>"><%= assists_against&.round(1) || "N/A" %></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+
+                    <table class="table table-hover text-center mb-4">
+                      <thead>
+                        <tr>
+                          <th>Points</th>
+                          <th>Assists</th>
+                          <th>Rebounds</th>
+                          <th>Threes</th>
+                        </tr>
+                      </thead>
+                        <tbody>
+                          <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                            <tr>
+                              <td><%= "#{point_threshold}+ (#{((@betting_info[player.id][:points][i] / 5.0) * 100).to_i}%)" %></td>
+                              <td><%= "#{assist_threshold}+ (#{((@betting_info[player.id][:assists][i] / 5.0) * 100).to_i}%)" %></td>
+                              <td><%= "#{rebound_threshold}+ (#{((@betting_info[player.id][:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
+                              <td><%= "#{three_threshold}+ (#{((@betting_info[player.id][:threes][i] / 5.0) * 100).to_i}%)" %></td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+
+                    </table>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Team Hit Rates -->
+        <div class="col-md-6">
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3><%= @game.home_team.name %> (Home)</h3>
+            </div>
+            <div class="card-body" id="pd-sides-none">
+              <div class="player-hit-rates" id="home-hit-rates-container">
+                <% @home_team_players.each do |player| %>
+                  <div class="player-hit-rates-entry" data-minutes="<%= player.last_five_average[:minutes_played] %>">
+                    <div class="text-center mb-3">
+                      <!-- Player Info -->
+                      <h4 class="mb-2" style="padding-top: 10px">
+                        <%= link_to team_player_path(player.team, player), data: { turbo: false }  do %>
+                          <img src="<%= player.profile_picture_url %>" width="40" height="auto" class="me-2 rounded-circle">
+                          <%= "#{player.name.split(' ').first[0]}.#{player.name.split(' ')[1..].join(' ')}" %>
+                          <% if player.health.present? && player.health.status != "Healthy" %>
+                            <% status_display = case player.health.status %>
+                              <% when "Out", "Out For Season" then "O" %>
+                              <% when "Day-To-Day" then "DTD" %>
+                            <% end %>
+                            (<%= status_display %>)
+                          <% end %>
+                        <% end %>
+                      </h4>
+                    </div>
+
+                    <div class="d-flex justify-content-evenly align-items-start">
+                      <!-- Player Last 5 Averages -->
+                      <div class="text-center">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead>
+                            <tr>
+                              <th>M</th>
+                              <th>P</th>
+                              <th>R</th>
+                              <th>A</th>
+                              <th>3s</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td><%= player.last_five_average[:minutes_played] %></td>
+                              <td><%= player.last_five_average[:points].round(1) %></td>
+                              <td><%= player.last_five_average[:rebounds].round(1) %></td>
+                              <td><%= player.last_five_average[:assists].round(1) %></td>
+                              <td><%= player.last_five_average[:three_point_field_goals].round(1) %></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <!-- Opponent Defense -->
+                      <div class="text-end">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead>
+                            <tr>
+                              <th>Pos</th>
+                              <th>P</th>
+                              <th>R</th>
+                              <th>A</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% relevant_positions = case player.position %>
+                              <% when "PG" then ["PG", "G"] %>
+                              <% when "SG" then ["SG", "G"] %>
+                              <% when "SF" then ["SF", "F"] %>
+                              <% when "PF" then ["PF", "F"] %>
+                              <% when "C" then ["C"] %>
+                              <% else [] %>
+                            <% end %>
+
+                            <% opponent = if @game.home_team_id == player.team_id
+                                            @game.visitor_team
+                                          elsif @game.visitor_team_id == player.team_id
+                                            @game.home_team
+                                          end %>
+                            <% opponent_defense = opponent&.defense_vs_position || {} %>
+
+                            <% if opponent_defense.present? %>
+                              <% parsed_opponent_defense = JSON.parse(opponent_defense) rescue {} %>
+                              <% Rails.logger.debug("Parsed Opponent Defense: #{parsed_opponent_defense.inspect}") %>
+
+                              <% opponent_stats = parsed_opponent_defense.slice(*relevant_positions) %>
+                              <% Rails.logger.debug("Opponent Stats: #{opponent_stats.inspect}") %>
+
+                              <% points_against = opponent_stats.values.sum { |stats| stats["points_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                              <% rebounds_against = opponent_stats.values.sum { |stats| stats["rebounds_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                              <% assists_against = opponent_stats.values.sum { |stats| stats["assists_rank"] } / opponent_stats.size if opponent_stats.present? %>
+                            <% else %>
+                              <% points_against = rebounds_against = assists_against = nil %>
+                            <% end %>
+
+                            <tr>
+                              <td><%= player.position %></td>
+                              <td class="<%= rank_color_class(points_against) %>"><%= points_against&.round(1) || "N/A" %></td>
+                              <td class="<%= rank_color_class(rebounds_against) %>"><%= rebounds_against&.round(1) || "N/A" %></td>
+                              <td class="<%= rank_color_class(assists_against) %>"><%= assists_against&.round(1) || "N/A" %></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <table class="table table-hover text-center mb-4">
+                      <thead>
+                        <tr>
+                          <th>Points</th>
+                          <th>Assists</th>
+                          <th>Rebounds</th>
+                          <th>Threes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                          <tr>
+                            <td><%= "#{point_threshold}+ (#{((@betting_info[player.id][:points][i] / 5.0) * 100).to_i}%)" %></td>
+                            <td><%= "#{assist_threshold}+ (#{((@betting_info[player.id][:assists][i] / 5.0) * 100).to_i}%)" %></td>
+                            <td><%= "#{rebound_threshold}+ (#{((@betting_info[player.id][:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
+                            <td><%= "#{three_threshold}+ (#{((@betting_info[player.id][:threes][i] / 5.0) * 100).to_i}%)" %></td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                    
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<% end %>
+
+</div>
+
+<script>
+  document.addEventListener('turbo:load', () => {
+    const sortAndFilterHitRates = (containerId) => {
+      const container = document.querySelector(containerId);
+      if (container) {
+        const entries = Array.from(container.querySelectorAll('.player-hit-rates-entry'));
+        // Filter players who have averaged over 20 minutes played
+        const filteredEntries = entries.filter(entry => {
+          const minutes = parseFloat(entry.getAttribute('data-minutes')) || 0;
+          return minutes > 20; // Only include players with > 20 minutes
+        });
+        // Sort the filtered entries in descending order of minutes played
+        filteredEntries.sort((a, b) => {
+          const minutesA = parseFloat(a.getAttribute('data-minutes')) || 0;
+          const minutesB = parseFloat(b.getAttribute('data-minutes')) || 0;
+          return minutesB - minutesA;
+        });
+        // Clear the container and append the filtered and sorted entries
+        container.innerHTML = ''; // Remove existing entries
+        filteredEntries.forEach(entry => container.appendChild(entry));
+      }
+    };
+
+    // Sort and filter visitor and home hit rates by minutes played
+    sortAndFilterHitRates('#visitor-hit-rates-container');
+    sortAndFilterHitRates('#home-hit-rates-container');
+
+
+
+  console.log("Turbo:load triggered - Initializing Last 5 Games DataTables...");
+
+  function initializeLast5Table(tableId) {
+    const tableElement = document.querySelector(tableId);
+    if (tableElement) {
+      if (!$.fn.DataTable.isDataTable(tableElement)) {
+        $(tableElement).DataTable({
+          order: [[1, "desc"]], 
+          paging: false,       
+          searching: false,   
+          info: false,        
+          lengthChange: false, 
+        });
+        console.log(`DataTable initialized for ${tableId}`);
+      } else {
+        console.log(`DataTable for ${tableId} is already initialized.`);
+      }
+    } else {
+      console.warn(`Table with ID ${tableId} not found.`);
+    }
+  }
+  
+    // Apply custom sticky column behavior initially
+  applyStickyColumn();
+
+  // Reapply the sticky column behavior whenever DataTable is redrawn (e.g., pagination, sorting)
+  dataTable.on('draw', function() {
+    console.log('Redrawing table...');
+    applyStickyColumn();
+  });
+
+  // Function to apply the sticky column to the first column
+  function applyStickyColumn() {
+    $(".sticky-col").each(function() {
+      $(this).css({
+        "position": "sticky",
+        "left": "0",
+        "background-color": "white",
+        "z-index": "2",
+        "border-right": "1px solid #ddd"  // Optional: to make the column stand out
+      });
+    });
+  }
+
+  // Initialize DataTables for visitor and home last 5 tables
+  initializeLast5Table("#visitor-last5-table");
+  initializeLast5Table("#home-last5-table");
+
+
+  });
+
+document.addEventListener("turbo:load", () => {
+  const chartContainer = document.getElementById("game-player-chart");
+  const playerDropdown = document.getElementById("player-dropdown");
+  const statDropdown = document.getElementById("stat-dropdown");
+  const gameRangeDropdown = document.getElementById("game-range-dropdown");
+  const thresholdInput = document.getElementById("threshold-input");
+  const hitRateSummary = document.getElementById("hit-rate-summary");
+  let chart;
+  let threshold; // Global threshold variable to persist across updates
+
+  if (!chartContainer || !playerDropdown || !statDropdown || !gameRangeDropdown || !thresholdInput || !hitRateSummary) {
+    console.warn("Chart dependencies are missing. Exiting...");
+    return;
+  }
+
+  const ctx = chartContainer.getContext("2d");
+
+  // Fetch game logs and players from Rails controller
+  const allGames = <%= @game_logs.map { |game| 
+    { 
+      player_id: game.player_id,
+      date: game.game.date,
+      formatted_date: game.game.date.strftime("%m/%d"),
+      opponent: game.game.opponent_for(game.player.team).abbreviation,
+      points: game.points || 0,
+      rebounds: game.total_rebounds || 0,
+      assists: game.assists || 0,
+      threes: game.three_point_field_goals || 0
+    } 
+  }.to_json.html_safe %>;
+
+  const allPlayers = <%= @players.map { |player| { id: player.id, name: player.name } }.to_json.html_safe %>;
+
+  function fetchPlayerGames(playerId, range) {
+    const playerGames = allGames
+      .filter((game) => game.player_id === parseInt(playerId) && new Date(game.date) <= new Date())
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by latest date first
+
+    return range === "last5"
+      ? playerGames.slice(0, 5)
+      : range === "last10"
+      ? playerGames.slice(0, 10)
+      : playerGames;
+  }
+
+  function calculateAverages(games, stat) {
+    return (games.reduce((sum, game) => {
+      if (Array.isArray(stat)) {
+        return sum + stat.reduce((s, key) => s + game[key], 0);
+      }
+      return sum + game[stat];
+    }, 0) / games.length).toFixed(1);
+  }
+
+  function getYAxisLimits(data) {
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+
+    const upperLimit = Math.ceil(max / 5) * 5 + 5; // 5 above the max
+    const lowerLimit = Math.max(0, Math.floor(min / 5) * 5 - 5); // 5 below the min, but not less than 0
+
+    return { upperLimit, lowerLimit };
+  }
+
+  // Plugin to draw a horizontal line for the threshold
+  const thresholdLinePlugin = {
+    id: "thresholdLine",
+    beforeDraw: (chart) => {
+      const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+      const threshold = chart.config.options.plugins.thresholdLine.value;
+
+      if (threshold !== undefined) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]); // Dashed line
+        const yPosition = y.getPixelForValue(threshold);
+        ctx.moveTo(left, yPosition);
+        ctx.lineTo(right, yPosition);
+        ctx.stroke();
+        ctx.restore();
+      }
+    },
+  };
+
+  Chart.register(thresholdLinePlugin);
+
+function initializeChart(games, selectedStat, threshold) {
+  const statData = games.map((game) => {
+    switch (selectedStat) {
+      case "points_assists":
+        return game.points + game.assists;
+      case "points_rebounds":
+        return game.points + game.rebounds;
+      case "rebounds_assists":
+        return game.rebounds + game.assists;
+      case "points_rebounds_assists":
+        return game.points + game.rebounds + game.assists;
+      default:
+        return game[selectedStat];
+    }
+  });
+
+  // Reverse the order of games to display the latest game on the right
+  const reversedGames = games.slice().reverse();
+  const reversedStatData = statData.slice().reverse();
+
+  const { upperLimit, lowerLimit } = getYAxisLimits(reversedStatData);
+
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: reversedGames.map((game) => `${game.formatted_date} (${game.opponent})`),
+      datasets: [
+        {
+          label: selectedStat.replace(/_/g, " ").toUpperCase(),
+          data: reversedStatData,
+          backgroundColor: reversedStatData.map((value) =>
+            value >= threshold ? "rgba(75, 192, 75, 0.8)" : "rgba(192, 75, 75, 0.8)"
+          ),
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        thresholdLine: { value: threshold }, // Pass threshold to plugin
+      },
+      scales: {
+        x: { reverse: false },
+        y: {
+          min: lowerLimit,
+          max: upperLimit,
+          ticks: { stepSize: 5 },
+          title: { display: true, text: "Value" },
+        },
+      },
+    },
+  });
+}
+
+
+  function updateChart(manualThreshold = null) {
+    const playerId = playerDropdown.value;
+    const selectedStat = statDropdown.value;
+    const range = gameRangeDropdown.value;
+    const games = fetchPlayerGames(playerId, range);
+
+    if (!games || games.length === 0) {
+      chartContainer.style.display = "none";
+      hitRateSummary.textContent = "No data available for the selected player.";
+      return;
+    }
+
+    chartContainer.style.display = "block";
+    if (chart) chart.destroy();
+
+    if (manualThreshold) {
+      threshold = manualThreshold; // User-specified threshold
+    } else {
+      // Automatically calculate threshold based on selectedStat
+      threshold = calculateAverages(
+        games,
+        selectedStat === "points_assists" ? ["points", "assists"] :
+        selectedStat === "points_rebounds" ? ["points", "rebounds"] :
+        selectedStat === "rebounds_assists" ? ["rebounds", "assists"] :
+        selectedStat === "points_rebounds_assists" ? ["points", "rebounds", "assists"] :
+        selectedStat // Single stat (e.g., "points")
+      );
+    }
+    thresholdInput.value = threshold; // Update input with threshold
+
+    initializeChart(games, selectedStat, parseFloat(threshold));
+
+    // Update hit rate summary
+    const hits = games.filter((game) => {
+      const value = selectedStat.includes("_")
+        ? selectedStat.split("_").reduce((sum, stat) => sum + game[stat], 0)
+        : game[selectedStat];
+      return value >= threshold;
+    }).length;
+
+    hitRateSummary.textContent = `Hit rate: ${hits} out of ${games.length} (${((hits / games.length) * 100).toFixed(0)}%)`;
+  }
+
+  // Populate the player dropdown
+  allPlayers.forEach((player) => {
+    const option = document.createElement("option");
+    option.value = player.id;
+    option.textContent = player.name;
+    playerDropdown.appendChild(option);
+  });
+
+  // Event Listeners
+  playerDropdown.addEventListener("change", () => updateChart());
+  statDropdown.addEventListener("change", () => updateChart());
+  gameRangeDropdown.addEventListener("change", () => updateChart());
+  thresholdInput.addEventListener("input", () => updateChart(parseFloat(thresholdInput.value)));
+
+  // Initialize the chart with the first player
+  updateChart();
+});
+
+
+
+
+</script>

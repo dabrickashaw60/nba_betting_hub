@@ -1,0 +1,743 @@
+<!-- app/views/players/show.html.erb -->
+
+<h1 class="text-center mb-4">
+  <%= @player.name %>
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png"
+       alt="<%= @team.name %> logo" width="50" height="auto" class="me-2">
+</h1>
+
+<!-- 🔽 Season Selector -->
+<div class="text-center mb-3">
+  <%= form_with url: team_player_path(@team, @player), method: :get, local: true, class: "d-inline-block" do %>
+    <div class="d-flex justify-content-center align-items-center">
+      <label for="season_id" class="me-2 fw-bold">Season:</label>
+      <%= select_tag :season_id,
+            options_from_collection_for_select(@seasons, :id, :name, @selected_season.id),
+            onchange: "this.form.submit()",
+            class: "form-select w-auto" %>
+    </div>
+  <% end %>
+</div>
+
+
+<div class="container">
+  <div class="row">
+    <!-- Player Picture and Information -->
+      <div class="col-md-4">
+        <!-- Player Information Card with Picture -->
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+  <div class="card-body">
+    <!-- Top Section: Player Info -->
+    <div class="row">
+      <!-- Player Picture -->
+      <div class="col-4 d-flex align-items-start">
+        <img src="<%= @player.profile_picture_url %>" 
+             alt="<%= @player.name %> Profile Picture" 
+             class="img-fluid rounded" 
+             style="max-width: 100px;">
+      </div>
+
+      <!-- Player Information -->
+      <div class="col-8">
+        <p class="mb-0"><strong>Position:</strong> <%= @player.position %></p>
+        <p class="mb-0"><strong>Height:</strong> <%= @player.height %></p>
+        <p class="mb-0"><strong>Weight:</strong> <%= @player.weight %> lbs</p>
+        <% if @player.birth_date %>
+          <% age = ((Date.today - @player.birth_date).to_i / 365.25).floor %>
+          <p class="mb-0"><strong>Age:</strong> <%= age %></p>
+        <% end %>
+        <% if @player.health.present? %>
+          <p class="mb-0"><strong>Status:</strong> <%= @player.health.status %></p>
+          <p class="mb-0"><strong>Description:</strong> <%= @player.health.description %></p>
+                  <% if @player.health.status == "Healthy" %>
+          <p class="mb-0"><strong>Last Injury:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                  <% else %>
+          <p class="mb-0"><strong>Est. Return:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                  <% end %>                  
+        <% else %>
+          <p class="mb-0">No health information available.</p>
+        <% end %>
+        <p class="mb-0">
+          <a class="twitter-timeline" href="https://twitter.com/search?q=<%= CGI.escape(@player.name) %>&src=typed_query&f=live" target="_blank" >Latest on X for <%= @player.name %></a>
+          <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>          
+        </p>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Bottom Section: Game Info and Opponent Defense -->
+    <div class="row">
+      <!-- Next Game Info -->
+      <div class="col-6">
+        <h6>Next Game</h6>
+        <h5>
+          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png" 
+              alt="<%= @team.name %> logo" 
+              width="50" 
+              height="auto" 
+              class="me-2">vs. 
+<% if @opponent_team.present? %>
+  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @opponent_team.abbreviation %>-2025.png" 
+       alt="<%= @opponent_team.name %> logo" 
+       width="50" height="auto" class="me-2">
+<% else %>
+  <!-- Optional fallback image or blank -->
+  <span class="text-muted">No upcoming opponent</span>
+<% end %>
+
+        </h5>
+<% if @opponent_team.present? %>        
+        <p class="mb-0"><strong>Date:</strong> <%= @next_game.date.strftime("%m/%d/%y") %></p>
+        <p class="mb-0"><strong>Location:</strong> <%= @next_game.location %></p>
+<% else %>
+<%end%>        
+      </div>
+
+<% if @opponent_team && @defense_vs_position.present? %>
+  <!-- Opponent Defense -->
+  <div class="col-6">
+    <h6><%= @opponent_team.name.split(' ').last %> DvP</h6>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Pos</th>
+          <th>P</th>
+          <th>R</th>
+          <th>A</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% relevant_positions = case @player.position %>
+          <% when "PG" then ["PG", "G"] %>
+          <% when "SG" then ["SG", "G"] %>
+          <% when "SF" then ["SF", "F"] %>
+          <% when "PF" then ["PF", "F"] %>
+          <% when "C" then ["C"] %>
+          <% else [] %>
+        <% end %>
+
+        <% if @defense_vs_position.is_a?(Hash) %>
+          <% @defense_vs_position.each do |position, stats| %>
+            <% if relevant_positions.include?(position) %>
+              <tr>
+                <td><%= position %></td>
+                <td style="<%= rank_color_class(stats['points_rank']) %>"><%= stats["points_rank"] || "N/A" %></td>
+                <td style="<%= rank_color_class(stats['rebounds_rank']) %>"><%= stats["rebounds_rank"] || "N/A" %></td>
+                <td style="<%= rank_color_class(stats['assists_rank']) %>"><%= stats["assists_rank"] || "N/A" %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="4">No data available for opponent defense.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="col-6">
+    <h6>Opponent DvP</h6>
+    <p class="text-muted">No opponent or DvP data available.</p>
+  </div>
+<% end %>
+
+    </div>
+  </div>
+</div>
+
+      </div>
+
+
+    <!-- Last 5 Games -->
+    <div class="col-md-8">
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+  <div class="card-header d-flex justify-content-between align-items-center" id="pd-sides-sm">
+    <span>L5 Games</span>
+    <div class="d-flex align-items-center" style="line-height: 1;">
+        <!-- Info Icon -->
+        <i class="bi bi-info-circle text-info me-2" 
+          data-bs-toggle="tooltip" 
+          data-bs-placement="top" 
+          title="Select a player to see <%= @player.name %>'s box scores with the selected player Out."></i>
+
+        <!-- Dropdown -->
+        <select id="teammate-select" class="form-select me-2" style="width: auto;">
+          <option value="" selected disabled>Select a Teammate</option>
+          <% @team.players.each do |teammate| %>
+            <option value="<%= teammate.id %>"><%= teammate.name %></option>
+          <% end %>
+        </select>
+
+        <!-- Go and Undo Buttons -->
+        <div class="btn-group" role="group">
+          <button id="go-button" class="btn btn-primary btn-sm">Go</button>
+          <button id="undo-button" class="btn btn-secondary btn-sm">Undo</button>
+        </div>
+    </div>
+  </div>
+
+  <div class="card-body" id="pd-left-none">
+    <% if @last_five_games.any? %>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opp</th>
+            <th>Mins</th>
+            <th>P</th>
+            <th>R</th>
+            <th>A</th>
+            <th>FG</th>
+            <th>3P</th>
+            <th>FT</th>
+            <th>+/-</th>
+          </tr>
+        </thead>
+        <tbody id="last-five-games-body">
+          <!-- Dynamic Game Rows -->
+          <%= render partial: 'game_rows', locals: { games: @last_five_games } %>
+
+          <!-- Static Rows -->
+          <!-- Averages Row -->
+          <tr class="table-secondary font-weight-bold">
+            <td colspan="2">Last 5 Avg</td>
+            <td><%= @last_five_averages[:minutes_played] %></td>
+            <td><%= number_with_precision(@last_five_averages[:points], precision: 1) %></td>
+            <td><%= number_with_precision(@last_five_averages[:rebounds], precision: 1) %></td>
+            <td><%= number_with_precision(@last_five_averages[:assists], precision: 1) %></td>
+            <td><%= @last_five_averages[:field_goals] %></td>
+            <td><%= @last_five_averages[:three_pointers] %></td>
+            <td><%= @last_five_averages[:free_throws] %></td>
+            <td><%= number_with_precision(@last_five_averages[:plus_minus], precision: 1) %></td>
+          </tr>
+
+          <!-- 2024-2025 Season Stats Row -->
+          <% if @player_stats.any? %>
+            <% @player_stats.each do |stat| %>
+              <tr class="table-secondary font-weight-bold">
+                <td colspan="2">2024-2025</td>
+                <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
+                <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                <td><%= "#{number_with_precision(stat.field_goals, precision: 1)}/#{number_with_precision(stat.field_goals_attempted, precision: 1)}" %></td>
+                <td><%= "#{number_with_precision(stat.three_point_field_goals, precision: 1)}/#{number_with_precision(stat.three_point_field_goals_attempted, precision: 1)}" %></td>
+                <td><%= "#{number_with_precision(stat.free_throws, precision: 1)}/#{number_with_precision(stat.free_throws_attempted, precision: 1)}" %></td>
+                <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr class="table-secondary font-weight-bold">
+              <td colspan="10">No stats available for this player.</td>
+            </tr>
+          <% end %>
+
+<% if @opponent_team.present? %>
+  <!-- Previous Games Against the Next Opponent -->
+  <% opponent_games = @game_logs.select { |game_log| game_log.game.opponent_for(@player.team) == @opponent_team } %>
+  <% if opponent_games.any? %>
+    <tr class="font-weight-bold">
+      <td colspan="10">Previous Games Against <%= @opponent_team.name %></td>
+    </tr>
+    <% opponent_games.each do |box_score| %>
+      <tr>
+        <td><%= link_to box_score.game.date.strftime("%m/%d/%y"), game_path(box_score.game), class: "text-decoration-none" %></td>
+        <td>
+          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= box_score.game.opponent_for(@player.team).abbreviation %>-2025.png" 
+               alt="<%= box_score.game.opponent_for(@player.team).name %> logo" 
+               width="20" height="auto" class="me-2">
+        </td>
+        <td><%= box_score.minutes_played %></td>
+        <td><%= box_score.points %></td>
+        <td><%= box_score.total_rebounds %></td>
+        <td><%= box_score.assists %></td>
+        <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+        <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+        <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+        <td><%= box_score.plus_minus %></td>
+      </tr>
+    <% end %>
+  <% else %>
+    <tr class="font-weight-bold">
+      <td colspan="10">No previous games against <%= @opponent_team.name %></td>
+    </tr>
+  <% end %>
+<% end %>
+
+        </tbody>
+      </table>
+    <% else %>
+      <p>No recent games available for this player.</p>
+    <% end %>
+  </div>
+</div>
+
+    </div>
+
+  </div>
+
+<div class="row">
+  <!-- Hit Rates Card -->
+  <div class="col-md-4">
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header">Last 5 Hit Rates</div>
+      <div class="card-body">
+        <table class="table table-hover" id="player-hit-rate">
+          <thead>
+            <tr>
+              <th>Ps</th>
+              <th>As</th>
+              <th>Rs</th>
+              <th>3s</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+              <tr>
+                <td><%= "#{point_threshold}+  (#{((@betting_info[:points][i] / 5.0) * 100).to_i}%)" %></td>
+                <td><%= "#{assist_threshold}+  (#{((@betting_info[:assists][i] / 5.0) * 100).to_i}%)" %></td>
+                <td><%= "#{rebound_threshold}+  (#{((@betting_info[:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
+                <td><%= "#{three_threshold}+  (#{((@betting_info[:threes][i] / 5.0) * 100).to_i}%)" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Graph Card -->
+  <div class="col-md-8">
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header d-flex justify-content-between align-items-center">
+          
+          <div class="d-flex align-items-center mb-0">
+            <select id="game-range-dropdown" class="form-select mb-0">
+              <option value="last5">Last 5 Games</option>
+              <option value="last10">Last 10 Games</option>
+              <option value="all">All Games</option>
+            </select>
+
+            <!-- Stat Dropdown -->
+            <select id="stat-dropdown" class="form-select me-2" style="width: auto;">
+              <option value="points">P</option>
+              <option value="rebounds">R</option>
+              <option value="assists">A</option>
+              <option value="threes">3s</option>
+              <option value="points_assists">P+A</option>
+              <option value="points_rebounds">P+R</option>
+              <option value="rebounds_assists">R+A</option>
+              <option value="points_rebounds_assists">P+R+A</option>
+            </select>
+
+            <!-- Threshold Input -->
+            <input
+              type="number"
+              id="threshold-input"
+              class="form-control"
+              style="width: 50%;"
+              placeholder="Threshold"
+            >
+          </div>
+
+      </div>
+      <div class="card-body">
+        <canvas id="player-line-chart" style="height: 300px;"></canvas>
+        <p class="mt-2 text-center" id="hit-rate-summary"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+  <!-- Season Stats -->
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header">Season Stats (PER GAME)</div>
+    <div class="card-body" id="pd-left-none">
+      <% if @player_stats.any? %>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>GP</th>
+              <th>MPG</th>
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>ORB</th>
+              <th>DRB</th>
+              <th>TRB</th>
+              <th>AST</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>PTS</th>
+              <th>GmSc</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @player_stats.each do |stat| %>
+              <tr>
+                <td><%= stat.season %></td>
+                <td><%= stat.games_played %></td>
+                <td><%= stat.minutes_played %></td>
+                <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.field_goals_attempted, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
+                <td><%= number_with_precision(stat.three_point_field_goals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.three_point_field_goals_attempted, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+                <td><%= number_with_precision(stat.free_throws, precision: 1) %></td>
+                <td><%= number_with_precision(stat.free_throws_attempted, precision: 1) %></td>
+                <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+                <td><%= number_with_precision(stat.offensive_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.defensive_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+                <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+                <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+                <td><%= number_with_precision(stat.personal_fouls, precision: 1) %></td>
+                <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+                <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p>No stats available for this player.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Game Logs -->
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header">Game Logs</div>
+    <div class="card-body" id="pd-left-none">
+      <% if @game_logs.any? %>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Opp</th>
+              <th>Pts</th>
+              <th>Rbs</th>
+              <th>Asts</th>
+              <th>Mins</th>
+              <th>FG</th>
+              <th>3P</th>
+              <th>FT</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @game_logs.each do |box_score| %>
+              <tr>
+                <td><%= link_to box_score.game.date.strftime("%m/%d/%y"), game_path(box_score.game), class: "text-decoration-none" %></td>
+                <td>
+                  <% player_team_at_game_time = box_score.team %>
+                  <% opponent_team = box_score.game.visitor_team_id == player_team_at_game_time.id ? box_score.game.home_team : box_score.game.visitor_team %>
+
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent_team.abbreviation %>-2025.png" 
+                      alt="<%= opponent_team.name %> logo" 
+                      width="20" height="auto" class="me-2">
+                </td>
+                <td><%= box_score.points %></td>
+                <td><%= box_score.total_rebounds %></td>
+                <td><%= box_score.assists %></td>
+                <td><%= box_score.minutes_played %></td>
+                <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+                <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+                <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+                <td><%= box_score.plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p>No game logs available for this player.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  let chart; // Declare `chart` as a global variable
+
+  document.addEventListener("turbo:load", function () {
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach((tooltipTriggerEl) => {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  const goButton = document.getElementById("go-button");
+  const undoButton = document.getElementById("undo-button");
+  const teammateSelect = document.getElementById("teammate-select");
+  const lastFiveGamesBody = document.getElementById("last-five-games-body");
+
+  const originalContent = lastFiveGamesBody.innerHTML;
+
+  goButton.addEventListener("click", () => {
+    const teammateId = teammateSelect.value;
+    if (!teammateId) {
+      alert("Please select a teammate.");
+      return;
+    }
+
+    fetch(`<%= filter_games_team_player_path(@team, @player) %>?teammate_id=${teammateId}`, {
+      headers: { Accept: "text/html" },
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.text();
+        } else {
+          throw new Error("Failed to fetch filtered games.");
+        }
+      })
+      .then((html) => {
+        lastFiveGamesBody.innerHTML = html; // Update the rows and label
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("An error occurred while fetching filtered games.");
+      });
+  });
+
+  undoButton.addEventListener("click", () => {
+    lastFiveGamesBody.innerHTML = originalContent; // Reset to the original content
+  });
+  
+    const chartContainer = document.getElementById("player-line-chart");
+    const statDropdown = document.getElementById("stat-dropdown");
+    const gameRangeDropdown = document.getElementById("game-range-dropdown");
+    const thresholdInput = document.getElementById("threshold-input");
+    const hitRateSummary = document.getElementById("hit-rate-summary");
+
+    // Ensure chart is destroyed if it exists
+    if (chart) {
+      console.log("Destroying existing chart...");
+      chart.destroy();
+      chart = null; // Reset the chart variable
+    }
+
+    if (!chartContainer || !statDropdown || !gameRangeDropdown || !thresholdInput || !hitRateSummary) {
+      console.warn("Chart dependencies are missing. Exiting...");
+      return;
+    }
+
+    const ctx = chartContainer.getContext("2d");
+
+    // Fetch game logs for last 5, 10, and all games
+    const lastFiveGames = <%= @last_five_games.map { |game| 
+      { 
+        date: game.game.date.strftime("%m/%d"), 
+        opponent: game.game.opponent_for(@player.team).abbreviation,
+        points: game.points,
+        rebounds: game.total_rebounds,
+        assists: game.assists,
+        threes: game.three_point_field_goals
+      } 
+    }.reverse.to_json.html_safe %>;
+
+    const lastTenGames = <%= @last_ten_games.map { |game| 
+      { 
+        date: game.game.date.strftime("%m/%d"), 
+        opponent: game.game.opponent_for(@player.team).abbreviation,
+        points: game.points,
+        rebounds: game.total_rebounds,
+        assists: game.assists,
+        threes: game.three_point_field_goals
+      } 
+    }.reverse.to_json.html_safe %>;
+
+    const allGames = <%= @game_logs.map { |game| 
+      { 
+        date: game.game.date.strftime("%m/%d"), 
+        opponent: game.game.opponent_for(@player.team).abbreviation,
+        points: game.points,
+        rebounds: game.total_rebounds,
+        assists: game.assists,
+        threes: game.three_point_field_goals
+      } 
+    }.reverse.to_json.html_safe %>;
+
+    let selectedStat = "points";
+    let selectedGameRange = "last5"; // Default to last 5 games
+    let games = lastFiveGames;
+
+    function calculateAverages(games, stat) {
+      return (games.reduce((sum, game) => {
+        if (Array.isArray(stat)) {
+          return sum + stat.reduce((s, key) => s + game[key], 0);
+        }
+        return sum + game[stat];
+      }, 0) / games.length).toFixed(1);
+    }
+
+    let threshold = calculateAverages(games, selectedStat);
+    thresholdInput.value = threshold;
+
+    function getBarColors(data) {
+      return data.map((value) => {
+        return value >= threshold ? "rgba(75, 192, 75, 0.8)" : "rgba(192, 75, 75, 0.8)";
+      });
+    }
+
+    const horizontalLinePlugin = {
+      id: "horizontalLine",
+      beforeDraw: (chart) => {
+        const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+        if (threshold !== undefined) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]); // Dashed line
+          const yPosition = y.getPixelForValue(threshold);
+          ctx.moveTo(left, yPosition);
+          ctx.lineTo(right, yPosition);
+          ctx.stroke();
+          ctx.restore();
+        }
+      },
+    };
+
+    Chart.register(horizontalLinePlugin);
+
+    function initializeChart() {
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: games.map((game) => `${game.date} (${game.opponent})`),
+          datasets: [
+            {
+              label: "Points",
+              data: games.map((game) => game.points),
+              backgroundColor: getBarColors(games.map((game) => game.points)),
+              borderColor: "rgba(0, 0, 0, 0.1)",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const game = games[context.dataIndex];
+                  return `Date: ${game.date}, Value: ${context.raw}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                callback: function (value, index) {
+                  const game = games[index];
+                  return `${game.date} (${game.opponent})`;
+                },
+              },
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 5,
+              },
+              title: {
+                display: true,
+                text: "Value",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function updateChart() {
+      chart.data.labels = games.map((game) => `${game.date} (${game.opponent})`);
+
+      let statData;
+      switch (selectedStat) {
+        case "points_assists":
+          statData = games.map((game) => game.points + game.assists);
+          break;
+        case "points_rebounds":
+          statData = games.map((game) => game.points + game.rebounds);
+          break;
+        case "rebounds_assists":
+          statData = games.map((game) => game.rebounds + game.assists);
+          break;
+        case "points_rebounds_assists":
+          statData = games.map((game) => game.points + game.rebounds + game.assists);
+          break;
+        default:
+          statData = games.map((game) => game[selectedStat]);
+          break;
+      }
+
+      chart.data.datasets[0].label = selectedStat
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+      chart.data.datasets[0].data = statData;
+      chart.data.datasets[0].backgroundColor = getBarColors(statData);
+
+      const minValue = Math.max(0, Math.floor(Math.min(...statData) / 5) * 5 - 5);
+      const maxValue = Math.ceil(Math.max(...statData) / 5) * 5 + 5;
+
+      chart.options.scales.y.min = minValue;
+      chart.options.scales.y.max = maxValue;
+
+      chart.update();
+
+      const hits = statData.filter((value) => value >= threshold).length;
+      hitRateSummary.textContent = `Hit rate: ${hits} out of ${games.length} (${((hits / games.length) * 100).toFixed(0)}%)`;
+    }
+
+    statDropdown.addEventListener("change", () => {
+      selectedStat = statDropdown.value;
+      threshold = calculateAverages(games, selectedStat === "points_assists"
+        ? ["points", "assists"]
+        : selectedStat === "points_rebounds"
+        ? ["points", "rebounds"]
+        : selectedStat === "rebounds_assists"
+        ? ["rebounds", "assists"]
+        : selectedStat === "points_rebounds_assists"
+        ? ["points", "rebounds", "assists"]
+        : selectedStat);
+      thresholdInput.value = threshold;
+      updateChart();
+    });
+
+    gameRangeDropdown.addEventListener("change", () => {
+      selectedGameRange = gameRangeDropdown.value;
+      games = selectedGameRange === "last10"
+        ? lastTenGames
+        : selectedGameRange === "all"
+        ? allGames
+        : lastFiveGames;
+      updateChart();
+    });
+
+    thresholdInput.addEventListener("input", () => {
+      threshold = parseFloat(thresholdInput.value) || 0;
+      updateChart();
+    });
+
+    initializeChart();
+  });
+</script>

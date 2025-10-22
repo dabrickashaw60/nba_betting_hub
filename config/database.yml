@@ -1,0 +1,19 @@
+default: &default
+  adapter: mysql2
+  encoding: utf8
+  pool: 5
+  username: dabrickashaw
+  password: <%= ENV['MYSQL_PASSWORD'] %> # Use the same environment variable for consistency
+  host: localhost
+
+development:
+  <<: *default
+  database: nba_betting_hub_development
+
+test:
+  <<: *default
+  database: nba_betting_hub_test
+
+production:
+  <<: *default
+  database: nba_betting_hub_production # Match this to the database name created in GoDaddy

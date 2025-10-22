@@ -1,0 +1,224 @@
+<h1 class="mb-4 text-center"><img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2025.png" alt="<%= @team.name %> logo" width="50" height="auto" class="me-2"><%= @team.name %> (<%= @team.abbreviation %>)</h1>
+
+<div class="container">
+  <!-- Bootstrap Tabs -->
+  <ul class="nav nav-tabs" id="teamTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="player-stats-tab" data-bs-toggle="tab" data-bs-target="#player-stats" type="button" role="tab" aria-controls="player-stats" aria-selected="true">Player Stats</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule" aria-selected="false">Schedule</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="roster-tab" data-bs-toggle="tab" data-bs-target="#roster" type="button" role="tab" aria-controls="roster" aria-selected="false">Roster</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="teamTabsContent">
+    <!-- Player Stats Tab -->
+    <div class="tab-pane fade show active" id="player-stats" role="tabpanel" aria-labelledby="player-stats-tab">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3>Player Stats</h3>
+        </div>
+          <div class="card-body">
+            <table class="table table-hover" id="player-stats-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>GP</th>
+                  <th>MP</th>
+                  <th>FG%</th>
+                  <th>3P%</th>
+                  <th>FT%</th>
+                  <th>R</th>
+                  <th>A</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                  <th>TO</th>
+                  <th>PTS</th>
+                  <th data-bs-toggle="tooltip" title="Basketball Reference Game Score">GS</th>
+                  <th>+/-</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @player_stats.each do |stat| %>
+                  <tr>
+                    <td>
+                      <img src="<%= stat.player.profile_picture_url %>" width="auto" height="25">
+                      <%= link_to "#{stat.player.name}#{health_status(stat.player.health&.status)}", team_player_path(@team, stat.player), data: { turbo: false } %>
+                    </td>
+                    <td><%= stat.games_played %></td>
+                    <td><%= stat.minutes_played %></td>
+                    <td><%= number_to_percentage(stat.field_goal_percentage * 100, precision: 1) %></td>
+                    <td><%= number_to_percentage(stat.three_point_percentage * 100, precision: 1) %></td>
+                    <td><%= number_to_percentage(stat.free_throw_percentage * 100, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.steals, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.blocks, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.turnovers, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.game_score, precision: 1) %></td>
+                    <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+
+      </div>
+    </div>
+
+    <!-- Schedule Tab -->
+<div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3>Full Schedule</h3>
+    </div>
+    <div class="card-body">
+      <% if @team_schedule.any? %>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Visitor Team</th>
+              <th>Home Team</th>
+              <th>Location</th>
+              <th>Time</th>
+              <th>Score</th> <!-- New column for scores -->
+              <th>Action</th> <!-- Column for game show button -->
+            </tr>
+          </thead>
+          <tbody>
+            <% @team_schedule.each do |game| %>
+              <tr>
+                <td><%= game.date.strftime("%b %d, %Y") %></td>
+                <td><%= game.visitor_team.name %></td>
+                <td><%= game.home_team.name %></td>
+                <td><%= game.location %></td>
+                <td>
+                  <% if game.time.present? %>
+                    <%= game.time.strftime("%I:%M %p") %>
+                  <% else %>
+                    TBD
+                  <% end %>
+                </td>
+                <td>
+                  <% if game.visitor_points > 0 && game.home_points > 0 %>
+                    <strong><%= game.visitor_points %></strong> - <strong><%= game.home_points %></strong>
+                  <% else %>
+                    Not played yet
+                  <% end %>
+                </td>
+                <td>
+                  <%= link_to "View Game", game_path(game), class: "btn btn-outline-primary btn-sm", data: { turbo: false } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p>No scheduled games available for this team.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Roster Tab -->
+    <div class="tab-pane fade" id="roster" role="tabpanel" aria-labelledby="roster-tab">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3>Roster</h3>
+        </div>
+        <div class="card-body">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Uniform Number</th>
+                <th>Player Name</th>
+                <th>Position</th>
+                <th>Height</th>
+                <th>Weight</th>
+                <th>Birth Date</th>
+                <th>Country</th>
+                <th>College</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @players.each do |player| %>
+                <tr>
+                  <td><%= player.uniform_number %></td>
+                  <td>
+                    <img src="<%= player.profile_picture_url %>" width="auto" height="25">
+                    <%= link_to player.name, team_player_path(@team, player), data: { turbo: false } %>
+                  </td>
+                  <td><%= player.position %></td>
+                  <td><%= player.height %></td>
+                  <td><%= player.weight %> lbs</td>
+                  <td><%= player.birth_date.strftime("%B %d, %Y") if player.birth_date %></td>
+                  <td>
+                    <% if player.country_of_birth.present? %>
+                      <% lower_country, upper_country = player.country_of_birth.split %>
+                      <img src="https://cdn.ssref.net/req/1701182769569-20231028/flags/<%= lower_country %>.svg" alt="<%= upper_country %>" width="20" height="15">
+                      <%= upper_country %>
+                    <% else %>
+                      N/A
+                    <% end %>
+                  </td>
+                  <td><%= player.college.presence || "N/A" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("turbo:load", function() {
+    var triggerTabList = [].slice.call(document.querySelectorAll('#teamTabs button'))
+    triggerTabList.forEach(function(triggerEl) {
+      var tabTrigger = new bootstrap.Tab(triggerEl)
+      triggerEl.addEventListener('click', function(event) {
+        event.preventDefault()
+        tabTrigger.show()
+      })
+    })
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+      new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
+  console.log("Turbo:load triggered - Initializing player-stats-table DataTables...");
+
+  function initializePlayerStatsTable(tableId) {
+    const tableElement = document.querySelector(tableId);
+    if (tableElement) {
+      if (!$.fn.DataTable.isDataTable(tableElement)) {
+        $(tableElement).DataTable({
+          order: [[2, "desc"]], 
+          paging: false,    
+          searching: false,   
+          info: false,       
+          lengthChange: false, 
+        });
+        console.log(`DataTable initialized for ${tableId}`);
+      } else {
+        console.log(`DataTable for ${tableId} is already initialized.`);
+      }
+    } else {
+      console.warn(`Table with ID ${tableId} not found.`);
+    }
+  }
+
+  initializePlayerStatsTable("#player-stats-table");
+
+  });
+
+</script>

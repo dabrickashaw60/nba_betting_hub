@@ -1,0 +1,312 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS (and SCSS, if configured) file within this directory, lib/assets/stylesheets, or any plugin's
+ * vendor/assets/stylesheets directory can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the bottom of the
+ * compiled file so the styles you add here take precedence over styles defined in any other CSS
+ * files in this directory. Styles in this file should be added after the last require_* statement.
+ * It is generally better to create a new file per style scope.
+ *
+ *= require_tree .
+ *= require_self
+ */
+
+ //FONTS
+ body{
+  font-family: 'Signika', Arial, sans-serif !important;
+
+ }
+
+//DANGER STYLES
+.bg-danger {
+  background-color: #dc3545 !important;
+}
+.bg-warning {
+  background-color: #ffc107 !important;
+}
+.bg-success {
+  background-color: #28a745 !important;
+} 
+
+// Styles only for HOME page
+#game-card {
+  img {
+    width: 40px;
+    height: 40px;
+
+    @media (max-width: 768px) { // Target mobile screens
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+  .card {
+    box-shadow: 2px 4px 7px 0px #00000099;
+    transition: all 0.3s ease-in-out;
+    border: none; // Optional: remove default card border
+    background-color: #fff; // Ensure clean white background
+    width: 100%; /* Fill the column */
+    max-width: 250px; /* Maximum width per card */
+    height: 100px;
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: 5px 7px 10px 3px #00000099;
+      transform: translateY(-5px); // Slight lift on hover
+    }
+  }
+
+  // Ensure responsive grid
+  .container-fluid {
+    padding: 0; // Remove extra padding
+  }
+
+  .row {
+    margin: 0; // Remove row margin to align cleanly
+  }
+
+  .col-12 {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+#gameFilterDropdown li{
+  text-align: center;
+}
+
+.card-body{
+  overflow-x: auto;
+}
+table.dataTable tbody tr td:not(:first-child) {
+  text-align: center;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button{
+  padding: 0 !important;
+}
+
+/* Apply this to the sticky column */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background-color: white;
+  z-index: 2;
+  border-right: 1px solid #ddd; /* Optional: to make the column stand out */
+  width: 200px; /* Set the width of the first column */
+  white-space: nowrap; /* Ensure text in the first column stays on one line */
+  text-overflow: ellipsis; /* Optional: adds '...' if text overflows */
+  overflow: hidden; /* Prevents the text from spilling over */
+}
+
+/* Apply this width to all the first column's <th> and <td> cells */
+th.sticky-col, td.sticky-col {
+  width: 200px; /* Set the width for the <td> elements as well */
+}
+div.dataTables_wrapper div.dataTables_length select{
+  width: 65px !important;
+}
+
+.player-hit-rates-entry{
+  box-shadow: 0px 2px 2px 2px #a9a9a9;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+#game-preview-container{
+  max-width: 1600px !important;
+}
+
+.card-header h3{
+  margin-bottom: 0 !important;
+}
+
+#game-player-chart{
+  max-height: 600px;
+}
+
+.pd-bot-0{
+  padding-bottom: 0 !important;
+}
+.brdr-bot-0{
+  border-bottom: 0 !important;
+}
+.navbar{
+  box-shadow: 0 4px 8px #3a3a3a;
+}
+.nav-link{
+  color: black !important;
+}
+.nav-link.active{
+  box-shadow: 0px -3px 3px -1px red;
+  font-weight: 600;
+  transition: all .2s;
+  color: red !important;
+}
+#playersHitRatesTabs{
+  border-bottom: 0 !important;
+}
+
+//THEME
+a {
+  position: relative;
+  text-decoration: none !important; // Remove the default underline
+  color: black !important; // Inherit the text color if needed
+  transition: all .2s;
+}
+a:hover{ 
+  color: red !important;
+}
+.btn-outline-primary {
+  --bs-btn-color: #dc3545 !important; /* Red text color */
+  --bs-btn-border-color: #dc3545 !important; /* Red border */
+  --bs-btn-hover-color: #fff !important; /* White text on hover */
+  --bs-btn-hover-bg: #dc3545 !important; /* Red background on hover */
+  --bs-btn-hover-border-color: #dc3545 !important; /* Red border on hover */
+  --bs-btn-focus-shadow-rgb: 220, 53, 69 !important; /* Red focus shadow */
+  --bs-btn-active-color: #fff !important; /* White text when active */
+  --bs-btn-active-bg: #dc3545 !important; /* Red background when active */
+  --bs-btn-active-border-color: #dc3545 !important; /* Red border when active */
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125) !important; /* Active shadow */
+  --bs-btn-disabled-color: #dc3545 !important; /* Red text when disabled */
+  --bs-btn-disabled-bg: transparent !important; /* Transparent background when disabled */
+  --bs-btn-disabled-border-color: #dc3545 !important; /* Red border when disabled */
+  --bs-gradient: none !important; /* Remove gradient */
+}
+.btn-secondary {
+  --bs-btn-color: #fff !important; /* White text */
+  --bs-btn-bg: #000 !important; /* Black background */
+  --bs-btn-border-color: #000 !important; /* Black border */
+  --bs-btn-hover-color: #fff !important; /* White text on hover */
+  --bs-btn-hover-bg: #333 !important; /* Darker black/gray for hover effect */
+  --bs-btn-hover-border-color: #333 !important; /* Darker border on hover */
+  --bs-btn-focus-shadow-rgb: 51, 51, 51 !important; /* RGB for focus shadow */
+  --bs-btn-active-color: #fff !important; /* White text when active */
+  --bs-btn-active-bg: #444 !important; /* Slightly lighter black for active state */
+  --bs-btn-active-border-color: #444 !important; /* Slightly lighter border for active state */
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125) !important; /* Active shadow */
+  --bs-btn-disabled-color: #fff !important; /* White text when disabled */
+  --bs-btn-disabled-bg: #000 !important; /* Black background when disabled */
+  --bs-btn-disabled-border-color: #000 !important; /* Black border when disabled */
+}
+.btn-outline-primary:hover {
+  color: #fff !important; /* White text color on hover */
+}
+.form-control:focus {
+  box-shadow: 0 0 0 .25rem rgba(255, 0, 0, 0.25) !important;
+  border-color: red !important;
+}
+
+.pagination{
+  --bs-pagination-active-bg: red !important;
+  --bs-pagination-active-border-color: red !important;
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(253, 13, 13, 0.25) !important;
+}
+.btn-link{
+  --bs-btn-color: #000000 !important;
+  --bs-btn-active-color: red !important;
+  --bs-btn-hover-color: red !important;
+
+}
+.btn-primary {
+  --bs-btn-color: #fff !important;
+  --bs-btn-bg: #dc3545 !important; /* Red background */
+  --bs-btn-border-color: #dc3545 !important; /* Red border */
+  --bs-btn-hover-color: #fff !important;
+  --bs-btn-hover-bg: #bb2d3b !important; /* Darker red for hover */
+  --bs-btn-hover-border-color: #b02a37 !important; /* Darker red border for hover */
+  --bs-btn-focus-shadow-rgb: 220, 53, 69 !important; /* Red focus shadow */
+  --bs-btn-active-color: #fff !important;
+  --bs-btn-active-bg: #b02a37 !important; /* Even darker red for active state */
+  --bs-btn-active-border-color: #a52834 !important; /* Even darker red border for active state */
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125) !important;
+  --bs-btn-disabled-color: #fff !important;
+  --bs-btn-disabled-bg: #dc3545 !important; /* Red for disabled */
+  --bs-btn-disabled-border-color: #dc3545 !important; /* Red for disabled border */
+}
+/* Turbo progress bar custom styles */
+// .turbo-progress-bar {
+//   background-color: red !important; /* Change to red */
+// }
+
+.turbo-progress-bar {
+  background: linear-gradient(90deg, 
+      red, 
+      orange, 
+      yellow, 
+      green, 
+      blue, 
+      indigo, 
+      violet);
+  background-size: 200% 100%;
+  animation: rainbow 3s linear infinite;
+  height: 3px; /* Adjust height if needed */
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% 0; }
+  100% { background-position: 100% 0; }
+}
+
+
+//
+
+
+table.dataTable tbody th, table.dataTable tbody td{
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+} 
+
+@media (max-width: 625px) {
+    body{
+        font-size: 12px !important;
+    }    
+    h4{
+      font-size: 16px !important;
+    }
+  .container{
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    overflow-x: hidden;
+  }
+  th.sticky-col, td.sticky-col {
+    width: 150px; /* Set the width for the <td> elements as well */
+  }
+  .sticky-col {
+    width: 150px; /* Set the width of the first column */
+  }
+  #players-over-15-minutes-table img, .hit-rates-table img{
+    width: 15px;
+    height: auto;
+  }
+  #players-over-15-minutes-table, .hit-rates-table{
+    font-size: 12px;
+  }
+  #hit-rates{
+    font-size: 12px;
+  }
+  #player-hit-rate{
+    font-size: 12px;
+  }
+  #game-card > div > div > div{
+      width: 50% !important;
+  }
+  #pd-left-none{
+    padding-left: 0 !important;
+  }
+  #pd-sides-none{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #pd-sides-sm{
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+  }
+  #teammate-select{
+    font-size: 12px;
+  }
+
+}

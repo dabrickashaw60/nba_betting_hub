@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NBA Portal</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_importmap_tags %>
+  <%= javascript_include_tag 'search', 'data-turbo-track': 'reload' %>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=Signika:wght@300;400;600;700&display=swap" rel="stylesheet">  
+
+  <%= favicon_link_tag 'basketball.ico' %>
+
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5TMV8CJMFP"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5TMV8CJMFP');
+</script>
+
+</head>
+
+<body>
+  <!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="<%= root_path %>">NBA Portal</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <%= link_to "Home", root_path, class: "nav-link" %>
+        </li>
+        <li class="nav-item">
+          <%= link_to "Standings", standings_path, class: "nav-link" %>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="teamsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Teams
+          </a>
+          <div class="dropdown-menu p-3 ps-0 pe-0" aria-labelledby="teamsDropdown" style="width: 350px;">
+            <div class="row">
+              <!-- Eastern Conference Teams -->
+              <div class="col">
+                <h6 class="dropdown-header">Eastern Conference</h6>
+                <% Team.joins(:standings).where(standings: { conference: 'Eastern', season: 2025 }).order(:name).each do |team| %>
+                  <%= link_to team_path(team), class: "dropdown-item d-flex align-items-center", style: "font-size: 10px;" do %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png" alt="<%= team.name %> logo" width="20" height="20" class="me-2">
+                    <%= team.name %>
+                  <% end %>
+                <% end %>
+              </div>
+              <!-- Western Conference Teams -->
+              <div class="col">
+                <h6 class="dropdown-header">Western Conference</h6>
+                <% Team.joins(:standings).where(standings: { conference: 'Western', season: 2025 }).order(:name).each do |team| %>
+                  <%= link_to team_path(team), class: "dropdown-item d-flex align-items-center", style: "font-size: 10px;" do %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png" alt="<%= team.name %> logo" width="20" height="20" class="me-2">
+                    <%= team.name %>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </li>
+        
+        <!-- DvsP Button -->
+        <li class="nav-item">
+          <%= link_to "DvsP", defense_vs_position_teams_path, class: "nav-link" %>
+        </li>
+      </ul>
+
+      <!-- Live Search Bar -->
+      <form class="d-flex position-relative">
+        <input class="form-control me-2" type="search" id="playerSearchInput" placeholder="Search for players" aria-label="Search">
+        <div id="liveSearchResults" class="list-group position-absolute" style="top: 100%; width: 100%; z-index: 1000; display: none;"></div>
+      </form>
+    </div>
+  </div>
+</nav>
+
+
+
+
+  <% if flash[:notice] %>
+    <div class="alert alert-success"><%= flash[:notice] %></div>
+  <% elsif flash[:alert] %>
+    <div class="alert alert-danger"><%= flash[:alert] %></div>
+  <% end %>
+
+  <%= yield %>
+
+<script>
+  document.addEventListener("turbo:load", function() {
+    const dropdownToggle = document.getElementById("teamsDropdown");
+    const dropdownMenu = dropdownToggle.nextElementSibling;
+
+    // Show the dropdown when hovering over the toggle or menu
+    function showDropdown() {
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.show();
+    }
+
+    // Hide the dropdown when not hovering over the toggle or menu
+    function hideDropdown() {
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.hide();
+    }
+
+    // Add event listeners for hover functionality
+    dropdownToggle.addEventListener("mouseenter", showDropdown);
+    dropdownMenu.addEventListener("mouseenter", showDropdown);
+    dropdownToggle.addEventListener("mouseleave", function(event) {
+      // Delay hiding to allow moving to menu
+      setTimeout(() => {
+        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+          hideDropdown();
+        }
+      }, 100);
+    });
+    dropdownMenu.addEventListener("mouseleave", function(event) {
+      setTimeout(() => {
+        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+          hideDropdown();
+        }
+      }, 100);
+    });
+
+    // Support for toggle on click (for touch devices or click-based access)
+    dropdownToggle.addEventListener('click', function(event) {
+      event.preventDefault(); // Prevent default navigation
+      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      bootstrapDropdown.toggle();
+    });
+
+
+    document.addEventListener("turbo:load", function () {
+      console.log("Turbo:load triggered - Forcing DataTables reload...");
+
+      function initializeDataTable(tableId, options = {}) {
+        // Ensure the table exists
+        const tableElement = document.querySelector(tableId);
+        if (tableElement) {
+          // Destroy any existing DataTable instance
+          if ($.fn.DataTable.isDataTable(tableElement)) {
+            console.log(`Destroying existing DataTable for ${tableId}...`);
+            $(tableElement).DataTable().destroy();
+          }
+
+          console.log(`Initializing DataTable for ${tableId}...`);
+
+          // Default options
+          const defaultOptions = {
+            order: [[1, "desc"]],
+            pageLength: -1,
+            lengthChange: false,
+            searching: false,
+            paging: false,
+          };
+
+          // Merge default options with custom options
+          const finalOptions = Object.assign({}, defaultOptions, options);
+
+          // Initialize the DataTable
+          $(tableElement).DataTable(finalOptions);
+
+          console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
+        } else {
+          console.warn(`Table with ID ${tableId} not found on the page.`);
+        }
+      }
+
+      // Force reload and initialize DataTables for specific tables
+      initializeDataTable('#visitor-last5-table');
+      initializeDataTable('#home-last5-table');
+      initializeDataTable('#player-stats-table', {
+        order: [[2, "desc"]], // Custom sort order for this table
+      });
+
+      // Debugging to check if DataTables are active
+      console.log("Active DataTables on the page:");
+      $('table.dataTable').each(function () {
+        if ($.fn.DataTable.isDataTable(this)) {
+          console.log(`DataTable found for table ID: ${this.id}`);
+        } else {
+          console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
+        }
+      });
+    });
+
+    document.addEventListener("turbo:before-cache", function () {
+      console.log("Turbo:before-cache - Destroying all DataTables...");
+      // Find all tables with initialized DataTables and destroy them
+      $('table.dataTable').each(function () {
+        if ($.fn.DataTable.isDataTable(this)) {
+          console.log(`Destroying DataTable for table ID: ${this.id}`);
+          $(this).DataTable().destroy();
+        }
+      });
+    });
+
+
+  });
+</script>
+
+  
+</body>
+</html>

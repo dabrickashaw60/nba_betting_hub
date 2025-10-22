@@ -1,0 +1,15 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/s4ndfvytw8mg/public_html/nba_betting_hub"
+PassengerBaseURI "/"
+PassengerRuby "/home/s4ndfvytw8mg/rubyvenv/public__html_nba__betting__hub/2.7/bin/ruby"
+PassengerAppEnv production
+SetEnv SECRET_KEY_BASE 86a5f54582de03270678fb8d8b6ae37bd7610912621a1a2f405f4172dc5b7beb6067ff68bbdf205a59edc66323dc3eaf702fe70e4e135c92e0b01f165a0fcfe5
+
+<IfModule mod_headers.c>
+  Header always set X-Test-Header "hello"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(assets/.*)$ $1 [L]
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END

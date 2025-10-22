@@ -1,0 +1,661 @@
+
+<!-- Date Navigation and Date Picker -->
+<div class="d-flex justify-content-center my-4">
+  <!-- Left Arrow Button for Previous Day -->
+  <%= link_to "←", root_path(date: @date - 1.day), class: "btn btn-outline-primary mx-2" %>
+
+  <!-- Date Picker Form -->
+  <%= form_with url: root_path, method: :get, local: true, class: "mx-2" do %>
+    <%= date_field_tag :date, @date, class: "form-control", onchange: "this.form.submit();" %>
+  <% end %>
+
+  <!-- Right Arrow Button for Next Day -->
+  <%= link_to "→", root_path(date: @date + 1.day), class: "btn btn-outline-primary mx-2" %>
+</div>
+
+
+<!-- Today's Games Card -->
+<% if @todays_games.present? %>
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header">
+      <h3>Games for <%= @date.strftime("%B %d, %Y") %></h3>
+    </div>
+    <div class="card-body" id="game-card">
+      <div class="container-fluid">
+        <div class="row g-2 justify-content-center">
+          <% @todays_games.each do |game| %>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+              <div class="card d-flex flex-row align-items-center justify-content-between p-2" style="height: 100px;">
+                <!-- Team Logos and Records -->
+                <div class="d-flex flex-column justify-content-between">
+                  <!-- Away Team -->
+                  <div class="d-flex align-items-center mb-1">
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" 
+                         alt="<%= game.visitor_team.name %> Logo" width="25" height="25" class="me-2">
+                    <div>
+                      <strong><%= game.visitor_team.name.split(' ').last %></strong>
+                      <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
+                      <small class="d-block">
+                        <% if game.visitor_points.to_i > 0 %>
+                          <%= game.visitor_points %>
+                        <% else %>
+                          (<%= visitor_standing&.wins || "-" %>-<%= visitor_standing&.losses || "-" %>)
+                        <% end %>
+                      </small>
+                    </div>
+                  </div>
+                  <!-- Home Team -->
+                  <div class="d-flex align-items-center">
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" 
+                         alt="<%= game.home_team.name %> Logo" width="25" height="25" class="me-2">
+                    <div>
+                      <strong><%= game.home_team.name.split(' ').last %></strong>
+                      <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
+                      <small class="d-block">
+                        <% if game.home_points.to_i > 0 %>
+                          <%= game.home_points %>
+                        <% else %>
+                          (<%= home_standing&.wins || "-" %>-<%= home_standing&.losses || "-" %>)
+                        <% end %>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Game Time and More Info Button -->
+                <div class="d-flex flex-column align-items-center text-center ms-2">
+                  <div class="game-time mb-1">
+                    <% if game.date < Date.today %>
+                      <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
+                      <a href="<%= box_score_url %>" target="_blank" class="text-decoration-none">
+                        Basketball Reference
+                      </a>
+                    <% else %>
+                      <strong><%= game.time.strftime("%I:%M %p") if game.time.present? %></strong>
+                    <% end %>
+                  </div>
+                  <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
+<% end %>
+
+<% if @date >= Date.today && @todays_games.any? %>
+<!-- Tabs Navigation -->
+<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+  <div class="card-header pd-bot-0 brdr-bot-0 d-flex justify-content-between align-items-center">
+    <ul class="nav nav-tabs" id="playersHitRatesTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link active" 
+          id="all-players-tab" 
+          data-bs-toggle="tab" 
+          data-bs-target="#all-players" 
+          type="button" 
+          role="tab" 
+          aria-controls="all-players" 
+          aria-selected="false">
+          Today's Players
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link" 
+          id="hit-rates-tab" 
+          data-bs-toggle="tab" 
+          data-bs-target="#hit-rates" 
+          type="button" 
+          role="tab" 
+          aria-controls="hit-rates" 
+          aria-selected="true">
+          Best Hit Rates
+        </button>
+      </li>      
+    </ul>
+    <div class="d-flex align-items-center">
+      <!-- Toggle button for hiding/showing players with "Out" status -->
+      <button id="toggle-out-players" 
+              class="btn btn-outline-primary btn-sm me-2" 
+              data-bs-toggle="tooltip" 
+              data-bs-placement="top" 
+              title="Show/Hide (O) Players">
+        <i class="bi bi-eye"></i>
+      </button>
+
+
+      <!-- Dropdown for filtering by games -->
+      <div class="dropdown">
+        <button 
+          class="btn btn-outline-primary btn-sm dropdown-toggle" 
+          type="button" 
+          id="filter-games-dropdown" 
+          data-bs-toggle="dropdown" 
+          aria-expanded="false">
+          Games
+        </button>
+        <ul class="dropdown-menu p-2 text-center" aria-labelledby="filter-games-dropdown" id="games-filter-menu">
+          <!-- Select All checkbox -->
+          <li>
+            <div class="form-check">
+              <input 
+                class="form-check-input game-filter-checkbox" 
+                type="checkbox" 
+                value="all" 
+                id="select-all-games" 
+                checked>
+              <label class="form-check-label" for="select-all-games">
+                Select All
+              </label>
+            </div>
+          </li>
+          <hr>
+          <!-- Individual game checkboxes -->
+          <% @todays_games.each do |game| %>
+            <li>
+              <div class="form-check">
+                <input 
+                  class="form-check-input game-filter-checkbox" 
+                  type="checkbox" 
+                  value="<%= game.visitor_team_id %>,<%= game.home_team_id %>" 
+                  id="game-<%= game.id %>" 
+                  checked>
+                <label class="form-check-label" for="game-<%= game.id %>">
+                  <img 
+                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" 
+                    width="30" 
+                    alt="<%= game.visitor_team.name %>">
+                  vs
+                  <img 
+                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" 
+                    width="30" 
+                    alt="<%= game.home_team.name %>">
+                </label>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Content -->
+  <div class="card-body tab-content p-0">
+
+    <div 
+      class="tab-pane fade show active" 
+      id="all-players" 
+      role="tabpanel" 
+      aria-labelledby="all-players-tab">
+      <div class="card-body" id="pd-sides-none">
+        <div style="max-width: 100%; overflow-x: auto">
+          <table class="table table-hover" id="players-over-15-minutes-table">
+            <thead>
+              <tr>
+                <th class="sticky-col">Player</th>
+                <th>Team</th>
+                <th>Vs.</th>
+                <th class="text-center">PtsA</th>
+                <th class="text-center">RbsA</th>
+                <th class="text-center">AstA</th>
+                <th>MP</th>
+                <th>P</th>
+                <th>R</th>
+                <th>A</th>
+                <th>3s</th>
+                <th>P+A</th>
+                <th>P+R</th>
+                <th>R+A</th>
+                <th>P+R+A</th>
+              </tr>
+            </thead>
+              <tbody>
+                <% @players_over_15_minutes.each do |data| %>
+                  <% 
+                    player = data[:player]
+                    averages = data[:averages]
+                    health_status = health_status(player.health&.status) # Use helper method for health status
+                    next_game = player.team.games.where("date >= ?", Date.today).order(:date).first
+                    opponent = if next_game&.home_team_id == player.team_id
+                                next_game.visitor_team
+                              elsif next_game&.visitor_team_id == player.team_id
+                                next_game.home_team
+                              end
+
+                    opponent_stats = opponent&.defense_vs_position ? JSON.parse(opponent.defense_vs_position) : {}
+                    relevant_positions = case player.position
+                                          when "PG" then ["PG", "G"]
+                                          when "SG" then ["SG", "G"]
+                                          when "SF" then ["SF", "F"]
+                                          when "PF" then ["PF", "F"]
+                                          when "C" then ["C"]
+                                          else []
+                                          end
+                    filtered_stats = opponent_stats.slice(*relevant_positions)
+
+                    pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
+                    rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
+                    ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
+                  %>
+                  <tr data-team-id="<%= player.team_id %>">
+                    <td class="sticky-col">
+                      <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
+                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                        <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+                      <% end %>
+                    </td>
+                    <td>
+                      <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" width="20" alt="<%= player.team.name %>">
+                    </td>
+                    <td>
+                      <% if opponent %>
+                        <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" width="20" alt="<%= opponent.name %>">
+                      <% else %>
+                        N/A
+                      <% end %>
+                    </td>
+                    <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
+                    <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
+                    <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
+                    <td><%= averages[:minutes_played].round(1) %></td>
+                    <td><%= averages[:points].round(1) %></td>
+                    <td><%= averages[:rebounds].round(1) %></td>
+                    <td><%= averages[:assists].round(1) %></td>
+                    <td><%= averages[:three_point_field_goals].round(1) %></td>
+                    <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
+                    <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>
+                    <td><%= (averages[:rebounds] + averages[:assists]).round(1) %></td>
+                    <td><%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+
+          </table>
+        </div>
+      </div>
+    </div>
+
+        <div 
+      class="tab-pane fade" 
+      id="hit-rates" 
+      role="tabpanel" 
+      aria-labelledby="hit-rates-tab">
+      <div class="card-body" id="pd-sides-none">
+        <!-- Tabs Navigation for Stats -->
+        <ul class="nav nav-tabs" id="hitRatesTabs" role="tablist">
+          <% %w[Points Threes Rebounds Assists].each_with_index do |stat, index| %>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link <%= 'active' if index == 0 %>" 
+                      id="<%= stat.downcase %>-tab" 
+                      data-bs-toggle="tab" 
+                      data-bs-target="#<%= stat.downcase %>-content" 
+                      type="button" role="tab">
+                <%= stat %>
+              </button>
+            </li>
+          <% end %>
+        </ul>
+
+        <!-- Stats Tab Contents -->
+        <div class="tab-content mt-3" id="hitRatesContent">
+          <% { points: 'Points', three_point_field_goals: 'Threes', total_rebounds: 'Rebounds', assists: 'Assists' }.each_with_index do |(key, label), index| %>
+            <div class="tab-pane fade <%= 'show active' if index == 0 %>" id="<%= label.downcase %>-content" role="tabpanel">
+              <table class="table table-sm table-hover hit-rates-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Player</th>
+                    <th>Team</th>
+                    <th>Vs.</th>
+                    <th>D Rating</th>
+                    <th>Line</th>
+                    <th>Hit Rate</th>
+                    <th>Last 10 Avg</th>
+                  </tr>
+                </thead>
+                  <tbody>
+                    <% @top_hit_rates[key]&.each do |data| %>
+                      <% 
+                        player = data[:player]
+                        health_status = health_status(player.health&.status) # Use helper method for health status
+                        next_game = player.team.games.where("date >= ?", Date.today).order(:date).first
+                        opponent = if next_game&.home_team_id == player.team_id
+                                    next_game.visitor_team
+                                  elsif next_game&.visitor_team_id == player.team_id
+                                    next_game.home_team
+                                  end
+
+                        # Calculate the appropriate defense rating based on the selected stat tab
+                        defense_rating = nil
+                        stat_key = case key
+                                  when :points then "points_rank"
+                                  when :three_point_field_goals then "points_rank"
+                                  when :total_rebounds then "rebounds_rank"
+                                  when :assists then "assists_rank"
+                                  else nil
+                                  end
+                        if opponent && opponent.defense_vs_position.present? && stat_key
+                          begin
+                            opponent_defense = JSON.parse(opponent.defense_vs_position)
+                            relevant_positions = case player.position
+                                                  when "PG" then ["PG", "G"]
+                                                  when "SG" then ["SG", "G"]
+                                                  when "SF" then ["SF", "F"]
+                                                  when "PF" then ["PF", "F"]
+                                                  when "C" then ["C"]
+                                                  else []
+                                                  end
+                            filtered_stats = opponent_defense.slice(*relevant_positions)
+                            defense_rating = filtered_stats.values.sum { |stats| stats[stat_key] } / filtered_stats.size rescue nil
+                          rescue JSON::ParserError
+                            defense_rating = nil
+                          end
+                        end
+                      %>
+                      <tr data-team-id="<%= player.team_id %>">
+                        <td class="sticky-col">
+                          <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
+                            <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                            <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+                          <% end %>
+                        </td>
+                        <td>
+                          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" width="20" alt="<%= player.team.name %>">
+                        </td>
+                        <td>
+                          <% if opponent %>
+                            <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" width="20" alt="<%= opponent.name %>">
+                          <% else %>
+                            N/A
+                          <% end %>
+                        </td>
+                        <td style="<%= rank_color_class(defense_rating&.round) %>"><%= defense_rating&.round(1) || "N/A" %></td>
+                        <td><%= data[:best_threshold] %>+</td>
+                        <td><%= data[:hit_rate] %>%</td>
+                        <td><%= data[:last_ten_average]&.round(1) || "N/A" %></td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% else %>
+  <div class="alert alert-info text-center">
+    No player projections available for this date.
+  </div>
+<% end %>
+
+<!-- Collapsible Card for Schedule and Box Score Updates -->
+<div class="card mb-4 mx-auto" style="max-width: 750px; box-shadow: 0px 4px 8px #3a3a3a;">
+
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h2 style="font-size: 14px;" class="mb-0">Updates</h2>
+    <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#updateSection" aria-expanded="false" aria-controls="updateSection">
+      Toggle Updates
+    </button>
+  </div>
+    <div id="updateSection" class="collapse">
+      <div class="card-body d-flex flex-column align-items-center">
+        <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center mb-3">
+    
+          <%= form_with url: update_schedule_path, method: :post, local: true, class: "d-flex align-items-center gap-2" do %>
+            <div class="form-group mb-0">
+              <%= select_tag :month, options_for_select(['October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June']), class: "form-control" %>
+            </div>
+            <%= submit_tag "Update Schedule", class: "btn btn-primary" %>
+          <% end %>
+    
+          <%= button_to "Scrape Previous Day's Games", scrape_previous_day_games_path, method: :post, class: "btn btn-primary" %>
+    
+          <%= button_to "Run Injury Scraper", update_injuries_path, method: :post, class: "btn btn-primary" %>
+    
+        </div>
+      </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("turbo:load", function () {
+  console.log("Initializing DataTable for players over 15 minutes and Hit Rates...");
+
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  let hideOutPlayers = false; // State to track if Out players should be hidden
+  let selectedGameTeams = new Set(); // Set to track selected teams for filtering by games
+
+  // Add toggle button logic for hiding/showing injured players
+  const toggleButton = document.querySelector("#toggle-out-players");
+  if (toggleButton) {
+    toggleButton.addEventListener("click", function () {
+      hideOutPlayers = !hideOutPlayers;
+      toggleButton.classList.toggle("active", hideOutPlayers);
+      redrawTables(); // Redraw tables based on toggle state
+    });
+  }
+
+  // Add game filter dropdown logic
+  const selectAllGamesCheckbox = document.querySelector("#select-all-games");
+  const gameFilterCheckboxes = document.querySelectorAll(".game-filter-checkbox:not(#select-all-games)");
+  if (selectAllGamesCheckbox) {
+    selectAllGamesCheckbox.addEventListener("change", function () {
+      const isChecked = this.checked;
+      selectedGameTeams.clear();
+
+      gameFilterCheckboxes.forEach((checkbox) => {
+        checkbox.checked = isChecked;
+        if (isChecked) {
+          const [visitorId, homeId] = checkbox.value.split(",");
+          selectedGameTeams.add(visitorId);
+          selectedGameTeams.add(homeId);
+        }
+      });
+
+      redrawTables(); // Redraw tables based on selected games
+    });
+  }
+
+  gameFilterCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", function () {
+      const [visitorId, homeId] = this.value.split(",");
+      if (this.checked) {
+        selectedGameTeams.add(visitorId);
+        selectedGameTeams.add(homeId);
+      } else {
+        selectedGameTeams.delete(visitorId);
+        selectedGameTeams.delete(homeId);
+        // Uncheck "Select All" if not all games are selected
+        if (selectAllGamesCheckbox.checked) {
+          selectAllGamesCheckbox.checked = false;
+        }
+      }
+      redrawTables(); // Redraw tables based on selected games
+    });
+  });
+
+  // Helper function to redraw tables
+  function redrawTables() {
+    [playersTableId, ...Array.from(hitRatesTables).map((t) => `#${t.id}`)].forEach((tableId) => {
+      if ($.fn.DataTable.isDataTable(tableId)) {
+        const table = $(tableId).DataTable();
+        table.draw(); // Trigger DataTables' filtering logic
+        table.page('first').draw('page'); // Reset pagination to the first page
+      }
+    });
+  }
+
+  // DataTables custom filtering function
+  $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+    const tableId = settings.nTable.getAttribute("id");
+    const row = settings.aoData[dataIndex].nTr;
+
+    if (tableId === "players-over-15-minutes-table" || tableId.startsWith("hit-rates-table")) {
+      const teamId = $(row).data("team-id")?.toString();
+      const healthStatus = $(row).find("td:first-child").text().includes("(O)");
+
+      // Filter logic: Include rows based on selected teams and hideOutPlayers flag
+      if (hideOutPlayers && healthStatus) {
+        return false;
+      }
+
+      if (selectedGameTeams.size > 0 && teamId && !selectedGameTeams.has(teamId)) {
+        return false;
+      }
+    }
+
+    return true; // Include row if it passes all filters
+  });
+
+  // Initialize DataTable for players over 15 minutes
+  const playersTableId = "#players-over-15-minutes-table";
+  const playersTableElement = document.querySelector(playersTableId);
+
+  if (playersTableElement) {
+    if (!$.fn.DataTable.isDataTable(playersTableId)) {
+      const playersTable = $(playersTableId).DataTable({
+        order: [[6, "desc"]],
+        pageLength: 25,
+        lengthChange: true,
+        searching: true,
+        paging: true,
+        columnDefs: [
+          { className: "no-expansion", targets: "_all" }
+        ]
+      });
+
+      // Apply sticky column styling and color coding initially
+      applyStickyColumn(playersTableId, "white");
+      applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14]);
+
+      // Reapply sticky column and color coding on every redraw
+      playersTable.on("draw", function () {
+        applyStickyColumn(playersTableId, "white");
+        applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14]);
+      });
+
+      console.log("DataTable initialized for players over 15 minutes.");
+    } else {
+      console.log("DataTable already initialized for players over 15 minutes.");
+    }
+  } else {
+    console.warn("Table not found for players over 15 minutes.");
+  }
+
+  // Initialize DataTable for Hit Rates
+  const hitRatesTables = document.querySelectorAll(".hit-rates-table");
+  hitRatesTables.forEach((table, index) => {
+    const tableId = table.id || `hit-rates-table-${index}`;
+    table.id = tableId; // Ensure each table has a unique ID
+
+    if (!$.fn.DataTable.isDataTable(`#${tableId}`)) {
+      const hitRatesTable = $(table).DataTable({
+        order: [[4, "desc"]],
+        pageLength: 25,
+        lengthChange: true,
+        searching: true,
+        paging: true
+      });
+
+      // Apply sticky column styling and color coding initially
+      applyStickyColumn(`#${table.id}`, "white");
+      applyBootstrapColorCoding(`#${table.id}`, [3]);
+
+      // Reapply sticky column and color coding on every redraw
+      hitRatesTable.on("draw", function () {
+        applyStickyColumn(`#${table.id}`, "white");
+        applyBootstrapColorCoding(`#${table.id}`, [3]);
+      });
+
+      console.log(`DataTable initialized for hit rates table: ${tableId}`);
+    } else {
+      console.log(`DataTable already initialized for hit rates table: ${tableId}`);
+    }
+  });
+
+  // Function to apply sticky column styling
+  function applyStickyColumn(tableId, backgroundColor) {
+    $(`${tableId} .sticky-col`).each(function () {
+      $(this).css({
+        position: "sticky",
+        left: "0",
+        backgroundColor: backgroundColor,
+        zIndex: "2",
+        borderRight: "1px solid #ddd"
+      });
+    });
+  }
+
+  // Apply color coding for ranked columns
+  function applyBootstrapColorCoding(tableId, columnsToColor) {
+    const table = $(tableId).DataTable();
+    const rows = table.rows({ filter: "applied" }).nodes();
+
+    columnsToColor.forEach((columnIndex) => {
+      const values = Array.from(rows).map((row) => {
+        const cell = row.cells[columnIndex];
+        const text = cell.textContent.trim();
+        return text === "-" ? null : parseFloat(text);
+      });
+
+      const rankedRows = values
+        .map((value, index) => ({ value, index }))
+        .filter((entry) => entry.value !== null)
+        .sort((a, b) => b.value - a.value)
+        .map((entry, rank) => ({ ...entry, rank: rank + 1 }));
+
+      const maxRank = Math.max(...rankedRows.map((entry) => entry.rank));
+      const midRank = Math.ceil(maxRank / 2);
+
+      rankedRows.forEach(({ value, index, rank }) => {
+        const cell = rows[index].cells[columnIndex];
+        let backgroundColor;
+
+        if (rank <= midRank) {
+          const ratio = (rank - 1) / (midRank - 1);
+          const red = Math.round(76 + (255 - 76) * ratio);
+          const green = Math.round(175 + (255 - 175) * ratio);
+          const blue = Math.round(80 + (255 - 80) * ratio);
+          backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+        } else {
+          const ratio = (rank - midRank) / (maxRank - midRank);
+          const red = Math.round(255 + (162 - 255) * ratio);
+          const green = Math.round(255 + (0 - 255) * ratio);
+          const blue = Math.round(255 + (0 - 255) * ratio);
+          backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+        }
+
+        cell.style.backgroundColor = backgroundColor;
+        cell.style.color = "black";
+      });
+    });
+  }
+
+  // Destroy DataTable before Turbo caches the page
+  document.addEventListener("turbo:before-cache", function () {
+    [playersTableId, ...hitRatesTables].forEach((tableId) => {
+      if ($.fn.DataTable.isDataTable(tableId)) {
+        console.log(`Destroying DataTable for ${tableId} before Turbo caches the page...`);
+        $(tableId).DataTable().destroy();
+      }
+    });
+  });
+});
+
+</script>
+
+
+

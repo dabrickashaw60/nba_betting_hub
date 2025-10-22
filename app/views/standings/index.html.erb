@@ -1,0 +1,93 @@
+<!-- app/views/standings/index.html.erb -->
+
+<h1 class="mb-4">Standings (2025)</h1>
+
+<%= button_to "Update Standings", update_standings_path, method: :post, class: "btn btn-primary mb-4" %>
+
+<div class="row">
+  <div class="col-md-6">
+    <h3>Eastern Conference</h3>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Team</th>
+          <th>Wins</th>
+          <th>Losses</th>
+          <th>Win %</th>
+          <th>GB</th>
+          <th>PS/G</th>
+          <th>PA/G</th>
+          <th>SRS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @eastern_standings.present? %>
+          <% @eastern_standings.each_with_index do |standing, index| %>
+            <tr>
+              <td><%= index + 1 %></td> <!-- Rank column -->
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= standing.team.abbreviation %>-2025.png" alt="<%= standing.team.name %> logo" width="25" height="auto" class="me-2"> 
+                <%= link_to standing.team.name, team_path(standing.team) %>
+              </td>
+              <td><%= standing.wins %></td>
+              <td><%= standing.losses %></td>
+              <td><%= standing.win_percentage %></td>
+              <td><%= standing.games_behind %></td>
+              <td><%= standing.points_per_game %></td>
+              <td><%= standing.opponent_points_per_game %></td>
+              <td><%= standing.srs %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="9">No standings available for this season.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-md-6">
+    <h3>Western Conference</h3>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Team</th>
+          <th>Wins</th>
+          <th>Losses</th>
+          <th>Win %</th>
+          <th>GB</th>
+          <th>PS/G</th>
+          <th>PA/G</th>
+          <th>SRS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @western_standings.present? %>
+          <% @western_standings.each_with_index do |standing, index| %>
+            <tr>
+              <td><%= index + 1 %></td> <!-- Rank column -->
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= standing.team.abbreviation %>-2025.png" alt="<%= standing.team.name %> logo" width="25" height="auto" class="me-2">
+                <%= link_to standing.team.name, team_path(standing.team) %>
+              </td>
+              <td><%= standing.wins %></td>
+              <td><%= standing.losses %></td>
+              <td><%= standing.win_percentage %></td>
+              <td><%= standing.games_behind %></td>
+              <td><%= standing.points_per_game %></td>
+              <td><%= standing.opponent_points_per_game %></td>
+              <td><%= standing.srs %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="9">No standings available for this season.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
