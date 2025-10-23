@@ -88,37 +88,9 @@
 <% end %>
 
 <% if @date >= Date.today && @todays_games.any? %>
-<!-- Tabs Navigation -->
 <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
   <div class="card-header pd-bot-0 brdr-bot-0 d-flex justify-content-between align-items-center">
-    <ul class="nav nav-tabs" id="playersHitRatesTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button 
-          class="nav-link active" 
-          id="all-players-tab" 
-          data-bs-toggle="tab" 
-          data-bs-target="#all-players" 
-          type="button" 
-          role="tab" 
-          aria-controls="all-players" 
-          aria-selected="false">
-          Today's Players
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button 
-          class="nav-link" 
-          id="hit-rates-tab" 
-          data-bs-toggle="tab" 
-          data-bs-target="#hit-rates" 
-          type="button" 
-          role="tab" 
-          aria-controls="hit-rates" 
-          aria-selected="true">
-          Best Hit Rates
-        </button>
-      </li>      
-    </ul>
+    <h4 class="mb-0">Players in Today's Games</h4>
     <div class="d-flex align-items-center">
       <!-- Toggle button for hiding/showing players with "Out" status -->
       <button id="toggle-out-players" 
@@ -128,7 +100,6 @@
               title="Show/Hide (O) Players">
         <i class="bi bi-eye"></i>
       </button>
-
 
       <!-- Dropdown for filtering by games -->
       <div class="dropdown">
@@ -141,22 +112,13 @@
           Games
         </button>
         <ul class="dropdown-menu p-2 text-center" aria-labelledby="filter-games-dropdown" id="games-filter-menu">
-          <!-- Select All checkbox -->
           <li>
             <div class="form-check">
-              <input 
-                class="form-check-input game-filter-checkbox" 
-                type="checkbox" 
-                value="all" 
-                id="select-all-games" 
-                checked>
-              <label class="form-check-label" for="select-all-games">
-                Select All
-              </label>
+              <input class="form-check-input game-filter-checkbox" type="checkbox" value="all" id="select-all-games" checked>
+              <label class="form-check-label" for="select-all-games">Select All</label>
             </div>
           </li>
           <hr>
-          <!-- Individual game checkboxes -->
           <% @todays_games.each do |game| %>
             <li>
               <div class="form-check">
@@ -167,15 +129,11 @@
                   id="game-<%= game.id %>" 
                   checked>
                 <label class="form-check-label" for="game-<%= game.id %>">
-                  <img 
-                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" 
-                    width="30" 
-                    alt="<%= game.visitor_team.name %>">
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-<%= @current_season.end_year %>.png" 
+                       width="30" alt="<%= game.visitor_team.name %>">
                   vs
-                  <img 
-                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" 
-                    width="30" 
-                    alt="<%= game.home_team.name %>">
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-<%= @current_season.end_year %>.png" 
+                       width="30" alt="<%= game.home_team.name %>">
                 </label>
               </div>
             </li>
@@ -185,208 +143,92 @@
     </div>
   </div>
 
-  <!-- Tabs Content -->
-  <div class="card-body tab-content p-0">
+  <div class="card-body" id="pd-sides-none">
+    <div style="max-width: 100%; overflow-x: auto">
+      <table class="table table-hover" id="players-over-15-minutes-table">
+        <thead>
+          <tr>
+            <th class="sticky-col">Player</th>
+            <th>Team</th>
+            <th>Vs.</th>
+            <th class="text-center">PtsA</th>
+            <th class="text-center">RbsA</th>
+            <th class="text-center">AstA</th>
+            <th>MP</th>
+            <th>P</th>
+            <th>R</th>
+            <th>A</th>
+            <th>3s</th>
+            <th>P+A</th>
+            <th>P+R</th>
+            <th>R+A</th>
+            <th>P+R+A</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @players_over_15_minutes.each do |data| %>
+            <% 
+              player = data[:player]
+              averages = data[:averages]
+              health_status = health_status(player.health&.status)
+              next_game = player.team.games.where("date >= ?", Date.today).where(season_id: @current_season.id).order(:date).first
 
-    <div 
-      class="tab-pane fade show active" 
-      id="all-players" 
-      role="tabpanel" 
-      aria-labelledby="all-players-tab">
-      <div class="card-body" id="pd-sides-none">
-        <div style="max-width: 100%; overflow-x: auto">
-          <table class="table table-hover" id="players-over-15-minutes-table">
-            <thead>
-              <tr>
-                <th class="sticky-col">Player</th>
-                <th>Team</th>
-                <th>Vs.</th>
-                <th class="text-center">PtsA</th>
-                <th class="text-center">RbsA</th>
-                <th class="text-center">AstA</th>
-                <th>MP</th>
-                <th>P</th>
-                <th>R</th>
-                <th>A</th>
-                <th>3s</th>
-                <th>P+A</th>
-                <th>P+R</th>
-                <th>R+A</th>
-                <th>P+R+A</th>
-              </tr>
-            </thead>
-              <tbody>
-                <% @players_over_15_minutes.each do |data| %>
-                  <% 
-                    player = data[:player]
-                    averages = data[:averages]
-                    health_status = health_status(player.health&.status) # Use helper method for health status
-                    next_game = player.team.games.where("date >= ?", Date.today).order(:date).first
-                    opponent = if next_game&.home_team_id == player.team_id
-                                next_game.visitor_team
-                              elsif next_game&.visitor_team_id == player.team_id
-                                next_game.home_team
-                              end
+              opponent = if next_game&.home_team_id == player.team_id
+                           next_game.visitor_team
+                         elsif next_game&.visitor_team_id == player.team_id
+                           next_game.home_team
+                         end
 
-                    opponent_stats = opponent&.defense_vs_position ? JSON.parse(opponent.defense_vs_position) : {}
-                    relevant_positions = case player.position
-                                          when "PG" then ["PG", "G"]
-                                          when "SG" then ["SG", "G"]
-                                          when "SF" then ["SF", "F"]
-                                          when "PF" then ["PF", "F"]
-                                          when "C" then ["C"]
-                                          else []
-                                          end
-                    filtered_stats = opponent_stats.slice(*relevant_positions)
+              opponent_stats = opponent&.defense_data_for(@current_season) || {}
+              relevant_positions = case player.position
+                                   when "PG" then ["PG", "G"]
+                                   when "SG" then ["SG", "G"]
+                                   when "SF" then ["SF", "F"]
+                                   when "PF" then ["PF", "F"]
+                                   when "C"  then ["C"]
+                                   else []
+                                   end
+              filtered_stats = opponent_stats.slice(*relevant_positions)
 
-                    pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
-                    rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
-                    ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
-                  %>
-                  <tr data-team-id="<%= player.team_id %>">
-                    <td class="sticky-col">
-                      <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
-                        <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                        <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
-                      <% end %>
-                    </td>
-                    <td>
-                      <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" width="20" alt="<%= player.team.name %>">
-                    </td>
-                    <td>
-                      <% if opponent %>
-                        <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" width="20" alt="<%= opponent.name %>">
-                      <% else %>
-                        N/A
-                      <% end %>
-                    </td>
-                    <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
-                    <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
-                    <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
-                    <td><%= averages[:minutes_played].round(1) %></td>
-                    <td><%= averages[:points].round(1) %></td>
-                    <td><%= averages[:rebounds].round(1) %></td>
-                    <td><%= averages[:assists].round(1) %></td>
-                    <td><%= averages[:three_point_field_goals].round(1) %></td>
-                    <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
-                    <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>
-                    <td><%= (averages[:rebounds] + averages[:assists]).round(1) %></td>
-                    <td><%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %></td>
-                  </tr>
+              pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
+              rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
+              ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
+            %>
+            <tr data-team-id="<%= player.team_id %>">
+              <td class="sticky-col">
+                <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
+                  <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                  <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
                 <% end %>
-              </tbody>
-
-          </table>
-        </div>
-      </div>
-    </div>
-
-        <div 
-      class="tab-pane fade" 
-      id="hit-rates" 
-      role="tabpanel" 
-      aria-labelledby="hit-rates-tab">
-      <div class="card-body" id="pd-sides-none">
-        <!-- Tabs Navigation for Stats -->
-        <ul class="nav nav-tabs" id="hitRatesTabs" role="tablist">
-          <% %w[Points Threes Rebounds Assists].each_with_index do |stat, index| %>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link <%= 'active' if index == 0 %>" 
-                      id="<%= stat.downcase %>-tab" 
-                      data-bs-toggle="tab" 
-                      data-bs-target="#<%= stat.downcase %>-content" 
-                      type="button" role="tab">
-                <%= stat %>
-              </button>
-            </li>
+              </td>
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-<%= @current_season.end_year %>.png"
+                     width="20" alt="<%= player.team.name %>">
+              </td>
+              <td>
+                <% if opponent %>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-<%= @current_season.end_year %>.png"
+                       width="20" alt="<%= opponent.name %>">
+                <% else %>
+                  N/A
+                <% end %>
+              </td>
+              <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
+              <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
+              <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
+              <td><%= averages[:minutes_played].round(1) %></td>
+              <td><%= averages[:points].round(1) %></td>
+              <td><%= averages[:rebounds].round(1) %></td>
+              <td><%= averages[:assists].round(1) %></td>
+              <td><%= averages[:three_point_field_goals].round(1) %></td>
+              <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
+              <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>
+              <td><%= (averages[:rebounds] + averages[:assists]).round(1) %></td>
+              <td><%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %></td>
+            </tr>
           <% end %>
-        </ul>
-
-        <!-- Stats Tab Contents -->
-        <div class="tab-content mt-3" id="hitRatesContent">
-          <% { points: 'Points', three_point_field_goals: 'Threes', total_rebounds: 'Rebounds', assists: 'Assists' }.each_with_index do |(key, label), index| %>
-            <div class="tab-pane fade <%= 'show active' if index == 0 %>" id="<%= label.downcase %>-content" role="tabpanel">
-              <table class="table table-sm table-hover hit-rates-table">
-                <thead>
-                  <tr>
-                    <th class="sticky-col">Player</th>
-                    <th>Team</th>
-                    <th>Vs.</th>
-                    <th>D Rating</th>
-                    <th>Line</th>
-                    <th>Hit Rate</th>
-                    <th>Last 10 Avg</th>
-                  </tr>
-                </thead>
-                  <tbody>
-                    <% @top_hit_rates[key]&.each do |data| %>
-                      <% 
-                        player = data[:player]
-                        health_status = health_status(player.health&.status) # Use helper method for health status
-                        next_game = player.team.games.where("date >= ?", Date.today).order(:date).first
-                        opponent = if next_game&.home_team_id == player.team_id
-                                    next_game.visitor_team
-                                  elsif next_game&.visitor_team_id == player.team_id
-                                    next_game.home_team
-                                  end
-
-                        # Calculate the appropriate defense rating based on the selected stat tab
-                        defense_rating = nil
-                        stat_key = case key
-                                  when :points then "points_rank"
-                                  when :three_point_field_goals then "points_rank"
-                                  when :total_rebounds then "rebounds_rank"
-                                  when :assists then "assists_rank"
-                                  else nil
-                                  end
-                        if opponent && opponent.defense_vs_position.present? && stat_key
-                          begin
-                            opponent_defense = JSON.parse(opponent.defense_vs_position)
-                            relevant_positions = case player.position
-                                                  when "PG" then ["PG", "G"]
-                                                  when "SG" then ["SG", "G"]
-                                                  when "SF" then ["SF", "F"]
-                                                  when "PF" then ["PF", "F"]
-                                                  when "C" then ["C"]
-                                                  else []
-                                                  end
-                            filtered_stats = opponent_defense.slice(*relevant_positions)
-                            defense_rating = filtered_stats.values.sum { |stats| stats[stat_key] } / filtered_stats.size rescue nil
-                          rescue JSON::ParserError
-                            defense_rating = nil
-                          end
-                        end
-                      %>
-                      <tr data-team-id="<%= player.team_id %>">
-                        <td class="sticky-col">
-                          <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
-                            <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                            <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
-                          <% end %>
-                        </td>
-                        <td>
-                          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-2025.png" width="20" alt="<%= player.team.name %>">
-                        </td>
-                        <td>
-                          <% if opponent %>
-                            <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-2025.png" width="20" alt="<%= opponent.name %>">
-                          <% else %>
-                            N/A
-                          <% end %>
-                        </td>
-                        <td style="<%= rank_color_class(defense_rating&.round) %>"><%= defense_rating&.round(1) || "N/A" %></td>
-                        <td><%= data[:best_threshold] %>+</td>
-                        <td><%= data[:hit_rate] %>%</td>
-                        <td><%= data[:last_ten_average]&.round(1) || "N/A" %></td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-
-              </table>
-            </div>
-          <% end %>
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -395,6 +237,7 @@
     No player projections available for this date.
   </div>
 <% end %>
+
 
 <!-- Collapsible Card for Schedule and Box Score Updates -->
 <div class="card mb-4 mx-auto" style="max-width: 750px; box-shadow: 0px 4px 8px #3a3a3a;">

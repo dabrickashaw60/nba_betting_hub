@@ -1,40 +1,27 @@
 # lib/tasks/update_defense_data.rake
 namespace :teams do
-  desc "Update defense_vs_position for all teams"
+  desc "Rebuild Defense vs Position data for all teams by season"
   task update_defense_data: :environment do
-    updated_count = 0
-    skipped_count = 0
+    puts "Starting DefenseVsPosition rebuild at #{Time.now}"
 
-    puts "Starting update_defense_data task at #{Time.now}"
+    # Use the current season, or fall back to the most recent one
+    current_season = Season.find_by(current: true) || Season.order(:start_date).last
 
-    Team.all.each_with_index do |team, index|
-      begin
-        puts "Processing Team ##{index + 1}: #{team.name} (ID: #{team.id})"
+    if current_season.nil?
+      puts "❌ No active or recent season found. Aborting task."
+      exit
+    end
 
-        defense_data = team.defense_vs_position
-        parsed_data = JSON.parse(defense_data || "{}")
-        serialized_data = parsed_data.deep_stringify_keys.to_json
+    puts "Processing season: #{current_season.name} (ID: #{current_season.id})"
 
-        if team.defense_vs_position != serialized_data
-          team.update!(defense_vs_position: serialized_data)
-          updated_count += 1
-          puts "Updated defense_vs_position for #{team.name}"
-        else
-          skipped_count += 1
-          puts "No changes needed for #{team.name}"
-        end
-      rescue JSON::ParserError => e
-        puts "Failed to parse defense_vs_position for #{team.name}: #{e.message}"
-      rescue ActiveRecord::StatementInvalid => e
-        puts "Database error for #{team.name}: #{e.message}"
-      rescue => e
-        puts "Unexpected error for #{team.name}: #{e.message}"
-      end
+    begin
+      DefenseVsPosition.rebuild_all_for_season(current_season)
+      puts "✅ Successfully rebuilt DefenseVsPosition for #{current_season.name}"
+    rescue => e
+      puts "❌ Error rebuilding DefenseVsPosition: #{e.message}"
+      puts e.backtrace.take(10)
     end
 
     puts "Task completed at #{Time.now}"
-    puts "Total teams processed: #{Team.count}"
-    puts "Total teams updated: #{updated_count}"
-    puts "Total teams skipped: #{skipped_count}"
   end
 end

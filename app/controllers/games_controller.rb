@@ -70,8 +70,8 @@ class GamesController < ApplicationController
 
     # Opponent defense per team
     @defense_vs_position_by_team = {
-      @home_team.id    => @home_team.opponent_defense_for_game(@game),
-      @visitor_team.id => @visitor_team.opponent_defense_for_game(@game)
+      @home_team.id    => @home_team.defense_data_for(@current_season),
+      @visitor_team.id => @visitor_team.defense_data_for(@current_season)
     }
   end
 

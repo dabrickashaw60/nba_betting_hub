@@ -30,32 +30,33 @@ class TeamsController < ApplicationController
   # 🧱 DEFENSE VS POSITION VIEW
   # ---------------------------------------------------------------------------
   def defense_vs_position
-    Rails.logger.debug("Entering defense_vs_position action")
+    @position = params[:position] || "PG"
+    @seasons = Season.order(start_date: :desc)
+    @selected_season =
+      if params[:season_id].present?
+        Season.find_by(id: params[:season_id])
+      else
+        Season.find_by(current: true) || @seasons.first
+      end
 
-    # Ensure team defense data is serialized correctly
-    update_team_defense_data
+    if @selected_season.nil?
+      flash[:alert] = "No season found."
+      redirect_to root_path and return
+    end
 
-    # Parse defense JSON for each team
-    @teams = Team.all.map do |team|
-      parsed_data = JSON.parse(team.defense_vs_position || "{}") rescue {}
-      team.define_singleton_method(:parsed_defense_vs_position) { parsed_data }
+    @teams = Team.includes(:defense_vs_positions).map do |team|
+      defense_data = team.defense_data_for(@selected_season) || {}
+      team.define_singleton_method(:parsed_defense_vs_position) { defense_data }
       team
     end
 
-    @position = params[:position] || "PG"
-
     respond_to do |format|
       format.html
-      format.turbo_stream do
-        Rails.logger.debug("Rendering turbo stream with position: #{@position}")
-        render turbo_stream: turbo_stream.replace(
-          "defense_table",
-          partial: "teams/defense_table",
-          locals: { teams: @teams, position: @position }
-        )
-      end
+      format.turbo_stream
     end
   end
+
+
 
   # ---------------------------------------------------------------------------
   # 🔧 PRIVATE METHODS

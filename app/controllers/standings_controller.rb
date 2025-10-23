@@ -2,11 +2,24 @@ class StandingsController < ApplicationController
   before_action :set_current_season
 
   def index
-    @eastern_standings = Standing.where(season_id: @current_season.id, conference: 'Eastern')
+    @seasons = Season.order(start_date: :desc)
+    @selected_season =
+      if params[:season_id].present?
+        Season.find_by(id: params[:season_id])
+      else
+        @current_season || @seasons.first
+      end
+
+    if @selected_season.nil?
+      flash[:alert] = "No season found."
+      redirect_to root_path and return
+    end
+
+    @eastern_standings = Standing.where(season_id: @selected_season.id, conference: 'Eastern')
                                  .includes(:team)
                                  .order(win_percentage: :desc)
 
-    @western_standings = Standing.where(season_id: @current_season.id, conference: 'Western')
+    @western_standings = Standing.where(season_id: @selected_season.id, conference: 'Western')
                                  .includes(:team)
                                  .order(win_percentage: :desc)
   end

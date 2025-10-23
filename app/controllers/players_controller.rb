@@ -62,12 +62,12 @@ def show
                    .first
 
   if @next_game
-    # Identify opponent and their defense vs position
     opponent_team_id =
       @next_game.visitor_team_id == @team.id ? @next_game.home_team_id : @next_game.visitor_team_id
     @opponent_team = Team.find(opponent_team_id)
-    @defense_vs_position = JSON.parse(@opponent_team.defense_vs_position || "{}") rescue {}
+    @defense_vs_position = @opponent_team.defense_data_for(@selected_season)
   end
+
 end
 
 

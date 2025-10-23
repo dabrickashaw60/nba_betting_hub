@@ -390,7 +390,7 @@
           <tbody>
             <% @player_stats.each do |stat| %>
               <tr>
-                <td><%= stat.season %></td>
+                <td><%= stat.season&.name %></td>
                 <td><%= stat.games_played %></td>
                 <td><%= stat.minutes_played %></td>
                 <td><%= number_with_precision(stat.field_goals, precision: 1) %></td>

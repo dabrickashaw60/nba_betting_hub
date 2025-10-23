@@ -1,9 +1,15 @@
+# app/services/scrapers/box_score_scraper.rb
 module Scrapers
   class BoxScoreScraper
     def initialize(game)
       @game = game
       @url = "https://www.basketball-reference.com/boxscores/#{@game.date.strftime("%Y%m%d")}0#{@game.home_team.abbreviation}.html"
       puts "Initialized scraper for Game ID: #{@game.id} with URL: #{@url}"
+
+      # Warn if season_id is missing on the game
+      if @game.season_id.nil?
+        puts "⚠️  WARNING: Game ID #{@game.id} (#{@game.date}) has no season_id set!"
+      end
     end
 
     def scrape_box_score
@@ -37,6 +43,7 @@ module Scrapers
 
       team_box_score_table.each do |row|
         player_name = row.at_css('th[data-stat="player"] a')&.text
+        next unless player_name
 
         # Skip rows where the player "Did Not Play" or "Inactive"
         did_not_play = row.at_css('td[data-stat="reason"]')&.text
@@ -45,7 +52,7 @@ module Scrapers
           next
         end
 
-        # Check for minutes played
+        # Skip players with 0 minutes
         minutes_played_text = row.at_css('td[data-stat="mp"]')&.text
         minutes_played_seconds = convert_minutes_to_seconds(minutes_played_text)
         if minutes_played_seconds == 0
@@ -53,19 +60,35 @@ module Scrapers
           next
         end
 
-        next unless player_name
-
         player = Player.find_by(name: player_name)
         unless player
           puts "Player #{player_name} not found in database, skipping."
           next
         end
 
-        # Prepare box score data with NaN check
+        # --- Team correction logic ---
+        if team.present?
+          if player.team_id.nil?
+            puts "Assigning #{player.name} to #{team.name}"
+            player.update!(team_id: team.id)
+          elsif player.team_id != team.id
+            old_team = player.team&.name || "Unknown"
+            puts "Player #{player.name} has switched teams (#{old_team} → #{team.name})"
+            player.update!(team_id: team.id)
+
+            File.open(Rails.root.join('log', 'transactions.log'), 'a') do |f|
+              f.puts "[#{Time.current.strftime('%Y-%m-%d %H:%M:%S')}] #{player.name}: #{old_team} → #{team.name}"
+            end
+          end
+        end
+        # ------------------------------
+
+        # Prepare box score data with NaN-safe conversions
         box_score_data = {
           game: @game,
           team: team,
           player: player,
+          season_id: @game.season_id, # ✅ Always include the correct season_id
           minutes_played: minutes_played_text,
           field_goals: safe_to_i(row.at_css('td[data-stat="fg"]')&.text),
           field_goals_attempted: safe_to_i(row.at_css('td[data-stat="fga"]')&.text),
@@ -89,16 +112,21 @@ module Scrapers
           plus_minus: safe_to_f(row.at_css('td[data-stat="plus_minus"]')&.text)
         }
 
+        # Create or update box score
         box_score = BoxScore.find_or_initialize_by(game: @game, team: team, player: player)
         box_score.assign_attributes(box_score_data)
 
         if box_score.save
-          puts "Saved box score for player #{player_name} in Game ID: #{@game.id}"
+          puts "Saved box score for player #{player_name} (#{team.name}) in Game ID: #{@game.id}"
         else
-          puts "Failed to save box score for player #{player_name} in Game ID: #{@game.id}: #{box_score.errors.full_messages.join(', ')}"
+          puts "❌ Failed to save box score for player #{player_name} in Game ID: #{@game.id}: #{box_score.errors.full_messages.join(', ')}"
         end
       end
     end
+
+    # --------------------------------------------------
+    # Utility methods
+    # --------------------------------------------------
 
     def safe_to_i(value)
       Integer(value || 0) rescue 0
@@ -110,7 +138,6 @@ module Scrapers
 
     def convert_minutes_to_seconds(minutes_played_text)
       return 0 if minutes_played_text.blank?
-
       minutes, seconds = minutes_played_text.split(":").map(&:to_i)
       (minutes * 60) + (seconds || 0)
     end

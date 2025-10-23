@@ -1,0 +1,47 @@
+<% positions = ["PG", "SG", "SF", "PF", "C", "G", "F"] %>
+
+<% positions.each do |position| %>
+  <div id="<%= position.downcase %>" class="position-table" style="<%= 'display: block;' if position == 'PG' %>">
+    <h2>Defense vs <%= position %> (<%= @selected_season.name %>)</h2>
+    <table class="table table-bordered" id="<%= position.downcase %>Table">
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>Rank</th>
+          <th>Pts</th>
+          <th>Rank</th>
+          <th>Reb</th>
+          <th>Rank</th>
+          <th>Ast</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @teams.each do |team| %>
+          <tr>
+            <td>
+              <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
+                   alt="<%= team.name %> logo"
+                   width="25"
+                   height="auto"
+                   class="me-2">
+              <%= team.name %>
+            </td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "points_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "points") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "rebounds_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "rebounds") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "assists_rank") || "-" %></td>
+            <td><%= team.parsed_defense_vs_position&.dig(position, "assists") || "-" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<script>
+  function showTable(position) {
+    document.querySelectorAll('.position-table').forEach(t => t.style.display = 'none');
+    document.getElementById(position).style.display = 'block';
+  }
+</script>
