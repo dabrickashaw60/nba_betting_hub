@@ -45,24 +45,30 @@
             <th onclick="sortTable('<%= position.downcase %>Table', 6)">Assists Allowed</th>
           </tr>
         </thead>
-        <tbody>
-          <% @teams.each do |team| %>
-            <tr>
-              <td>
-                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
-                     alt="<%= team.name %> logo"
-                     width="25" height="auto" class="me-2">
-                <%= team.name %>
-              </td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "points_rank") || "-" %></td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "points") || "-" %></td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "rebounds_rank") || "-" %></td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "rebounds") || "-" %></td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "assists_rank") || "-" %></td>
-              <td><%= team.parsed_defense_vs_position&.dig(position, "assists") || "-" %></td>
-            </tr>
-          <% end %>
-        </tbody>
+          <tbody>
+            <% @teams.each do |team| %>
+              <tr>
+                <td>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
+                      alt="<%= team.name %> logo"
+                      width="25" height="auto" class="me-2">
+                  <%= team.name %>
+                </td>
+                <td style="<%= rank_color_class(team.parsed_defense_vs_position&.dig(position, 'points_rank')) %>">
+                  <%= team.parsed_defense_vs_position&.dig(position, "points_rank") || "-" %>
+                </td>
+                <td><%= team.parsed_defense_vs_position&.dig(position, "points") || "-" %></td>
+                <td style="<%= rank_color_class(team.parsed_defense_vs_position&.dig(position, 'rebounds_rank')) %>">
+                  <%= team.parsed_defense_vs_position&.dig(position, "rebounds_rank") || "-" %>
+                </td>
+                <td><%= team.parsed_defense_vs_position&.dig(position, "rebounds") || "-" %></td>
+                <td style="<%= rank_color_class(team.parsed_defense_vs_position&.dig(position, 'assists_rank')) %>">
+                  <%= team.parsed_defense_vs_position&.dig(position, "assists_rank") || "-" %>
+                </td>
+                <td><%= team.parsed_defense_vs_position&.dig(position, "assists") || "-" %></td>
+              </tr>
+            <% end %>
+          </tbody>
       </table>
     </div>
   <% end %>

@@ -36,6 +36,7 @@ namespace :scrapers do
       Team.find_each do |team|
         team.rebuild_defense_vs_position!(current_season)
       end
+      DefenseVsPosition.rebuild_all_for_season(current_season)
       puts "✅ Defense vs Position data updated successfully for #{current_season.name}."
 
     else

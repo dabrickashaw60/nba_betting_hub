@@ -9,6 +9,7 @@ class DefenseVsPosition < ApplicationRecord
     puts "Rebuilding DefenseVsPosition data for season: #{season.name}"
     all_averages = {}
 
+    # STEP 1: Collect all teams’ averages first
     Team.find_each do |team|
       averages = team.average_stats_allowed_by_position(season)
       team.update_defense_vs_position!(season, averages)
@@ -18,21 +19,28 @@ class DefenseVsPosition < ApplicationRecord
     positions = %w[PG SG SF PF C G F]
     stats = %i[points rebounds assists]
 
+    # STEP 2: Rank teams by stat and position
     positions.each do |position|
       stats.each do |stat|
-        ranked = all_averages.sort_by { |_, avg| avg.dig(position, stat) || Float::INFINITY }
+        # Sort by lowest stat first — teams that allow fewer points = better rank
+        ranked_teams = all_averages
+          .select { |_, avg| avg[position].present? && avg[position][stat].present? }
+          .sort_by { |_, avg| avg[position][stat] }
 
-        ranked.each_with_index do |(team_id, _), index|
-          team_record = find_by(team_id: team_id, season_id: season.id)
-          next unless team_record&.data
+        ranked_teams.each_with_index do |(team_id, _), index|
+          record = DefenseVsPosition.find_by(team_id: team_id, season_id: season.id)
+          next unless record
 
-          team_record.data[position] ||= {}
-          team_record.data[position]["#{stat}_rank"] = index + 1
-          team_record.save!
+          # Ensure position exists in record data
+          record.data[position] ||= {}
+
+          # Assign rank: 1 = best (least allowed)
+          record.data[position]["#{stat}_rank"] = index + 1
+          record.save!
         end
       end
     end
 
-    puts "DefenseVsPosition updated for #{Team.count} teams in #{season.name}."
+    puts "✅ DefenseVsPosition ranks rebuilt successfully for #{Team.count} teams in #{season.name}."
   end
 end
