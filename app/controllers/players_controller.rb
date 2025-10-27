@@ -38,6 +38,12 @@ def show
                       .where.not(minutes_played: nil)
                       .order('games.date DESC')
 
+  @all_game_logs = @player.box_scores
+                        .joins(:game)
+                        .where.not(minutes_played: nil)
+                        .includes(:game)
+                        .order('games.date DESC')                    
+
   # --- Last 5 and 10 Games ---
   @last_five_games = @game_logs.limit(5)
   @last_ten_games  = @game_logs.limit(10)
