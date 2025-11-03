@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_10_22_131037) do
+ActiveRecord::Schema.define(version: 2025_10_30_193325) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -40,6 +40,21 @@ ActiveRecord::Schema.define(version: 2025_10_22_131037) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "season_id"
+    t.float "true_shooting_pct"
+    t.float "effective_fg_pct"
+    t.float "three_point_attempt_rate"
+    t.float "free_throw_rate"
+    t.float "offensive_rebound_pct"
+    t.float "defensive_rebound_pct"
+    t.float "total_rebound_pct"
+    t.float "assist_pct"
+    t.float "steal_pct"
+    t.float "block_pct"
+    t.float "turnover_pct"
+    t.float "usage_pct"
+    t.integer "offensive_rating"
+    t.integer "defensive_rating"
+    t.float "box_plus_minus"
     t.index ["game_id"], name: "index_box_scores_on_game_id"
     t.index ["player_id"], name: "index_box_scores_on_player_id"
     t.index ["team_id"], name: "index_box_scores_on_team_id"
@@ -116,6 +131,21 @@ ActiveRecord::Schema.define(version: 2025_10_22_131037) do
     t.float "game_score"
     t.float "plus_minus"
     t.integer "season_id"
+    t.float "true_shooting_pct"
+    t.float "effective_fg_pct"
+    t.float "three_point_attempt_rate"
+    t.float "free_throw_rate"
+    t.float "offensive_rebound_pct"
+    t.float "defensive_rebound_pct"
+    t.float "total_rebound_pct"
+    t.float "assist_pct"
+    t.float "steal_pct"
+    t.float "block_pct"
+    t.float "turnover_pct"
+    t.float "usage_pct"
+    t.float "offensive_rating"
+    t.float "defensive_rating"
+    t.float "box_plus_minus"
     t.index ["player_id"], name: "index_player_stats_on_player_id"
   end
 

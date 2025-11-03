@@ -1,48 +1,42 @@
 namespace :scrapers do
-  desc "Scrape box scores for games on a specific date (e.g., Jan 29, 2025)"
-  task box_scores_12925: :environment do
+  desc "Backfill advanced box scores for Game IDs 1340–1407"
+  task backfill_box_scores_1340_1407: :environment do
     require Rails.root.join('app/services/scrapers/box_score_scraper')
 
-    # Identify current season
     current_season = Season.find_by(current: true)
     unless current_season
       puts "❌ No active season found. Please mark the current season as 'current: true'."
       next
     end
 
-    # 👇 Change this to the exact date you want
-    specific_date = Date.new(2025, 10, 21)
+    start_id = 1340
+    end_id   = 1407
 
-    games = Game.where(date: specific_date, season_id: current_season.id)
+    games = Game.where(id: start_id..end_id, season_id: current_season.id).order(:id)
 
     if games.any?
-      puts "🏀 Starting box score scraping for #{games.count} games from #{specific_date} (Season: #{current_season.name})"
+      puts "🏀 Starting backfill for #{games.count} games (IDs #{start_id}–#{end_id})"
+      puts "Season: #{current_season.name}"
 
       games.each_with_index do |game, index|
-        puts "➡️ Scraping Game ID #{game.id} (#{index + 1}/#{games.count}) - #{game.visitor_team.name} @ #{game.home_team.name}"
+        puts "➡️ [#{index + 1}/#{games.count}] Scraping Game ID #{game.id} - #{game.visitor_team.name} @ #{game.home_team.name}"
 
         scraper = Scrapers::BoxScoreScraper.new(game)
-        if scraper.scrape_box_score
-          puts "✅ Successfully scraped Game ID: #{game.id}"
+        success = scraper.scrape_box_score
+
+        if success
+          puts "✅ Updated Game ID #{game.id}"
         else
-          puts "⚠️ Failed to scrape Game ID: #{game.id}"
+          puts "⚠️ Failed Game ID #{game.id}"
         end
 
-        # Space out requests slightly
-        sleep(30) unless index == games.size - 1
+        # Small sleep between requests to avoid being blocked
+        sleep(25) unless index == games.size - 1
       end
 
-      # Rebuild defense vs position data for current season
-      puts "📊 Rebuilding Defense vs Position data for all teams (#{current_season.name})..."
-      Team.find_each do |team|
-        team.rebuild_defense_vs_position!(current_season)
-      end
-      DefenseVsPosition.rebuild_all_for_season(current_season)
-
-      puts "✅ Defense vs Position data updated successfully for #{current_season.name}."
-
+      puts "✅ Finished backfilling advanced box scores for #{games.count} games."
     else
-      puts "ℹ️ No games found for #{specific_date} (Season: #{current_season.name})"
+      puts "ℹ️ No games found in ID range #{start_id}–#{end_id}"
     end
   end
 end

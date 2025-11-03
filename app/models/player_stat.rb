@@ -14,13 +14,12 @@ class PlayerStat < ApplicationRecord
     current_season = Season.find_by(current: true)
     return unless current_season
 
-    # Only include box scores from the current season
     box_scores = player.box_scores.where(season_id: current_season.id)
     return if box_scores.empty?
 
-    # Find or initialize the player's season stat record
     player_stat = PlayerStat.find_or_initialize_by(player: player, season: current_season)
 
+    # --- Basic stats ---
     player_stat.games_played = box_scores.count
     player_stat.field_goals = box_scores.average(:field_goals)
     player_stat.field_goals_attempted = box_scores.average(:field_goals_attempted)
@@ -61,19 +60,37 @@ class PlayerStat < ApplicationRecord
     player_stat.game_score = box_scores.average(:game_score)
     player_stat.plus_minus = box_scores.average(:plus_minus)
 
-    # Calculate average minutes played (MM:SS)
+    # --- Advanced stats ---
+    player_stat.true_shooting_pct = box_scores.average(:true_shooting_pct)
+    player_stat.effective_fg_pct = box_scores.average(:effective_fg_pct)
+    player_stat.three_point_attempt_rate = box_scores.average(:three_point_attempt_rate)
+    player_stat.free_throw_rate = box_scores.average(:free_throw_rate)
+    player_stat.offensive_rebound_pct = box_scores.average(:offensive_rebound_pct)
+    player_stat.defensive_rebound_pct = box_scores.average(:defensive_rebound_pct)
+    player_stat.total_rebound_pct = box_scores.average(:total_rebound_pct)
+    player_stat.assist_pct = box_scores.average(:assist_pct)
+    player_stat.steal_pct = box_scores.average(:steal_pct)
+    player_stat.block_pct = box_scores.average(:block_pct)
+    player_stat.turnover_pct = box_scores.average(:turnover_pct)
+    player_stat.usage_pct = box_scores.average(:usage_pct)
+    player_stat.offensive_rating = box_scores.average(:offensive_rating)
+    player_stat.defensive_rating = box_scores.average(:defensive_rating)
+    player_stat.box_plus_minus = box_scores.average(:box_plus_minus)
+
+    # --- Minutes (MM:SS) ---
     valid_box_scores = box_scores.where.not(minutes_played: [nil, ""])
     if valid_box_scores.empty?
       player_stat.minutes_played = "00:00"
     else
       total_seconds = valid_box_scores.sum { |bs| convert_to_seconds(bs.minutes_played) }
-      average_seconds = total_seconds / valid_box_scores.size
-      player_stat.minutes_played = format_seconds_as_time(average_seconds)
+      avg_seconds = total_seconds / valid_box_scores.size
+      player_stat.minutes_played = format_seconds_as_time(avg_seconds)
     end
 
     Rails.logger.debug "Saving PlayerStat for #{player.name} (#{current_season.name}): #{player_stat.minutes_played}"
     player_stat.save!
   end
+
 
   # Convert "MM:SS" to seconds
   def self.convert_to_seconds(time_str)

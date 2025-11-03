@@ -123,5 +123,31 @@ class Player < ApplicationRecord
     first_name_part = first_name[0, 2]             # Take the first 2 characters of the first name
     "https://www.basketball-reference.com/req/202106291/images/headshots/#{last_name_part}#{first_name_part}01.jpg"
   end
+
+  def last_5_avg_points
+    box_scores
+      .joins(:game)
+      .where("games.date <= ?", Date.current)
+      .order("games.date DESC")
+      .limit(5)
+      .average(:points)
+      .to_f.round(1)
+  end
+
+def team_today_opponent
+  today_game = team.games.find_by(date: Date.current)
+  return unless today_game
+
+  if today_game.home_team_id == team.id
+    today_game.visitor_team
+  elsif today_game.visitor_team_id == team.id
+    today_game.home_team
+  else
+    nil
+  end
+end
+
+
+
   
 end

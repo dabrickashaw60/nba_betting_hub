@@ -40,8 +40,6 @@ Rails.application.routes.draw do
   end
   
 
-
-
   # Standings routes
   get 'standings', to: 'standings#index', as: 'standings'
   post 'standings/update', to: 'standings#update', as: 'update_standings'
