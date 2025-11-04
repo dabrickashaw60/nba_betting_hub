@@ -200,6 +200,19 @@
                 <%= render partial: 'game_rows', locals: { games: @last_five_games } %>
 
                 <!-- Static Rows -->
+                <% if @next_game_projection.present? %>
+                  <tr class="table-info font-weight-bold">
+                    <td colspan="2">Next Game Projection</td>
+                    <td><%= number_with_precision(@next_game_projection.expected_minutes, precision: 0) %></td>
+                    <td><%= number_with_precision(@next_game_projection.proj_points, precision: 1) %></td>
+                    <td><%= number_with_precision(@next_game_projection.proj_rebounds, precision: 1) %></td>
+                    <td><%= number_with_precision(@next_game_projection.proj_assists, precision: 1) %></td>
+                    <td>-</td>
+                    <td><%= number_with_precision(@next_game_projection.proj_threes, precision: 1) %></td>
+                    <td>-</td>
+                    <td><%= number_with_precision(@next_game_projection.proj_plus_minus, precision: 1) %></td>
+                  </tr>
+                <% end %>                
                 <!-- Averages Row -->
                 <tr class="table-secondary font-weight-bold">
                   <td colspan="2">Last 5 Avg</td>

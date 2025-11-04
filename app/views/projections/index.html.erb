@@ -1,0 +1,101 @@
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Projections for <%= @date.strftime("%B %d, %Y") %></h3>
+
+    <%= button_to "Run Simulation",
+          generate_projections_path(date: @date),
+          method: :post,
+          class: "btn btn-outline-primary d-flex align-items-center",
+          id: "simulate-btn" %>
+  </div>
+
+  <div id="loading-indicator" class="d-none mt-2 text-primary">
+    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+    <strong>Running simulation… please wait</strong>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("simulate-btn");
+      const loading = document.getElementById("loading-indicator");
+      if (!btn) return;
+
+      btn.addEventListener("click", () => {
+        // let Rails submit naturally — don’t prevent default
+        loading.classList.remove("d-none");
+      });
+    });
+  </script>
+
+
+  <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0" id="projections-table">
+        <thead class="table-light">
+          <tr>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Opp</th>
+            <th>Min</th>
+            <th>USG%</th>
+            <th>P</th>
+            <th>R</th>
+            <th>REB%</th>
+            <th>A</th>
+            <th>AST%</th>
+            <th>3s</th>
+            <th>P+A</th>
+            <th>P+R</th>
+            <th>R+A</th>
+            <th>PRA</th>
+          </tr>
+        </thead>
+          <tbody>
+            <% @projections.each do |data| %>
+              <% proj = data[:projection] %>
+              <% last5 = data[:last5_avg] %>
+
+              <tr>
+                <td>
+                  <%= link_to proj.player.name,
+              team_player_path(proj.team_id, proj.player_id),
+              data: { turbo: false } %>
+                </td>
+                <td><%= proj.team.abbreviation %></td>
+                <td><%= proj.opponent_team.abbreviation %></td>
+                <td>
+                  <%= proj.expected_minutes&.round(0) %>
+                  <%= trend_icon(proj.expected_minutes, last5[:minutes_played]) %>              
+                </td>
+                <td>
+                  <%= proj.usage_pct&.round(1) %>
+                  <%= trend_icon(proj.usage_pct, last5[:usage_pct]) %>
+                </td>
+                <td>
+                  <%= proj.proj_points&.round(1) %>
+                  <%= trend_icon(proj.proj_points, last5[:points]) %>
+                </td>
+                <td>
+                  <%= proj.proj_rebounds&.round(1) %>
+                  <%= trend_icon(proj.proj_rebounds, last5[:rebounds]) %>
+                </td>
+                <td><%= proj.rebound_pct&.round(1) %></td>
+                <td>
+                  <%= proj.proj_assists&.round(1) %>
+                  <%= trend_icon(proj.proj_assists, last5[:assists]) %>
+                </td>
+                <td><%= proj.assist_pct&.round(1) %></td>
+
+                <td><%= proj.proj_threes&.round(1) %></td>
+                <td><%= proj.proj_pa&.round(1) %></td>
+                <td><%= proj.proj_pr&.round(1) %></td>
+                <td><%= proj.proj_ra&.round(1) %></td>
+                <td><%= proj.proj_pra&.round(1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+
+      </table>
+    </div>
+  </div>
+</div>

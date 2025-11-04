@@ -73,6 +73,12 @@ def show
     @opponent_team = Team.find(opponent_team_id)
     @defense_vs_position = @opponent_team.defense_data_for(@selected_season)
   end
+  @next_game_projection = Projection
+  .where(player_id: @player.id)
+  .where("date >= ?", Date.today)
+  .order(:date)
+  .first
+
 
 end
 

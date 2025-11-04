@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_10_30_193325) do
+ActiveRecord::Schema.define(version: 2025_11_04_192109) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -166,6 +166,60 @@ ActiveRecord::Schema.define(version: 2025_10_30_193325) do
     t.index ["team_id"], name: "index_players_on_team_id"
   end
 
+  create_table "projection_runs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+    t.date "date", null: false
+    t.string "model_version", default: "baseline_v1", null: false
+    t.string "status", default: "running", null: false
+    t.text "notes"
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.integer "projections_count", default: 0
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["date", "model_version"], name: "index_projection_runs_on_date_and_model_version", unique: true
+  end
+
+  create_table "projections", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+    t.bigint "projection_run_id", null: false
+    t.bigint "player_id", null: false
+    t.bigint "team_id", null: false
+    t.bigint "opponent_team_id", null: false
+    t.date "date", null: false
+    t.float "expected_minutes"
+    t.float "usage_pct"
+    t.string "position"
+    t.string "injury_status"
+    t.float "dvp_pts_mult"
+    t.float "dvp_reb_mult"
+    t.float "dvp_ast_mult"
+    t.float "proj_points"
+    t.float "proj_rebounds"
+    t.float "proj_assists"
+    t.float "proj_threes"
+    t.float "proj_steals"
+    t.float "proj_blocks"
+    t.float "proj_turnovers"
+    t.float "proj_plus_minus"
+    t.float "proj_pa"
+    t.float "proj_pr"
+    t.float "proj_ra"
+    t.float "proj_pra"
+    t.float "stdev_points"
+    t.float "stdev_rebounds"
+    t.float "stdev_assists"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.float "assist_pct"
+    t.float "rebound_pct"
+    t.index ["date", "opponent_team_id"], name: "index_projections_on_date_and_opponent_team_id"
+    t.index ["date", "player_id"], name: "index_projections_on_date_and_player_id", unique: true
+    t.index ["date", "team_id"], name: "index_projections_on_date_and_team_id"
+    t.index ["opponent_team_id"], name: "index_projections_on_opponent_team_id"
+    t.index ["player_id"], name: "index_projections_on_player_id"
+    t.index ["projection_run_id"], name: "index_projections_on_projection_run_id"
+    t.index ["team_id"], name: "index_projections_on_team_id"
+  end
+
   create_table "seasons", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.date "start_date", null: false
@@ -211,5 +265,9 @@ ActiveRecord::Schema.define(version: 2025_10_30_193325) do
   add_foreign_key "healths", "players"
   add_foreign_key "player_stats", "players"
   add_foreign_key "players", "teams"
+  add_foreign_key "projections", "players"
+  add_foreign_key "projections", "projection_runs", on_delete: :cascade
+  add_foreign_key "projections", "teams"
+  add_foreign_key "projections", "teams", column: "opponent_team_id"
   add_foreign_key "standings", "teams"
 end

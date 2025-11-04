@@ -53,10 +53,13 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <%= link_to "Home", root_path, class: "nav-link" %>
+          <%= link_to "Home", root_path, class: "nav-link #{'active' if current_page?(root_path)}" %>
         </li>
         <li class="nav-item">
-          <%= link_to "Standings", standings_path, class: "nav-link" %>
+          <%= link_to "Projections", projections_path, class: "nav-link #{'active' if current_page?(projections_path)}" %>
+        </li>        
+        <li class="nav-item">
+          <%= link_to "Standings", standings_path, class: "nav-link #{'active' if current_page?(standings_path)}" %>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="teamsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -89,7 +92,7 @@
         </li>
         <!-- DvsP Button -->
         <li class="nav-item">
-          <%= link_to "DvsP", defense_vs_position_teams_path, class: "nav-link" %>
+          <%= link_to "DvsP", defense_vs_position_teams_path, class: "nav-link #{'active' if current_page?(defense_vs_position_teams_path)}" %>
         </li>
       </ul>
 

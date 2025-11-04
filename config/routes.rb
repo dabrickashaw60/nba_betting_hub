@@ -22,6 +22,11 @@ Rails.application.routes.draw do
 
   post 'update_injuries', to: 'home#update_injuries'
 
+  resources :projections, only: [:index] do
+    collection do
+      post :generate
+    end
+  end
 
   resources :players, only: [] do
     post 'update_stats', on: :member
