@@ -1,4 +1,4 @@
-<div class="container">
+<div style="margin-left:5px;margin-right: 5px">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Projections for <%= @date.strftime("%B %d, %Y") %></h3>
 
@@ -28,74 +28,197 @@
   </script>
 
 
-  <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+  <div class="card mb-4 p-3" style="box-shadow: 0px 4px 8px #3a3a3a;">
     <div class="card-body p-0">
       <table class="table table-hover mb-0" id="projections-table">
         <thead class="table-light">
           <tr>
-            <th>Player</th>
+            <th class="sticky-col">Player</th>
             <th>Team</th>
             <th>Opp</th>
-            <th>Min</th>
-            <th>USG%</th>
-            <th>P</th>
-            <th>R</th>
-            <th>REB%</th>
-            <th>A</th>
-            <th>AST%</th>
-            <th>3s</th>
-            <th>P+A</th>
-            <th>P+R</th>
-            <th>R+A</th>
-            <th>PRA</th>
+            <th class="text-center">PtsA</th>
+            <th class="text-center">RbsA</th>
+            <th class="text-center">AstA</th>
+            <th class="text-center">Min</th>
+            <th class="text-center">USG%</th>
+            <th class="text-center">P</th>
+            <th class="text-center">R</th>
+            <th class="text-center">REB%</th>
+            <th class="text-center">A</th>
+            <th class="text-center">AST%</th>
+            <th class="text-center">3s</th>
+            <th class="text-center">P+A</th>
+            <th class="text-center">P+R</th>
+            <th class="text-center">R+A</th>
+            <th class="text-center">PRA</th>
           </tr>
         </thead>
-          <tbody>
-            <% @projections.each do |data| %>
-              <% proj = data[:projection] %>
-              <% last5 = data[:last5_avg] %>
 
-              <tr>
-                <td>
-                  <%= link_to proj.player.name,
-              team_player_path(proj.team_id, proj.player_id),
-              data: { turbo: false } %>
-                </td>
-                <td><%= proj.team.abbreviation %></td>
-                <td><%= proj.opponent_team.abbreviation %></td>
-                <td>
-                  <%= proj.expected_minutes&.round(0) %>
-                  <%= trend_icon(proj.expected_minutes, last5[:minutes_played]) %>              
-                </td>
-                <td>
-                  <%= proj.usage_pct&.round(1) %>
-                  <%= trend_icon(proj.usage_pct, last5[:usage_pct]) %>
-                </td>
-                <td>
-                  <%= proj.proj_points&.round(1) %>
-                  <%= trend_icon(proj.proj_points, last5[:points]) %>
-                </td>
-                <td>
-                  <%= proj.proj_rebounds&.round(1) %>
-                  <%= trend_icon(proj.proj_rebounds, last5[:rebounds]) %>
-                </td>
-                <td><%= proj.rebound_pct&.round(1) %></td>
-                <td>
-                  <%= proj.proj_assists&.round(1) %>
-                  <%= trend_icon(proj.proj_assists, last5[:assists]) %>
-                </td>
-                <td><%= proj.assist_pct&.round(1) %></td>
+        <tbody>
+          <% @projections.each do |data| %>
+            <% proj    = data[:projection] %>
+            <% last5   = data[:last5_avg] %>
+            <% player  = proj.player %>
+            <% team    = proj.team %>
+            <% opponent = proj.opponent_team %>
+            <% health_status = health_status(player.health&.status) %>
 
-                <td><%= proj.proj_threes&.round(1) %></td>
-                <td><%= proj.proj_pa&.round(1) %></td>
-                <td><%= proj.proj_pr&.round(1) %></td>
-                <td><%= proj.proj_ra&.round(1) %></td>
-                <td><%= proj.proj_pra&.round(1) %></td>
-              </tr>
+            <% season = @current_season || @season || Season.find_by(current: true) %>
+
+            <% opponent_stats = opponent ? opponent.defense_data_for(season) : {} %>
+            <% relevant_positions =
+                case player.position
+                when "PG" then ["PG", "G"]
+                when "SG" then ["SG", "G"]
+                when "SF" then ["SF", "F"]
+                when "PF" then ["PF", "F"]
+                when "C"  then ["C"]
+                else []
+                end %>
+
+            <% filtered_stats = opponent_stats.slice(*relevant_positions) %>
+
+            <% if filtered_stats.present? %>
+              <% pts_rank = filtered_stats.values.sum { |s| s["points_rank"] }.to_f / filtered_stats.size %>
+              <% rbs_rank = filtered_stats.values.sum { |s| s["rebounds_rank"] }.to_f / filtered_stats.size %>
+              <% ast_rank = filtered_stats.values.sum { |s| s["assists_rank"]  }.to_f / filtered_stats.size %>
+            <% else %>
+              <% pts_rank = rbs_rank = ast_rank = nil %>
             <% end %>
-          </tbody>
+
+
+            <tr data-team-id="<%= player.team_id %>">
+              <!-- Player (sticky) -->
+              <td class="sticky-col">
+                <%= link_to team_player_path(team, player), data: { turbo: false } do %>
+                  <img src="<%= player.profile_picture_url %>" width="20" class="me-2 rounded-circle">
+                  <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+                <% end %>
+              </td>
+
+              <!-- Team logo -->
+              <td>
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-<%= @current_season.end_year %>.png"
+                    width="20" alt="<%= team.name %>">
+              </td>
+
+              <!-- Opponent logo -->
+              <td>
+                <% if opponent %>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-<%= @current_season.end_year %>.png"
+                      width="20" alt="<%= opponent.name %>">
+                <% else %>
+                  N/A
+                <% end %>
+              </td>
+
+              <!-- DvP ranks -->
+              <td class="text-center" style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
+              <td class="text-center" style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
+              <td class="text-center" style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
+
+              <!-- Projections -->
+              <td class="text-center">
+                <%= proj.expected_minutes&.round(0) %>
+                <%= trend_icon(proj.expected_minutes, last5[:minutes_played]) %>
+              </td>
+              <td class="text-center">
+                <%= proj.usage_pct&.round(1) %>
+                <%= trend_icon(proj.usage_pct, last5[:usage_pct]) %>
+              </td>
+              <td class="text-center">
+                <%= proj.proj_points&.round(1) %>
+                <%= trend_icon(proj.proj_points, last5[:points]) %>
+              </td>
+              <td class="text-center">
+                <%= proj.proj_rebounds&.round(1) %>
+                <%= trend_icon(proj.proj_rebounds, last5[:rebounds]) %>
+              </td>
+              <td class="text-center"><%= proj.rebound_pct&.round(1) %></td>
+              <td class="text-center">
+                <%= proj.proj_assists&.round(1) %>
+                <%= trend_icon(proj.proj_assists, last5[:assists]) %>
+              </td>
+              <td class="text-center"><%= proj.assist_pct&.round(1) %></td>
+              <td class="text-center"><%= proj.proj_threes&.round(1) %></td>
+              <td class="text-center"><%= proj.proj_pa&.round(1) %></td>
+              <td class="text-center"><%= proj.proj_pr&.round(1) %></td>
+              <td class="text-center"><%= proj.proj_ra&.round(1) %></td>
+              <td class="text-center"><%= proj.proj_pra&.round(1) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+
 
       </table>
     </div>
   </div>
 </div>
+<script>
+document.addEventListener("turbo:load", function () {
+  console.log("Initializing DataTable for projections...");
+
+  // Initialize Bootstrap tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  const projectionsTableId = "#projections-table";
+  const projectionsTableElement = document.querySelector(projectionsTableId);
+
+  // --- Initialize DataTable for projections ---
+  if (projectionsTableElement) {
+    if (!$.fn.DataTable.isDataTable(projectionsTableId)) {
+      const projectionsTable = $(projectionsTableId).DataTable({
+        order: [[6, "desc"]], // Auto sort by 7th column (index starts at 0)
+        pageLength: 25,
+        lengthChange: true,
+        searching: true,
+        paging: true,
+        autoWidth: false,
+        responsive: true,
+        columnDefs: [
+          { className: "no-expansion", targets: "_all" },
+          { targets: [0, 1, 2], orderable: false } // Don’t sort Player/Team/Opp columns
+        ]
+      });
+
+      // Apply sticky column and color coding initially
+      applyStickyColumn(projectionsTableId, "white");
+
+      // Reapply sticky columns and color coding after each redraw
+      projectionsTable.on("draw", function () {
+        applyStickyColumn(projectionsTableId, "white");
+      });
+
+      console.log("DataTable initialized for projections table.");
+    } else {
+      console.log("DataTable already initialized for projections table.");
+    }
+  } else {
+    console.warn("Table not found for projections.");
+  }
+
+  // --- Sticky column helper (same as index script) ---
+  function applyStickyColumn(tableId, backgroundColor) {
+    $(`${tableId} .sticky-col`).each(function () {
+      $(this).css({
+        position: "sticky",
+        left: "0",
+        backgroundColor: backgroundColor,
+        zIndex: "2",
+        borderRight: "1px solid #ddd"
+      });
+    });
+  }
+
+  // --- Cleanup before Turbo caches the page ---
+  document.addEventListener("turbo:before-cache", function () {
+    if ($.fn.DataTable.isDataTable(projectionsTableId)) {
+      console.log(`Destroying DataTable for ${projectionsTableId} before Turbo caches the page...`);
+      $(projectionsTableId).DataTable().destroy();
+    }
+  });
+});
+</script>

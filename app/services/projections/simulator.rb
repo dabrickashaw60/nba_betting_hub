@@ -1,6 +1,6 @@
 module Projections
   class Simulator
-    RUNS = 1000
+    RUNS = 100
     MODEL_VERSION = "simulation_v1".freeze
 
     def initialize(date: Date.today)

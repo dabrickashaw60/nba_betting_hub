@@ -2,6 +2,7 @@
 class ProjectionsController < ApplicationController
   def index
     @date = params[:date].present? ? Date.parse(params[:date]) : Date.today
+    @current_season = Season.find_by(current: true)
     @run  = ProjectionRun.find_by(date: @date, model_version: Projections::BaselineModel::MODEL_VERSION)
     season_id = Season.find_by(current: true)&.id
 
@@ -60,9 +61,17 @@ class ProjectionsController < ApplicationController
 
   def generate
     date = params[:date] ? Date.parse(params[:date]) : Date.today
+
+    # --- Step 1: Destroy old projections and runs for that date ---
+    Projection.where(date: date).delete_all
+    ProjectionRun.where(date: date, model_version: "simulation_v1").delete_all
+
+    # --- Step 2: Run the new simulation ---
     run = Projections::Simulator.new(date: date).run!
-    redirect_to projections_path(date: date), notice: "Simulation completed with #{run.projections_count} players."
+
+    redirect_to projections_path(date: date), notice: "Simulation re-run completed with #{run.projections_count} players."
   end
+
 
 end
 

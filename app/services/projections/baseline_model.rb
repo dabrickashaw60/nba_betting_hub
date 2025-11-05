@@ -14,17 +14,38 @@ module ::Projections
 
       run.update!(status: :running, started_at: Time.current, notes: nil, projections_count: 0)
 
-      todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
-      team_ids = todays_games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.uniq
+# Find today's games/teams (as you already do)
+todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
+team_ids = todays_games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.uniq
+return mark_success(run) if team_ids.blank?
 
-puts "[DEBUG] Found #{todays_games.count} games for #{@date}"
-puts "[DEBUG] Team IDs: #{team_ids.inspect}"
+# Build an efficient eligible set:
+# - same-team today
+# - current season
+# - at least 5 box scores with minutes
+# - last-5 avg minutes > 15 (900 sec)
+# - NOT Out (joins healths)
+eligible_player_ids = Player
+  .joins(box_scores: :game)
+  .where(players: { team_id: team_ids })
+  .where(games: { season_id: @season.id })
+  .where.not(box_scores: { minutes_played: [nil, ""] })
+  .group('players.id')
+  .having(<<~SQL.squish)
+    COUNT(box_scores.id) >= 5
+    AND AVG(
+      (CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", 1) AS UNSIGNED) * 60) +
+      CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", -1) AS UNSIGNED)
+    ) > 900
+  SQL
+  .joins('LEFT JOIN healths ON healths.player_id = players.id')
+  .where('COALESCE(healths.status, "Healthy") <> "Out"')
+  .pluck(:id)
 
-      return mark_success(run) if team_ids.blank?
+players = Player.where(id: eligible_player_ids).includes(:team)
+puts "[DEBUG] Eligible players (>15 min last5 & not Out): #{players.size}"
 
-      players = Player.where(team_id: team_ids).includes(:team)
 
-puts "[DEBUG] Found #{players.count} players on today's teams"
 
       count = 0
       players.find_each do |player|
@@ -107,31 +128,48 @@ puts "[DEBUG] Found #{players.count} players on today's teams"
     end
 
     def gather_inputs(player, opponent)
-      # Last 5 game logs (current season)
+      # Skip entirely if player is OUT — no minutes or projection.
+      injury = player.health&.status
+      if injury == "Out"
+        puts "[SKIP gather_inputs] #{player.name} – status: OUT"
+        return nil
+      end
+
+      # Last 5 game logs for current season
       bs = player.box_scores
-                 .joins(:game)
-                 .where(games: { season_id: @season.id })
-                 .where.not(minutes_played: [nil, ""])
-                 .order("games.date DESC").limit(5)
+                .joins(:game)
+                .where(games: { season_id: @season.id })
+                .where.not(minutes_played: [nil, ""])
+                .order("games.date DESC").limit(5)
 
       if bs.blank?
         puts "[SKIP gather_inputs] #{player.name} – no recent box scores"
         return nil
       end
 
-
       minutes_avg = avg_minutes(bs)
-      usage_avg   = bs.average(:usage_pct).to_f # already 0-100 or 0-1? If 0-1 keep as-is
 
-      # Adjust minutes for injuries (simple v1)
-      injury = player.health&.status
+      # Skip if player doesn't average at least 15 minutes per game over last 5
+      if minutes_avg < 15
+        puts "[SKIP gather_inputs] #{player.name} – avg minutes #{minutes_avg.round(1)} < 15"
+        return nil
+      end
+
+      usage_avg = bs.average(:usage_pct).to_f
+
+      # Adjust expected minutes for minor injuries
       minutes_expected =
         case injury
-        when "Day-To-Day" then minutes_avg * 0.9
-        when "Healthy"     then minutes_avg * 1.0
-        when "Out"          then 0.0
-        else minutes_avg
+        when "Day-To-Day" then (minutes_avg * 0.9).round(1)
+        when "Healthy", nil then minutes_avg.round(1)
+        else minutes_avg.round(1)
         end
+
+      # Final safety: if expected minutes 0 or nil, skip projection
+      if minutes_expected <= 0
+        puts "[SKIP gather_inputs] #{player.name} – expected minutes #{minutes_expected} <= 0"
+        return nil
+      end
 
       # Opponent Defense vs Position multipliers (fallback 1.0)
       dvp = opponent.defense_data_for(@season) || {}
@@ -148,19 +186,19 @@ puts "[DEBUG] Found #{players.count} players on today's teams"
         expected_minutes: minutes_expected,
         usage_pct: usage_avg,
 
-        # last-5 per-game baselines from BoxScore
+        # Last-5 per-game baselines from BoxScore
         baseline: {
-          points:   avg_stat(bs, :points),
-          rebounds: avg_stat(bs, :total_rebounds),
-          assists:  avg_stat(bs, :assists),
-          threes:   avg_stat(bs, :three_point_field_goals),
-          steals:   avg_stat(bs, :steals),
-          blocks:   avg_stat(bs, :blocks),
-          turnovers: avg_stat(bs, :turnovers),
-          plus_minus: avg_stat(bs, :plus_minus),
-          minutes: minutes_avg,
-          assist_pct: avg_stat(bs, :assist_pct),
-          rebound_pct: avg_stat(bs, :total_rebound_pct)
+          points:        avg_stat(bs, :points),
+          rebounds:      avg_stat(bs, :total_rebounds),
+          assists:       avg_stat(bs, :assists),
+          threes:        avg_stat(bs, :three_point_field_goals),
+          steals:        avg_stat(bs, :steals),
+          blocks:        avg_stat(bs, :blocks),
+          turnovers:     avg_stat(bs, :turnovers),
+          plus_minus:    avg_stat(bs, :plus_minus),
+          minutes:       minutes_avg,
+          assist_pct:    avg_stat(bs, :assist_pct),
+          rebound_pct:   avg_stat(bs, :total_rebound_pct)
         },
 
         dvp_pts_mult: pts_mult,
@@ -168,6 +206,7 @@ puts "[DEBUG] Found #{players.count} players on today's teams"
         dvp_ast_mult: ast_mult
       }
     end
+
 
     def team_injury_boost(player)
       teammates = Player.where(team_id: player.team_id).where.not(id: player.id)
