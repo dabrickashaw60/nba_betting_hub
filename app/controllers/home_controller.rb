@@ -164,24 +164,61 @@ private
 
 def compute_bulk_averages(box_scores)
   count = box_scores.size.to_f
+
+  mins = average_minutes_seconds(box_scores)
+
   {
-    minutes_played: avg_minutes(box_scores),
+    minutes_played: mins[:float],
+    minutes_display: mins[:mmss],
     points: box_scores.sum(&:points).to_f / count,
     rebounds: box_scores.sum(&:total_rebounds).to_f / count,
     assists: box_scores.sum(&:assists).to_f / count,
-    three_point_field_goals: box_scores.sum(&:three_point_field_goals).to_f / count
+    three_point_field_goals: box_scores.sum(&:three_point_field_goals).to_f / count,
     usage_pct: box_scores.sum { |b| b.usage_pct.to_f } / count,
     trb_pct:   box_scores.sum { |b| b.total_rebound_pct.to_f } / count,
     ast_pct:   box_scores.sum { |b| b.assist_pct.to_f } / count
   }
 end
 
+
 def avg_minutes(box_scores)
-  valid = box_scores.select { |g| g.minutes_played.present? }
-  return 0 if valid.empty?
-  total_seconds = valid.sum do |g|
-    m, s = g.minutes_played.split(':').map(&:to_i)
+  valid_games = box_scores.select { |g| g.minutes_played.present? }
+  return "00:00" if valid_games.empty?
+
+  total_seconds = valid_games.sum do |g|
+    m, s = g.minutes_played.split(":").map(&:to_i)
     (m * 60) + s
   end
-  (total_seconds / 60.0 / valid.size).round(1)
+
+  avg_seconds = total_seconds / valid_games.size
+  minutes = avg_seconds / 60
+  seconds = avg_seconds % 60
+
+  format("%02d:%02d", minutes, seconds)
+end
+
+def average_minutes_seconds(box_scores)
+  valid = box_scores.select { |g| g.minutes_played.present? }
+  return { float: 0.0, mmss: "00:00" } if valid.empty?
+
+  total_seconds = valid.sum do |g|
+    m, s = g.minutes_played.split(":").map(&:to_i)
+    (m * 60) + s
+  end
+
+  avg_seconds = total_seconds / valid.size.to_f
+
+  minutes = (avg_seconds / 60).floor
+  seconds = (avg_seconds % 60).round
+
+  # Handle rare rounding issue
+  if seconds == 60
+    minutes += 1
+    seconds = 0
+  end
+
+  {
+    float: avg_seconds / 60.0,
+    mmss: format("%02d:%02d", minutes, seconds)
+  }
 end

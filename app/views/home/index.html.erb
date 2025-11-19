@@ -216,12 +216,6 @@
               pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
               rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
               ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
-
-              # Fetch season-level advanced stats
-              player_stat = player.player_stats.find_by(season: @current_season)
-              usage_pct = player_stat&.usage_pct ? (player_stat.usage_pct).round(1) : nil
-              trb_pct   = player_stat&.total_rebound_pct ? player_stat.total_rebound_pct.round(1) : nil
-              ast_pct   = player_stat&.assist_pct ? player_stat.assist_pct.round(1) : nil
             %>
 
             <tr data-team-id="<%= player.team_id %>">
@@ -246,13 +240,13 @@
               <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
               <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
               <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
-              <td><%= averages[:minutes_played].round(1) %></td>
-              <td><%= usage_pct ? "#{usage_pct}%" : "—" %></td>
+              <td><%= averages[:minutes_display] %></td>
+              <td><%= averages[:usage_pct]&.round(1) ? "#{averages[:usage_pct].round(1)}%" : "—" %></td>
               <td><%= averages[:points].round(1) %></td>
               <td><%= averages[:rebounds].round(1) %></td>
-              <td><%= trb_pct ? "#{trb_pct}%" : "—" %></td>              
+              <td><%= averages[:trb_pct]&.round(1)   ? "#{averages[:trb_pct].round(1)}%"   : "—" %></td>              
               <td><%= averages[:assists].round(1) %></td>
-              <td><%= ast_pct ? "#{ast_pct}%" : "—" %></td>              
+              <td><%= averages[:ast_pct]&.round(1)   ? "#{averages[:ast_pct].round(1)}%"   : "—" %></td>              
               <td><%= averages[:three_point_field_goals].round(1) %></td>
               <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
               <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>

@@ -229,7 +229,7 @@
                 <% if @player_stats.any? %>
                   <% @player_stats.each do |stat| %>
                     <tr class="table-secondary font-weight-bold">
-                      <td colspan="2">2024-2025</td>
+                      <td colspan="2"><%= @current_season.name %></td>
                       <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
                       <td><%= number_with_precision(stat.points, precision: 1) %></td>
                       <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
