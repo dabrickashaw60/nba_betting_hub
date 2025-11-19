@@ -31,48 +31,57 @@
   background-color: #28a745 !important;
 } 
 
-// Styles only for HOME page
 #game-card {
-  img {
-    width: 40px;
-    height: 40px;
 
-    @media (max-width: 768px) { // Target mobile screens
+  .team-logo {
+    width: 30px;
+    height: 30px;
+
+    @media (max-width: 768px) {
       width: 25px;
       height: 25px;
     }
   }
 
-  .card {
-    box-shadow: 2px 4px 7px 0px #00000099;
-    transition: all 0.3s ease-in-out;
-    border: none; // Optional: remove default card border
-    background-color: #fff; // Ensure clean white background
-    width: 100%; /* Fill the column */
-    max-width: 250px; /* Maximum width per card */
-    height: 100px;
-    overflow: hidden;
+  .horizontal-scroll-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px;
+    gap: 12px;
 
-    &:hover {
-      box-shadow: 5px 7px 10px 3px #00000099;
-      transform: translateY(-5px); // Slight lift on hover
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #777;
+      border-radius: 5px;
     }
   }
 
-  // Ensure responsive grid
-  .container-fluid {
-    padding: 0; // Remove extra padding
+  .game-card-item {
+    flex: 0 0 auto;
+    width: 125px; // Fixed width
   }
 
-  .row {
-    margin: 0; // Remove row margin to align cleanly
-  }
+  .card {
+    height: 125px;
+    box-shadow: 2px 4px 7px 0px #00000099;
+    transition: all 0.3s ease-in-out;
+    border: none;
 
-  .col-12 {
-    display: flex;
-    justify-content: center;
+    &:hover {
+      box-shadow: 3px 5px 8px 2px #00000099;
+      transform: translateY(-5px);
+    }
   }
 }
+
 
 #gameFilterDropdown li{
   text-align: center;
@@ -290,9 +299,6 @@ table.dataTable tbody th, table.dataTable tbody td{
   }
   #player-hit-rate{
     font-size: 12px;
-  }
-  #game-card > div > div > div{
-      width: 50% !important;
   }
   #pd-left-none{
     padding-left: 0 !important;

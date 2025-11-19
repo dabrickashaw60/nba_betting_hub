@@ -1,6 +1,6 @@
 
 <!-- Date Navigation and Date Picker -->
-<div class="d-flex justify-content-center my-4">
+<div class="d-flex justify-content-center my-2">
   <!-- Left Arrow Button for Previous Day -->
   <%= link_to "←", root_path(date: @date - 1.day), class: "btn btn-outline-primary mx-2" %>
 
@@ -14,78 +14,80 @@
 </div>
 
 
-<!-- Today's Games Card -->
 <% if @todays_games.present? %>
-<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
-    <div class="card-header">
-      <h3>Games for <%= @date.strftime("%B %d, %Y") %></h3>
-    </div>
-    <div class="card-body" id="game-card">
-      <div class="container-fluid">
-        <div class="row g-2 justify-content-center">
-          <% @todays_games.each do |game| %>
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-              <div class="card d-flex flex-row align-items-center justify-content-between p-2" style="height: 100px;">
-                <!-- Team Logos and Records -->
-                <div class="d-flex flex-column justify-content-between">
-                  <!-- Away Team -->
-                  <div class="d-flex align-items-center mb-1">
-                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2025.png" 
-                         alt="<%= game.visitor_team.name %> Logo" width="25" height="25" class="me-2">
-                    <div>
-                      <strong><%= game.visitor_team.name.split(' ').last %></strong>
-                      <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
-                      <small class="d-block">
-                        <% if game.visitor_points.to_i > 0 %>
-                          <%= game.visitor_points %>
-                        <% else %>
-                          (<%= visitor_standing&.wins || "-" %>-<%= visitor_standing&.losses || "-" %>)
-                        <% end %>
-                      </small>
-                    </div>
-                  </div>
-                  <!-- Home Team -->
-                  <div class="d-flex align-items-center">
-                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2025.png" 
-                         alt="<%= game.home_team.name %> Logo" width="25" height="25" class="me-2">
-                    <div>
-                      <strong><%= game.home_team.name.split(' ').last %></strong>
-                      <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
-                      <small class="d-block">
-                        <% if game.home_points.to_i > 0 %>
-                          <%= game.home_points %>
-                        <% else %>
-                          (<%= home_standing&.wins || "-" %>-<%= home_standing&.losses || "-" %>)
-                        <% end %>
-                      </small>
-                    </div>
-                  </div>
-                </div>
+  <div id="game-card" class="mb-2">
 
-                <!-- Game Time and More Info Button -->
-                <div class="d-flex flex-column align-items-center text-center ms-2">
-                  <div class="game-time mb-1">
-                    <% if game.date < Date.today %>
-                      <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
-                      <a href="<%= box_score_url %>" target="_blank" class="text-decoration-none">
-                        Basketball Reference
-                      </a>
-                    <% else %>
-                      <strong><%= game.time.strftime("%I:%M %p") if game.time.present? %></strong>
-                    <% end %>
-                  </div>
-                  <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
-                </div>
+    <div class="horizontal-scroll-wrapper">
+      <% @todays_games.each do |game| %>
+        <div class="game-card-item">
+          <div class="card p-2">
+            <!-- ROW 1: Logos + Records -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+
+              <!-- Away Team -->
+              <div class="d-flex flex-column align-items-center">
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
+                    class="team-logo mb-1">
+                <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
+                <small style="font-size: 11px;">
+                  <% if game.visitor_points.to_i > 0 %>
+                    <%= game.visitor_points %>
+                  <% else %>
+                    (<%= visitor_standing&.wins || "-" %>-<%= visitor_standing&.losses || "-" %>)
+                  <% end %>
+                </small>
               </div>
+
+              <!-- @ Separator -->
+              <div class="d-flex flex-column align-items-center mx-2">
+                <strong style="font-size: 12px;">@</strong>
+              </div>
+
+              <!-- Home Team -->
+              <div class="d-flex flex-column align-items-center">
+                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
+                    class="team-logo mb-1">
+                <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
+                <small style="font-size: 11px;">
+                  <% if game.home_points.to_i > 0 %>
+                    <%= game.home_points %>
+                  <% else %>
+                    (<%= home_standing&.wins || "-" %>-<%= home_standing&.losses || "-" %>)
+                  <% end %>
+                </small>
+              </div>
+
             </div>
-          <% end %>
+
+            <!-- ROW 2: Time + Info -->
+            <div class="d-flex flex-column align-items-center text-center">
+
+              <div class="mb-1" style="font-size: 11px;">
+                <% if game.date < Date.today %>
+                  <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
+                  <a href="<%= box_score_url %>" target="_blank" class="text-decoration-none">
+                    Basketball Reference
+                  </a>
+                <% else %>
+                  <strong><%= game.time.strftime("%I:%M %p") if game.time.present? %></strong>
+                <% end %>
+              </div>
+
+              <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
+
+            </div>
+
+          </div>
+
         </div>
-      </div>
+      <% end %>
     </div>
+
   </div>
 <% else %>
   <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
 <% end %>
+
 
 <% if @date >= Date.today && @todays_games.any? %>
 <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
@@ -95,7 +97,8 @@
       <i class="bi bi-info-circle ms-2 text-info"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        title="Player stats are based on the last 5 games."></i>
+        title="Player stats use last 5 games. Defense ranks use last 10. For Defense Rankings: Green = weak defense (good matchup), Red = strong defense (tough matchup).">
+      </i>
 
       <%= button_to update_injuries_path, method: :post,
           class: "btn btn-link p-0 ms-2 text-primary",
@@ -264,7 +267,7 @@
 </div>
 <% else %>
   <div class="alert alert-info text-center">
-    No player projections available for this date.
+    No Last 5 Player stats available for a past date.
   </div>
 <% end %>
 

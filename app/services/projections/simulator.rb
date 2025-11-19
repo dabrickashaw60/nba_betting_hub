@@ -1,13 +1,15 @@
 module Projections
   class Simulator
-    RUNS = 100
-    MODEL_VERSION = "simulation_v1".freeze
+    MODEL_VERSION = "simulation_dvp_v1".freeze
+    RUNS = 1000  # Single deterministic projection since DvpOnlyModel already handles logic
 
     def initialize(date: Date.today)
       @date = date
       @season = Season.find_by(current: true)
       raise "No active season" unless @season
-      @model = Projections::BaselineModel.new(date: @date)
+
+      # Use the new simplified model
+      @model = Projections::DvpOnlyModel.new(date: @date)
     end
 
     def run!
@@ -16,14 +18,13 @@ module Projections
 
       run.update!(status: :running, started_at: Time.current, projections_count: 0)
 
-      todays_games = Game.where(date: @date, season_id: @season.id)
-                         .includes(:home_team, :visitor_team)
-
+      todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
       team_ids = todays_games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.uniq
-      players = Player.where(team_id: team_ids).includes(:team)
-      return mark_success(run) if players.blank?
+      return mark_success(run) if team_ids.blank?
 
-      puts "=== Starting Simulation for #{@date} (#{players.size} players across #{todays_games.size} games) ==="
+      players = Player.where(team_id: team_ids).includes(:team)
+      puts "=== Starting DvP Simulation for #{@date} (#{players.size} players, #{todays_games.size} games) ==="
+
       count = 0
 
       players.find_each.with_index(1) do |player, idx|
@@ -32,18 +33,12 @@ module Projections
           next unless opp
 
           inputs = @model.send(:gather_inputs, player, opp)
-          next unless inputs
+          next if inputs.blank?
 
-          puts "[SIM #{idx}] #{player.name} (#{player.team.abbreviation}) vs #{opp.abbreviation}"
+          outputs = @model.send(:project_stats, inputs)
 
-          # Run Monte Carlo simulations
-          sims = RUNS.times.map { @model.send(:project_stats, inputs) }
-
-          avg = average_sims(sims)
-
-          # Log averages for debug
-          puts "    → avg_pts=#{avg[:points].round(1)}  reb=#{avg[:rebounds].round(1)}  ast=#{avg[:assists].round(1)}  "\
-               "ast%=#{avg[:assist_pct].round(1)}  reb%=#{avg[:rebound_pct].round(1)}"
+          puts "[SIM #{idx}] #{player.name} (#{player.team.abbreviation}) vs #{opp.abbreviation} " \
+               "→ P: #{outputs[:points].round(1)}, R: #{outputs[:rebounds].round(1)}, A: #{outputs[:assists].round(1)}"
 
           projection = Projection.find_or_initialize_by(date: @date, player_id: player.id)
           projection.assign_attributes(
@@ -51,29 +46,13 @@ module Projections
             team_id: player.team_id,
             opponent_team_id: opp.id,
             position: inputs[:position],
-            injury_status: inputs[:injury_status],
-            expected_minutes: inputs[:expected_minutes],
-            usage_pct: inputs[:usage_pct],
-            dvp_pts_mult: inputs[:dvp_pts_mult],
-            dvp_reb_mult: inputs[:dvp_reb_mult],
-            dvp_ast_mult: inputs[:dvp_ast_mult],
-
-            proj_points: avg[:points],
-            proj_rebounds: avg[:rebounds],
-            proj_assists: avg[:assists],
-            proj_threes: avg[:threes],
-            proj_steals: avg[:steals],
-            proj_blocks: avg[:blocks],
-            proj_turnovers: avg[:turnovers],
-            proj_plus_minus: avg[:plus_minus],
-
-            assist_pct: avg[:assist_pct],
-            rebound_pct: avg[:rebound_pct],
-
-            proj_pa: avg[:points] + avg[:assists],
-            proj_pr: avg[:points] + avg[:rebounds],
-            proj_ra: avg[:rebounds] + avg[:assists],
-            proj_pra: avg[:points] + avg[:rebounds] + avg[:assists]
+            proj_points: outputs[:points],
+            proj_rebounds: outputs[:rebounds],
+            proj_assists: outputs[:assists],
+            proj_pa: outputs[:points] + outputs[:assists],
+            proj_pr: outputs[:points] + outputs[:rebounds],
+            proj_ra: outputs[:rebounds] + outputs[:assists],
+            proj_pra: outputs[:points] + outputs[:rebounds] + outputs[:assists]
           )
           projection.save!
           count += 1
@@ -103,16 +82,6 @@ module Projections
       g = todays_games.detect { |game| game.home_team_id == player.team_id || game.visitor_team_id == player.team_id }
       return nil unless g
       g.home_team_id == player.team_id ? g.visitor_team : g.home_team
-    end
-
-    def average_sims(sims)
-      stat_keys = sims.first.keys
-      avg = {}
-      stat_keys.each do |key|
-        values = sims.map { |h| h[key].to_f }
-        avg[key] = (values.sum / values.size.to_f).round(2)
-      end
-      avg
     end
   end
 end

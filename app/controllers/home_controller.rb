@@ -170,6 +170,9 @@ def compute_bulk_averages(box_scores)
     rebounds: box_scores.sum(&:total_rebounds).to_f / count,
     assists: box_scores.sum(&:assists).to_f / count,
     three_point_field_goals: box_scores.sum(&:three_point_field_goals).to_f / count
+    usage_pct: box_scores.sum { |b| b.usage_pct.to_f } / count,
+    trb_pct:   box_scores.sum { |b| b.total_rebound_pct.to_f } / count,
+    ast_pct:   box_scores.sum { |b| b.assist_pct.to_f } / count
   }
 end
 

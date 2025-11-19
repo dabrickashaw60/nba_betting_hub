@@ -1,5 +1,5 @@
 require_relative "boot"
-
+require "logger"
 require "rails/all"
 
 # Require the gems listed in Gemfile, including any gems
@@ -13,6 +13,11 @@ module NbaBettingHub
     config.time_zone = 'Eastern Time (US & Canada)' # Change this to your preferred time zone
     config.active_record.default_timezone = :utc
     config.active_job.queue_adapter = :inline
+
+    config.action_cable.disable_request_forgery_protection = true
+    config.action_cable.mount_path = nil
+    config.action_cable.allowed_request_origins = []
+
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
