@@ -1,0 +1,299 @@
+<div class="card mt-2 mb-2 the-shadow text-center" style="overflow-x: auto;">
+  <div class="card-header fw-bold text-center">
+    League Advanced Stats (Full Table)
+  </div>
+
+  <div class="card-body" style="overflow-x: auto;">
+    <table id="league-advanced-stats-table"
+          class="table table-sm table-bordered table-hover text-center nowrap"
+          style="width: 100%;">
+
+      <thead class="table-light">
+        <tr>
+
+          <th class="sticky-col">Team</th>
+
+          <th>Age</th>
+
+          <th data-bs-toggle="tooltip" title="Wins">
+            W
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Losses">
+            L
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Pythagorean Wins (expected wins based on points scored and allowed)">
+            PW
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Pythagorean Losses (expected losses based on points scored and allowed)">
+            PL
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Margin of Victory">
+            MOV
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Strength of Schedule (0 is average)">
+            SOS
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Simple Rating System (0 is average)">
+            SRS
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Offensive Rating (Estimated points scored per 100 possessions)">
+            ORtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Defensive Rating (Estimated points allowed per 100 possessions)">
+            DRtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Net Rating (Point differential per 100 possessions)">
+            NRtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Estimated possessions per 48 minutes">
+            Pace
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Free Throw Attempt Rate (Number of free throw attempts per field goal attempt)">
+            FTr
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Three-Point Attempt Rate (Percentage of field goal attempts taken from 3-point range)">
+            3PAr
+          </th>
+
+          <th data-bs-toggle="tooltip" title="True Shooting Percentage (Efficiency considering 2P, 3P, and FT shooting)">
+            TS%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Effective Field Goal Percentage (Adjusts because 3-pointers are worth more)">
+            eFG%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Turnover Percentage (Turnovers per 100 possessions)">
+            TOV%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Offensive Rebound Percentage (Estimate of the percentage of available offensive rebounds a team grabs)">
+            ORB%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Free throw attempts per field goal attempt">
+            FT/FGA
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Effective Field Goal Percentage">
+            Opp eFG%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Turnover Percentage">
+            Opp TOV%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Defensive Rebound Percentage">
+            Opp DRB%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent free throw attempts per field goal attempt">
+            Opp FT/FGA
+          </th>
+
+        </tr>
+      </thead>
+
+      <tbody>
+        <% @adv_stats.each do |adv| %>
+          <% s = adv.stats %>
+          <% r = adv.rankings || {} %>
+
+      <tr>
+
+        <!-- TEAM: logo + name -->
+        <td class="fw-bold sticky-col text-start">
+          <img 
+            src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= adv.team.abbreviation %>-<%= @current_season.end_year %>.png"
+            alt="<%= adv.team.name %> logo"
+            width="28"
+            height="28"
+            class="me-2"
+          >
+          <%= adv.team.name %>
+        </td>
+
+        <!-- AGE -->
+        <td data-order="<%= s['age'].to_f %>"><%= s["age"] %></td>
+
+        <!-- WINS / LOSSES / PYTHAG -->
+        <td data-order="<%= s['wins'].to_f %>"><%= s["wins"] %></td>
+        <td data-order="<%= s['losses'].to_f %>"><%= s["losses"] %></td>
+        <td data-order="<%= s['wins_pyth'].to_f %>"><%= s["wins_pyth"] %></td>
+        <td data-order="<%= s['losses_pyth'].to_f %>"><%= s["losses_pyth"] %></td>
+
+        <!-- MOV / SOS / SRS -->
+        <td data-order="<%= s['mov'].to_f %>">
+          <%= s["mov"] %> <small class="text-muted">( <%= r["mov_rank"] %> )</small>
+        </td>
+
+        <td data-order="<%= s['sos'].to_f %>">
+          <%= s["sos"] %> <small class="text-muted">( <%= r["sos_rank"] %> )</small>
+        </td>
+
+        <td data-order="<%= s['srs'].to_f %>">
+          <%= s["srs"] %> <small class="text-muted">( <%= r["srs_rank"] %> )</small>
+        </td>
+
+        <!-- OFF/DEF/NET RATINGS -->
+        <td data-order="<%= s['off_rtg'].to_f %>">
+          <%= s["off_rtg"] %> <small>( <%= r["off_rtg_rank"] %> )</small>
+        </td>
+
+        <td data-order="<%= s['def_rtg'].to_f %>">
+          <%= s["def_rtg"] %> <small>( <%= r["def_rtg_rank"] %> )</small>
+        </td>
+
+        <td data-order="<%= s['net_rtg'].to_f %>">
+          <%= s["net_rtg"] %> <small>( <%= r["net_rtg_rank"] %> )</small>
+        </td>
+
+        <!-- PACE -->
+        <td data-order="<%= s['pace'].to_f %>">
+          <%= s["pace"] %> <small>( <%= r["pace_rank"] %> )</small>
+        </td>
+
+        <!-- FT/FGA -->
+        <td data-order="<%= s['fta_per_fga_pct'].to_f %>">
+          <%= s["fta_per_fga_pct"] %>
+          <small class="text-muted">( <%= r["fta_per_fga_pct_rank"] %> )</small>
+        </td>
+
+        <!-- 3PAr -->
+        <td data-order="<%= s['fg3a_per_fga_pct'].to_f %>">
+          <%= s["fg3a_per_fga_pct"] %>
+          <small class="text-muted">( <%= r["fg3a_per_fga_pct_rank"] %> )</small>
+        </td>
+
+        <!-- TS% -->
+        <td data-order="<%= s['ts_pct'].to_f %>">
+          <%= s["ts_pct"] %>
+          <small class="text-muted">( <%= r["ts_pct_rank"] %> )</small>
+        </td>
+
+        <!-- eFG% -->
+        <td data-order="<%= s['efg_pct'].to_f %>">
+          <%= s["efg_pct"] %>
+          <small class="text-muted">( <%= r["efg_pct_rank"] %> )</small>
+        </td>
+
+        <!-- TOV% -->
+        <td data-order="<%= s['tov_pct'].to_f %>">
+          <%= s["tov_pct"] %>
+          <small class="text-muted">( <%= r["tov_pct_rank"] %> )</small>
+        </td>
+
+        <!-- ORB% -->
+        <td data-order="<%= s['orb_pct'].to_f %>">
+          <%= s["orb_pct"] %>
+          <small class="text-muted">( <%= r["orb_pct_rank"] %> )</small>
+        </td>
+
+        <!-- FT Rate -->
+        <td data-order="<%= s['ft_rate'].to_f %>">
+          <%= s["ft_rate"] %>
+          <small class="text-muted">( <%= r["ft_rate_rank"] %> )</small>
+        </td>
+
+        <!-- OPP eFG% -->
+        <td data-order="<%= s['opp_efg_pct'].to_f %>">
+          <%= s["opp_efg_pct"] %>
+          <small class="text-muted">( <%= r["opp_efg_pct_rank"] %> )</small>
+        </td>
+
+        <!-- OPP TOV% -->
+        <td data-order="<%= s['opp_tov_pct'].to_f %>">
+          <%= s["opp_tov_pct"] %>
+          <small class="text-muted">( <%= r["opp_tov_pct_rank"] %> )</small>
+        </td>
+
+        <!-- DRB% -->
+        <td data-order="<%= s['drb_pct'].to_f %>">
+          <%= s["drb_pct"] %>
+          <small class="text-muted">( <%= r["drb_pct_rank"] %> )</small>
+        </td>
+
+        <!-- Opp FT Rate -->
+        <td data-order="<%= s['opp_ft_rate'].to_f %>">
+          <%= s["opp_ft_rate"] %>
+          <small class="text-muted">( <%= r["opp_ft_rate_rank"] %> )</small>
+        </td>
+
+      </tr>
+
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function initLeagueAdvancedStatsTable() {
+  const tableId = "#league-advanced-stats-table";
+  const tableElement = document.querySelector(tableId);
+  if (!tableElement) return;
+
+  // Destroy if exists
+  if ($.fn.DataTable.isDataTable(tableId)) {
+    $(tableId).DataTable().destroy();
+  }
+
+  const table = $(tableId).DataTable({
+    order: [[8, "desc"]],
+    pageLength: 30,
+    lengthChange: true,
+    searching: true,
+    paging: true,
+    autoWidth: false,
+    columnDefs: [
+      { className: "no-expansion", targets: "_all" }
+    ]
+  });
+
+  applyStickyColumn(tableId);
+
+  table.on("draw", function () {
+    applyStickyColumn(tableId);
+  });
+}
+
+function applyStickyColumn(selector) {
+  document.querySelectorAll(selector + " .sticky-col").forEach(function (cell) {
+    cell.style.position = "sticky";
+    cell.style.left = "0";
+    cell.style.backgroundColor = "white";
+    cell.style.zIndex = "2";
+    cell.style.borderRight = "1px solid #ddd";
+  });
+}
+
+// Run when full page loads
+document.addEventListener("turbo:load", initLeagueAdvancedStatsTable);
+
+// Run again when the standings_frame finishes rendering
+document.addEventListener("turbo:frame-load", function (event) {
+  if (event.target.id === "standings_frame") {
+    initLeagueAdvancedStatsTable();
+  }
+});
+
+// Clean up before Turbo caches
+document.addEventListener("turbo:before-cache", function () {
+  const tableId = "#league-advanced-stats-table";
+  if ($.fn.DataTable.isDataTable(tableId)) {
+    $(tableId).DataTable().destroy();
+  }
+});
+</script>

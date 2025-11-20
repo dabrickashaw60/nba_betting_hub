@@ -22,6 +22,12 @@ class StandingsController < ApplicationController
     @western_standings = Standing.where(season_id: @selected_season.id, conference: 'Western')
                                  .includes(:team)
                                  .order(win_percentage: :desc)
+
+    @adv_stats = TeamAdvancedStat
+                  .where(season: @current_season)
+                  .includes(:team)
+                  .order(Arel.sql("JSON_EXTRACT(stats, '$.srs') + 0 DESC"))
+                            
   end
 
   def update

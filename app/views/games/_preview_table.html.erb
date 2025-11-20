@@ -1,0 +1,53 @@
+<table class="table table-hover preview-table">
+  <thead>
+    <tr>
+      <th class="sticky-col">Player</th>
+      <th>MP</th>
+      <th>USG%</th>
+      <th>PTS</th>
+      <th>REB</th>
+      <th>REB%</th>
+      <th>AST</th>
+      <th>AST%</th>
+      <th>3PM</th>
+      <th>P+A</th>
+      <th>P+R</th>
+      <th>R+A</th>
+      <th>P+R+A</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% players.each do |data| %>
+      <% p = data[:player] %>
+      <% a = data[:averages] %>
+
+      <tr>
+        <td class="sticky-col">
+          <%= link_to team_player_path(p.team, p), data: { turbo: false } do %>
+            <img src="<%= p.profile_picture_url %>" width="20" class="rounded-circle me-2">
+            <%= "#{p.name.split.first[0]}. #{p.name.split.drop(1).join(' ')}" %>
+          <% end %>
+        </td>
+
+        <td><%= a[:minutes_display] %></td>
+        <td><%= a[:usage_pct]&.round(1) ? "#{a[:usage_pct].round(1)}%" : "—" %></td>
+
+        <td><%= a[:points].round(1) %></td>
+        <td><%= a[:rebounds].round(1) %></td>
+        <td><%= a[:trb_pct]&.round(1) ? "#{a[:trb_pct].round(1)}%" : "—" %></td>
+
+        <td><%= a[:assists].round(1) %></td>
+        <td><%= a[:ast_pct]&.round(1) ? "#{a[:ast_pct].round(1)}%" : "—" %></td>
+
+        <td><%= a[:three_point_field_goals].round(1) %></td>
+
+        <td><%= (a[:points] + a[:assists]).round(1) %></td>
+        <td><%= (a[:points] + a[:rebounds]).round(1) %></td>
+        <td><%= (a[:rebounds] + a[:assists]).round(1) %></td>
+        <td><%= (a[:points] + a[:rebounds] + a[:assists]).round(1) %></td>
+      </tr>
+
+    <% end %>
+  </tbody>
+</table>

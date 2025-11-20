@@ -57,4 +57,9 @@ Rails.application.routes.draw do
 
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
+
+
+  ### TEMP DEBUG ###
+  get "debug/team_stats/:team_id", to: "debug#team_stats"
+
 end

@@ -1,0 +1,201 @@
+<div class="row">
+
+  <%= render "games/team_advanced_stats" %>
+
+</div>
+
+<div class="row">
+
+  <!-- AWAY TEAM BOX -->
+  <div class="col-md-6">
+    <div class="card the-shadow mb-4">
+      <div class="card-header text-center fw-bold">
+        <%= @visitor_team.name %> — Last 5 Averages
+      </div>
+      <div class="card-body p-0">
+        <%= render "games/preview_table", players: @away_preview_players %>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME TEAM BOX -->
+  <div class="col-md-6">
+    <div class="card the-shadow mb-4">
+      <div class="card-header text-center fw-bold">
+        <%= @home_team.name %> — Last 5 Averages
+      </div>
+      <div class="card-body p-0">
+        <%= render "games/preview_table", players: @home_preview_players %>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row">
+<hr class="my-4">
+
+<!-- ======= PREVIOUS MEETINGS ======= -->
+<div class="card the-shadow mb-4">
+  <div class="card-header fw-bold text-center">
+    Previous Meetings (This Season)
+  </div>
+  <div class="card-body">
+
+    <% if @previous_meetings.any? %>
+      <table class="table table-hover text-center">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Matchup</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% @previous_meetings.each do |g| %>
+            <tr>
+              <td><%= g.date.strftime("%b %d, %Y") %></td>
+
+              <td>
+                <%= link_to game_path(g) do %>
+                  <%= g.visitor_team.abbreviation %> @ <%= g.home_team.abbreviation %>
+                <% end %>
+              </td>
+
+              <td>
+                <% if g.visitor_points && g.home_points %>
+                  <%= "#{g.visitor_points} - #{g.home_points}" %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+
+      </table>
+    <% else %>
+      <p class="text-center text-muted">No previous meetings this season.</p>
+    <% end %>
+
+  </div>
+</div>
+<div class="card the-shadow mb-4">
+  <div class="card-header fw-bold text-center">
+    Defense vs Position (Season)
+  </div>
+
+  <div class="card-body">
+
+    <table class="table table-bordered text-center">
+      <thead class="table-light">
+        <tr>
+          <th>Position</th>
+          <th><%= @visitor_team.abbreviation %></th>
+          <th><%= @home_team.abbreviation %></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% @positions.each do |pos| %>
+          <% away = @away_dvp[pos] || {} %>
+          <% home = @home_dvp[pos] || {} %>
+
+          <tr>
+            <td><strong><%= pos %></strong></td>
+
+            <!-- AWAY TEAM DvP -->
+            <td>
+              <% if away.present? %>
+                Pts: <%= away["points_rank"] %><br>
+                Reb: <%= away["rebounds_rank"] %><br>
+                Ast: <%= away["assists_rank"] %>
+              <% else %>
+                —
+              <% end %>
+            </td>
+
+            <!-- HOME TEAM DvP -->
+            <td>
+              <% if home.present? %>
+                Pts: <%= home["points_rank"] %><br>
+                Reb: <%= home["rebounds_rank"] %><br>
+                Ast: <%= home["assists_rank"] %>
+              <% else %>
+                —
+              <% end %>
+            </td>
+          </tr>
+
+        <% end %>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+
+</div>
+
+<script>
+document.addEventListener("turbo:load", function () {
+  console.log("Initializing Preview DataTables...");
+
+  const previewTables = document.querySelectorAll(".preview-table");
+
+  previewTables.forEach(function (tableElement, index) {
+    const tableId = "preview-table-" + index;
+
+    // Force a unique ID before DataTables loads
+    tableElement.setAttribute("id", tableId);
+
+    // If already initialized, skip
+    if ($.fn.DataTable.isDataTable("#" + tableId)) {
+      console.log("Already initialized:", tableId);
+      return;
+    }
+
+    // Initialize DataTable
+    const dt = $("#" + tableId).DataTable({
+      order: [[1, "desc"]], // Sort by MP
+      pageLength: false,
+      lengthChange: false,
+      searching: false,
+      paging: false,
+      columnDefs: [
+        { className: "no-expansion", targets: "_all" }
+      ]
+    });
+
+    // Sticky column
+    applyStickyColumn("#" + tableId);
+
+    // Re-apply styling on redraw
+    dt.on("draw", function () {
+      applyStickyColumn("#" + tableId);
+    });
+  });
+
+  // Sticky column helper
+  function applyStickyColumn(selector) {
+    document.querySelectorAll(selector + " .sticky-col").forEach(function (cell) {
+      cell.style.position = "sticky";
+      cell.style.left = "0";
+      cell.style.backgroundColor = "white";
+      cell.style.zIndex = "2";
+      cell.style.borderRight = "1px solid #ddd";
+    });
+  }
+
+  // Clean up before Turbo cache
+  document.addEventListener("turbo:before-cache", function () {
+    previewTables.forEach(function (tableElement, index) {
+      const tableId = "#preview-table-" + index;
+      if ($.fn.DataTable.isDataTable(tableId)) {
+        $(tableId).DataTable().destroy();
+      }
+    });
+  });
+});
+</script>

@@ -98,6 +98,25 @@ table.dataTable tbody tr td:not(:first-child) {
   padding: 0 !important;
 }
 
+table.dataTable td {
+  white-space: nowrap;
+}
+
+#team-advanced {
+  th, td {
+    white-space: nowrap;
+  }
+  th{
+    font-size: 16px;
+  }
+  td{
+    font-size: 14px;
+  }
+
+  overflow-x: auto;
+  display: block;   // allows horizontal scroll if the table is wide
+}
+
 /* Apply this to the sticky column */
 .sticky-col {
   position: sticky;

@@ -1,0 +1,185 @@
+<div class="card the-shadow mb-4 p-0">
+  <div class="card-header fw-bold text-center">
+    Team Advanced Stats (Season)
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-bordered text-center mb-0" id="team-advanced">
+      <thead class="table-light">
+        <tr>
+
+          <th class="sticky-col">Team</th>
+
+          <th>Age</th>
+
+          <th data-bs-toggle="tooltip" title="Wins">
+            W
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Losses">
+            L
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Pythagorean Wins (expected wins based on points scored and allowed)">
+            PW
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Pythagorean Losses (expected losses based on points scored and allowed)">
+            PL
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Margin of Victory">
+            MOV
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Strength of Schedule (0 is average)">
+            SOS
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Simple Rating System (0 is average)">
+            SRS
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Offensive Rating (Estimated points scored per 100 possessions)">
+            ORtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Defensive Rating (Estimated points allowed per 100 possessions)">
+            DRtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Net Rating (Point differential per 100 possessions)">
+            NRtg
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Estimated possessions per 48 minutes">
+            Pace
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Free Throw Attempt Rate (Number of free throw attempts per field goal attempt)">
+            FTr
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Three-Point Attempt Rate (Percentage of field goal attempts taken from 3-point range)">
+            3PAr
+          </th>
+
+          <th data-bs-toggle="tooltip" title="True Shooting Percentage (Efficiency considering 2P, 3P, and FT shooting)">
+            TS%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Effective Field Goal Percentage (Adjusts because 3-pointers are worth more)">
+            eFG%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Turnover Percentage (Turnovers per 100 possessions)">
+            TOV%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Offensive Rebound Percentage (Estimate of the percentage of available offensive rebounds a team grabs)">
+            ORB%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Free throw attempts per field goal attempt">
+            FT/FGA
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Effective Field Goal Percentage">
+            Opp eFG%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Turnover Percentage">
+            Opp TOV%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent Defensive Rebound Percentage">
+            Opp DRB%
+          </th>
+
+          <th data-bs-toggle="tooltip" title="Opponent free throw attempts per field goal attempt">
+            Opp FT/FGA
+          </th>
+
+        </tr>
+      </thead>
+
+      <tbody>
+        <!-- AWAY TEAM -->
+        <tr>
+          <td class="fw-bold"><%= @visitor_team.abbreviation %></td>
+
+          <td><%= @away_adv["age"] %></td>
+          <td><%= @away_adv["wins"] %></td>
+          <td><%= @away_adv["losses"] %></td>
+          <td><%= @away_adv["wins_pyth"] %> <small>(<%= @away_rank["wins_pyth_rank"] %>)</small></td>
+          <td><%= @away_adv["losses_pyth"] %> <small>(<%= @away_rank["losses_pyth_rank"] %>)</small></td>
+
+          <td><%= @away_adv["mov"] %> <small>(<%= @away_rank["mov_rank"] %>)</small></td>
+          <td><%= @away_adv["sos"] %> <small>(<%= @away_rank["sos_rank"] %>)</small></td>
+          <td><%= @away_adv["srs"] %> <small>(<%= @away_rank["srs_rank"] %>)</small></td>
+
+          <td><%= @away_adv["off_rtg"] %> <small>(<%= @away_rank["off_rtg_rank"] %>)</small></td>
+          <td><%= @away_adv["def_rtg"] %> <small>(<%= @away_rank["def_rtg_rank"] %>)</small></td>
+          <td><%= @away_adv["net_rtg"] %> <small>(<%= @away_rank["net_rtg_rank"] %>)</small></td>
+          <td><%= @away_adv["pace"] %> <small>(<%= @away_rank["pace_rank"] %>)</small></td>
+
+          <td><%= @away_adv["fta_per_fga_pct"] %> <small>(<%= @away_rank["fta_per_fga_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["fg3a_per_fga_pct"] %> <small>(<%= @away_rank["fg3a_per_fga_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["ts_pct"] %> <small>(<%= @away_rank["ts_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["efg_pct"] %> <small>(<%= @away_rank["efg_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["tov_pct"] %> <small>(<%= @away_rank["tov_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["orb_pct"] %> <small>(<%= @away_rank["orb_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["ft_rate"] %> <small>(<%= @away_rank["ft_rate_rank"] %>)</small></td>
+
+          <td><%= @away_adv["opp_efg_pct"] %> <small>(<%= @away_rank["opp_efg_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["opp_tov_pct"] %> <small>(<%= @away_rank["opp_tov_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["drb_pct"] %> <small>(<%= @away_rank["drb_pct_rank"] %>)</small></td>
+          <td><%= @away_adv["opp_ft_rate"] %> <small>(<%= @away_rank["opp_ft_rate_rank"] %>)</small></td>
+        </tr>
+
+        <!-- HOME TEAM -->
+        <tr>
+          <td class="fw-bold"><%= @home_team.abbreviation %></td>
+
+          <td><%= @home_adv["age"] %></td>
+          <td><%= @home_adv["wins"] %></td>
+          <td><%= @home_adv["losses"] %></td>
+          <td><%= @home_adv["wins_pyth"] %> <small>(<%= @home_rank["wins_pyth_rank"] %>)</small></td>
+          <td><%= @home_adv["losses_pyth"] %> <small>(<%= @home_rank["losses_pyth_rank"] %>)</small></td>
+
+          <td><%= @home_adv["mov"] %> <small>(<%= @home_rank["mov_rank"] %>)</small></td>
+          <td><%= @home_adv["sos"] %> <small>(<%= @home_rank["sos_rank"] %>)</small></td>
+          <td><%= @home_adv["srs"] %> <small>(<%= @home_rank["srs_rank"] %>)</small></td>
+
+          <td><%= @home_adv["off_rtg"] %> <small>(<%= @home_rank["off_rtg_rank"] %>)</small></td>
+          <td><%= @home_adv["def_rtg"] %> <small>(<%= @home_rank["def_rtg_rank"] %>)</small></td>
+          <td><%= @home_adv["net_rtg"] %> <small>(<%= @home_rank["net_rtg_rank"] %>)</small></td>
+          <td><%= @home_adv["pace"] %> <small>(<%= @home_rank["pace_rank"] %>)</small></td>
+
+          <td><%= @home_adv["fta_per_fga_pct"] %> <small>(<%= @home_rank["fta_per_fga_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["fg3a_per_fga_pct"] %> <small>(<%= @home_rank["fg3a_per_fga_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["ts_pct"] %> <small>(<%= @home_rank["ts_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["efg_pct"] %> <small>(<%= @home_rank["efg_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["tov_pct"] %> <small>(<%= @home_rank["tov_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["orb_pct"] %> <small>(<%= @home_rank["orb_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["ft_rate"] %> <small>(<%= @home_rank["ft_rate_rank"] %>)</small></td>
+
+          <td><%= @home_adv["opp_efg_pct"] %> <small>(<%= @home_rank["opp_efg_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["opp_tov_pct"] %> <small>(<%= @home_rank["opp_tov_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["drb_pct"] %> <small>(<%= @home_rank["drb_pct_rank"] %>)</small></td>
+          <td><%= @home_adv["opp_ft_rate"] %> <small>(<%= @home_rank["opp_ft_rate_rank"] %>)</small></td>
+        </tr>
+
+      </tbody>
+    </table>
+
+
+  </div>
+</div>
+
+<script>
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+</script>

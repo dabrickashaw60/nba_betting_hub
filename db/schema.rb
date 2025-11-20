@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_11_04_192109) do
+ActiveRecord::Schema.define(version: 2025_11_19_190716) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -68,7 +68,7 @@ ActiveRecord::Schema.define(version: 2025_11_04_192109) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["season_id"], name: "index_defense_vs_positions_on_season_id"
     t.index ["team_id"], name: "index_defense_vs_positions_on_team_id"
-    t.check_constraint "json_valid(`data`)", name: "data"
+    t.check_constraint "son_valid(`data`", name: "defense_vs_positions_chk_1"
   end
 
   create_table "games", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
@@ -166,7 +166,7 @@ ActiveRecord::Schema.define(version: 2025_11_04_192109) do
     t.index ["team_id"], name: "index_players_on_team_id"
   end
 
-  create_table "projection_runs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+  create_table "projection_runs", charset: "latin1", force: :cascade do |t|
     t.date "date", null: false
     t.string "model_version", default: "baseline_v1", null: false
     t.string "status", default: "running", null: false
@@ -179,7 +179,7 @@ ActiveRecord::Schema.define(version: 2025_11_04_192109) do
     t.index ["date", "model_version"], name: "index_projection_runs_on_date_and_model_version", unique: true
   end
 
-  create_table "projections", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+  create_table "projections", charset: "latin1", force: :cascade do |t|
     t.bigint "projection_run_id", null: false
     t.bigint "player_id", null: false
     t.bigint "team_id", null: false
@@ -247,13 +247,24 @@ ActiveRecord::Schema.define(version: 2025_11_04_192109) do
     t.index ["team_id"], name: "index_standings_on_team_id"
   end
 
+  create_table "team_advanced_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "season_id", null: false
+    t.json "stats"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.json "rankings"
+    t.index ["season_id"], name: "index_team_advanced_stats_on_season_id"
+    t.index ["team_id"], name: "index_team_advanced_stats_on_team_id"
+  end
+
   create_table "teams", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name"
     t.string "abbreviation"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.text "defense_vs_position", size: :long, collation: "utf8mb4_bin"
-    t.check_constraint "json_valid(`defense_vs_position`)", name: "defense_vs_position"
+    t.check_constraint "son_valid(`defense_vs_position`", name: "teams_chk_1"
   end
 
   add_foreign_key "box_scores", "games"
@@ -266,8 +277,10 @@ ActiveRecord::Schema.define(version: 2025_11_04_192109) do
   add_foreign_key "player_stats", "players"
   add_foreign_key "players", "teams"
   add_foreign_key "projections", "players"
-  add_foreign_key "projections", "projection_runs", on_delete: :cascade
+  add_foreign_key "projections", "projection_runs"
   add_foreign_key "projections", "teams"
   add_foreign_key "projections", "teams", column: "opponent_team_id"
   add_foreign_key "standings", "teams"
+  add_foreign_key "team_advanced_stats", "seasons"
+  add_foreign_key "team_advanced_stats", "teams"
 end

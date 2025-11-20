@@ -1,0 +1,242 @@
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header">
+        <h3><%= @game.visitor_team.name %> Box Score</h3>
+      </div>
+      <div class="card-body" id="pd-left-none">
+        <table class="table table-hover" id="visitor-box-score-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Player</th>
+              <th>MP</th>
+              <th>PTS</th>              
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>ORB</th>
+              <th>DRB</th>
+              <th>TRB</th>
+              <th>AST</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>GmSc</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
+              <tr>
+                <td class="sticky-col"><img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle"><%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player), data: { turbo: false }  %> (<%= box_score.player.position %>)</td>
+                <td><%= box_score.minutes_played %></td>
+                <td><%= box_score.points %></td>                
+                <td><%= box_score.field_goals %></td>
+                <td><%= box_score.field_goals_attempted %></td>
+                <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.three_point_field_goals %></td>
+                <td><%= box_score.three_point_field_goals_attempted %></td>
+                <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.free_throws %></td>
+                <td><%= box_score.free_throws_attempted %></td>
+                <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.offensive_rebounds %></td>
+                <td><%= box_score.defensive_rebounds %></td>
+                <td><%= box_score.total_rebounds %></td>
+                <td><%= box_score.assists %></td>
+                <td><%= box_score.steals %></td>
+                <td><%= box_score.blocks %></td>
+                <td><%= box_score.turnovers %></td>
+                <td><%= box_score.personal_fouls %></td>
+                <td><%= box_score.game_score %></td>
+                <td><%= box_score.plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Home Team Box Score Card -->
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header">
+        <h3><%= @game.home_team.name %> Box Score</h3>
+      </div>
+      <div class="card-body" id="pd-left-none">
+        <table class="table table-hover" id="home-box-score-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Player</th>
+              <th>MP</th>
+              <th>PTS</th>              
+              <th>FG</th>
+              <th>FGA</th>
+              <th>FG%</th>
+              <th>3P</th>
+              <th>3PA</th>
+              <th>3P%</th>
+              <th>FT</th>
+              <th>FTA</th>
+              <th>FT%</th>
+              <th>ORB</th>
+              <th>DRB</th>
+              <th>TRB</th>
+              <th>AST</th>
+              <th>STL</th>
+              <th>BLK</th>
+              <th>TO</th>
+              <th>PF</th>
+              <th>GmSc</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
+              <tr>
+                <td class="sticky-col"><img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle"><%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player), data: { turbo: false }  %> (<%= box_score.player.position %>)</td>
+                <td><%= box_score.minutes_played %></td>
+                <td><%= box_score.points %></td>                
+                <td><%= box_score.field_goals %></td>
+                <td><%= box_score.field_goals_attempted %></td>
+                <td><%= number_to_percentage(box_score.field_goal_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.three_point_field_goals %></td>
+                <td><%= box_score.three_point_field_goals_attempted %></td>
+                <td><%= number_to_percentage(box_score.three_point_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.free_throws %></td>
+                <td><%= box_score.free_throws_attempted %></td>
+                <td><%= number_to_percentage(box_score.free_throw_percentage * 100, precision: 1) %></td>
+                <td><%= box_score.offensive_rebounds %></td>
+                <td><%= box_score.defensive_rebounds %></td>
+                <td><%= box_score.total_rebounds %></td>
+                <td><%= box_score.assists %></td>
+                <td><%= box_score.steals %></td>
+                <td><%= box_score.blocks %></td>
+                <td><%= box_score.turnovers %></td>
+                <td><%= box_score.personal_fouls %></td>
+                <td><%= box_score.game_score %></td>
+                <td><%= box_score.plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Visitor Team Advanced Box Score -->
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header bg-secondary text-white">
+        <h3><%= @game.visitor_team.name %> Advanced Box Score</h3>
+      </div>
+      <div class="card-body" id="pd-left-none">
+        <table class="table table-hover" id="visitor-advanced-box-score-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Player</th>
+              <th>TS%</th>
+              <th>eFG%</th>
+              <th>3PAr</th>
+              <th>FTr</th>
+              <th>ORB%</th>
+              <th>DRB%</th>
+              <th>TRB%</th>
+              <th>AST%</th>
+              <th>STL%</th>
+              <th>BLK%</th>
+              <th>TOV%</th>
+              <th>USG%</th>
+              <th>ORtg</th>
+              <th>DRtg</th>
+              <th>BPM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @game.box_scores.where(team: @game.visitor_team).each do |box_score| %>
+              <tr>
+                <td class="sticky-col">
+                  <img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle">
+                  <%= link_to box_score.player.name, team_player_path(@game.visitor_team, box_score.player), data: { turbo: false } %>
+                  (<%= box_score.player.position %>)
+                </td>
+                <td><%= number_to_percentage(box_score.true_shooting_pct * 100, precision: 1) if box_score.true_shooting_pct %></td>
+                <td><%= number_to_percentage(box_score.effective_fg_pct * 100, precision: 1) if box_score.effective_fg_pct %></td>
+                <td><%= number_to_percentage(box_score.three_point_attempt_rate * 100, precision: 1) if box_score.three_point_attempt_rate %></td>
+                <td><%= number_to_percentage(box_score.free_throw_rate * 100, precision: 1) if box_score.free_throw_rate %></td>
+                <td><%= number_to_percentage(box_score.offensive_rebound_pct, precision: 1) if box_score.offensive_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.defensive_rebound_pct, precision: 1) if box_score.defensive_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.total_rebound_pct, precision: 1) if box_score.total_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.assist_pct, precision: 1) if box_score.assist_pct %></td>
+                <td><%= number_to_percentage(box_score.steal_pct, precision: 1) if box_score.steal_pct %></td>
+                <td><%= number_to_percentage(box_score.block_pct, precision: 1) if box_score.block_pct %></td>
+                <td><%= number_to_percentage(box_score.turnover_pct, precision: 1) if box_score.turnover_pct %></td>
+                <td><%= number_to_percentage(box_score.usage_pct, precision: 1) if box_score.usage_pct %></td>
+                <td><%= box_score.offensive_rating %></td>
+                <td><%= box_score.defensive_rating %></td>
+                <td><%= box_score.box_plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>    
+
+    <!-- Home Team Advanced Box Score -->
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+      <div class="card-header bg-secondary text-white">
+        <h3><%= @game.home_team.name %> Advanced Box Score</h3>
+      </div>
+      <div class="card-body" id="pd-left-none">
+        <table class="table table-hover" id="home-advanced-box-score-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Player</th>
+              <th>TS%</th>
+              <th>eFG%</th>
+              <th>3PAr</th>
+              <th>FTr</th>
+              <th>ORB%</th>
+              <th>DRB%</th>
+              <th>TRB%</th>
+              <th>AST%</th>
+              <th>STL%</th>
+              <th>BLK%</th>
+              <th>TOV%</th>
+              <th>USG%</th>
+              <th>ORtg</th>
+              <th>DRtg</th>
+              <th>BPM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @game.box_scores.where(team: @game.home_team).each do |box_score| %>
+              <tr>
+                <td class="sticky-col">
+                  <img src="<%= box_score.player.profile_picture_url %>" width="15" height="auto" class="me-2 rounded-circle">
+                  <%= link_to box_score.player.name, team_player_path(@game.home_team, box_score.player), data: { turbo: false } %>
+                  (<%= box_score.player.position %>)
+                </td>
+                <td><%= number_to_percentage(box_score.true_shooting_pct * 100, precision: 1) if box_score.true_shooting_pct %></td>
+                <td><%= number_to_percentage(box_score.effective_fg_pct * 100, precision: 1) if box_score.effective_fg_pct %></td>
+                <td><%= number_to_percentage(box_score.three_point_attempt_rate * 100, precision: 1) if box_score.three_point_attempt_rate %></td>
+                <td><%= number_to_percentage(box_score.free_throw_rate * 100, precision: 1) if box_score.free_throw_rate %></td>
+                <td><%= number_to_percentage(box_score.offensive_rebound_pct, precision: 1) if box_score.offensive_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.defensive_rebound_pct, precision: 1) if box_score.defensive_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.total_rebound_pct, precision: 1) if box_score.total_rebound_pct %></td>
+                <td><%= number_to_percentage(box_score.assist_pct, precision: 1) if box_score.assist_pct %></td>
+                <td><%= number_to_percentage(box_score.steal_pct, precision: 1) if box_score.steal_pct %></td>
+                <td><%= number_to_percentage(box_score.block_pct, precision: 1) if box_score.block_pct %></td>
+                <td><%= number_to_percentage(box_score.turnover_pct, precision: 1) if box_score.turnover_pct %></td>
+                <td><%= number_to_percentage(box_score.usage_pct, precision: 1) if box_score.usage_pct %></td>
+                <td><%= box_score.offensive_rating %></td>
+                <td><%= box_score.defensive_rating %></td>
+                <td><%= box_score.box_plus_minus %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
