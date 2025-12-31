@@ -186,6 +186,7 @@
           </tr>
         </thead>
         <tbody>
+          <% qualifying_players = @players_over_15_minutes.map { |d| d[:player] } %>
           <% @players_over_15_minutes.each do |data| %>
             <% 
               player = data[:player]
@@ -211,20 +212,65 @@
                                   when "C"  then ["C"]
                                   else []
                                   end
+              alert_positions =
+                case player.position
+                when "PG" then ["PG", "SG"]
+                when "SG" then ["SG", "PG"]
+                when "SF" then ["SF", "PF"]
+                when "PF" then ["PF", "SF"]
+                when "C"  then ["C", "PF"]
+                else []
+                end
+                                  
               filtered_stats = opponent_stats.slice(*relevant_positions)
 
               pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
               rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
               ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
+
+              out_teammates = player.team.players
+                                    .where.not(id: player.id)
+                                    .joins(:health)
+                                    .where(health: { status: "Out" })
+                                    .where(position: alert_positions)
+                                    .select { |tm| qualifying_players.include?(tm) }
+
+                teammates_out = out_teammates.any?
+                out_names = out_teammates.map(&:name).join(", ")
+                tooltip_text = "#{out_names} is Out. Usage may increase."                
             %>
 
             <tr data-team-id="<%= player.team_id %>">
+              <%
+                show_health_tooltip = player.health&.status.present? && player.health.status != "Healthy"
+              %>
+
               <td class="sticky-col">
-                <%= link_to team_player_path(player.team, player), data: { turbo: false } do %>
+                <%= link_to team_player_path(player.team, player),
+                            data: (
+                              show_health_tooltip ?
+                              {
+                                turbo: false,
+                                bs_toggle: "tooltip",
+                                bs_placement: "right",
+                                bs_title: player.health&.description
+                              } :
+                              { turbo: false }
+                            ) do %>
+
                   <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
                   <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+
+                <% end %>
+
+                <% if teammates_out %>
+                  <i class="bi bi-arrow-up-right-square-fill ms-1"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="<%= tooltip_text %>"></i>
                 <% end %>
               </td>
+
               <td>
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-<%= @current_season.end_year %>.png"
                     width="20" alt="<%= player.team.name %>">
@@ -276,6 +322,25 @@ document.addEventListener("turbo:load", function () {
   tooltipTriggerList.forEach(function (tooltipTriggerEl) {
     new bootstrap.Tooltip(tooltipTriggerEl);
   });
+
+  // Auto-hide tooltips after 5 seconds (fix mobile lingering)
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+    el.addEventListener('shown.bs.tooltip', function () {
+      const tip = bootstrap.Tooltip.getInstance(el);
+      if (!tip) return;
+
+      // Clear any existing timeout
+      if (el._tooltipTimeout) {
+        clearTimeout(el._tooltipTimeout);
+      }
+
+      // Hide after 5 seconds
+      el._tooltipTimeout = setTimeout(function () {
+        tip.hide();
+      }, 5000);
+    });
+  });
+
 
   let hideOutPlayers = false; // Track if 'Out' players should be hidden
   let selectedGameTeams = new Set(); // Track selected teams for filtering
@@ -457,11 +522,19 @@ document.addEventListener("turbo:load", function () {
 
   // --- Cleanup before Turbo caches the page ---
   document.addEventListener("turbo:before-cache", function () {
+    // Dispose Bootstrap tooltips so they don't get stuck on mobile
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      const tip = bootstrap.Tooltip.getInstance(el);
+      if (tip) tip.dispose();
+    });
+
+    // Destroy DataTable before cache
     if ($.fn.DataTable.isDataTable(playersTableId)) {
       console.log(`Destroying DataTable for ${playersTableId} before Turbo caches the page...`);
       $(playersTableId).DataTable().destroy();
     }
   });
+
 });
 </script>
 

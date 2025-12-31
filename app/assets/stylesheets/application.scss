@@ -31,6 +31,16 @@
   background-color: #28a745 !important;
 } 
 
+.flash-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1055; /* above modals backdrop, below modal */
+  min-width: 300px;
+  max-width: 420px;
+}
+
+
 #game-card {
 
   .team-logo {
@@ -169,7 +179,7 @@ div.dataTables_wrapper div.dataTables_length select{
   color: black !important;
 }
 .nav-link.active{
-  box-shadow: 0px -3px 3px -1px red;
+  box-shadow: 0px -3px 4px 2px red;
   font-weight: 600;
   transition: all .2s;
   color: red !important;

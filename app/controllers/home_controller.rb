@@ -23,7 +23,7 @@ class HomeController < ApplicationController
     end
 
     # 5️⃣ Build player data (averages, betting info) efficiently and cache it
-    @players_over_15_minutes = Rails.cache.fetch("players_over_15_minutes_#{@date}", expires_in: 15.minutes) do
+    @players_over_15_minutes = Rails.cache.fetch("players_over_15_minutes_#{@date}", expires_in: 20.minutes) do
       players = Player.where(team_id: team_ids).includes(box_scores: :game)
 
       # Collect recent box scores in bulk
@@ -47,7 +47,7 @@ class HomeController < ApplicationController
         avg5 = compute_bulk_averages(last_five)
         avg10 = compute_bulk_averages(last_ten)
 
-        if avg5[:minutes_played] > 15
+        if avg5[:minutes_played] > 20
           { player: player, averages: avg5, last_ten_averages: avg10 }
         end
       end.compact
