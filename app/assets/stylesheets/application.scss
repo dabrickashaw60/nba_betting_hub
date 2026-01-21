@@ -89,6 +89,9 @@
       box-shadow: 3px 5px 8px 2px #00000099;
       transform: translateY(-5px);
     }
+    .btn{
+      font-size: 10px;
+    }
   }
 }
 
@@ -179,10 +182,11 @@ div.dataTables_wrapper div.dataTables_length select{
   color: black !important;
 }
 .nav-link.active{
-  box-shadow: 0px -3px 4px 2px red;
+  background-color: #dc3545;
   font-weight: 600;
   transition: all .2s;
-  color: red !important;
+  color: white !important;
+  border-radius: 8px;
 }
 #playersHitRatesTabs{
   border-bottom: 0 !important;
@@ -342,6 +346,43 @@ table.dataTable tbody th, table.dataTable tbody td{
   }
   #teammate-select{
     font-size: 12px;
+  }
+
+  //FOR DATATABLE HEARDER
+    /* Target only this table wrapper */
+  #players-over-15-minutes-table_wrapper .dataTables_length label,
+  #players-over-15-minutes-table_wrapper .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    width: 100%;
+  }
+
+  /* Hide "Show" and "entries" text, leaving only the select */
+  #players-over-15-minutes-table_wrapper .dataTables_length label {
+    font-size: 0; /* hides text nodes */
+  }
+  #players-over-15-minutes-table_wrapper .dataTables_length select {
+    font-size: 14px; /* bring the select text back */
+    width: 72px;     /* dropdown width */
+  }
+
+  /* Make the top control row not wrap into two lines */
+  #players-over-15-minutes-table_wrapper > .d-flex.w-100 {
+    flex-wrap: nowrap !important;
+  }
+
+  /* Search: keep label text small and input fill remaining width */
+  #players-over-15-minutes-table_wrapper .dataTables_filter {
+    flex: 1 1 auto;
+  }
+  #players-over-15-minutes-table_wrapper .dataTables_filter label {
+    justify-content: flex-end;
+  }
+  #players-over-15-minutes-table_wrapper .dataTables_filter input {
+    width: 100%;
+    max-width: 100%;
   }
 
 }

@@ -10,38 +10,54 @@ class Scrapers::ScheduleScraper
   end
 
   def scrape_schedule
-    month_path = @month ? "-#{@month.downcase}" : ""
-    schedule_url = "#{BASE_URL}#{month_path}.html"
+    allowed = %w[october november december january february march april may june]
 
-    response = HTTParty.get(schedule_url)
+    base_date =
+      if @month.present?
+        # If someone passes "December", anchor to 1st of that month in current year
+        Date.strptime(@month.to_s, "%B") rescue nil
+      end
 
-    if response.code == 200
+    # If month parse failed or no month provided, use today
+    base_date ||= Time.zone.today
+
+    months_to_scrape = [
+      (base_date << 1), # previous month
+      base_date,        # current month
+      (base_date >> 1)  # next month
+    ].map { |d| d.strftime("%B").downcase }.uniq
+
+    scraped_keys_by_date = Hash.new { |h, k| h[k] = [] }
+
+    months_to_scrape.each do |month_slug|
+      next unless allowed.include?(month_slug)
+
+      schedule_url = "#{BASE_URL}-#{month_slug}.html"
+      response = HTTParty.get(schedule_url)
+
+      if response.code != 200
+        puts "Failed to access #{schedule_url} - Status: #{response.code}"
+        next
+      end
+
       puts "Successfully accessed #{schedule_url} - Status: #{response.code}"
       parsed_page = Nokogiri::HTML(response.body)
 
-      # Track what Basketball-Reference says should exist for TODAY+FUTURE
-      # Only for dates present on the page we are currently scraping.
-      scraped_keys_by_date = Hash.new { |h, k| h[k] = [] }
-
       parsed_page.css('table#schedule tbody tr').each do |row|
         game_data = parse_row(row)
+        next unless game_data
 
-        if game_data
-          # Only sync TODAY+FUTURE (never past)
-          if game_data[:date].present? && game_data[:date] >= Time.zone.today
-            scraped_keys_by_date[game_data[:date]] << game_key(game_data)
-          end
-
-          save_game(game_data)
+        # Track expected keys only for TODAY+FUTURE for dates present on the pages we scraped
+        if game_data[:date].present? && game_data[:date] >= Time.zone.today
+          scraped_keys_by_date[game_data[:date]] << game_key(game_data)
         end
-      end
 
-      # After scraping + saving, prune any TODAY+FUTURE games in the DB for these scraped dates
-      # that no longer exist on Basketball-Reference.
-      prune_future_games(scraped_keys_by_date)
-    else
-      puts "Failed to access #{schedule_url} - Status: #{response.code}"
+        save_game(game_data)
+      end
     end
+
+    # Prune once using the merged expected set across all 3 pages
+    prune_future_games(scraped_keys_by_date)
   end
 
   private

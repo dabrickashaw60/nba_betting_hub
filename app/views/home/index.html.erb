@@ -59,7 +59,7 @@
 
             </div>
 
-            <!-- ROW 2: Time + Info -->
+            <!-- ROW 2: Time + Info + Filter -->
             <div class="d-flex flex-column align-items-center text-center">
 
               <div class="mb-1" style="font-size: 11px;">
@@ -73,7 +73,21 @@
                 <% end %>
               </div>
 
-              <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
+              <!-- Info + Eye on same line -->
+              <div class="d-flex align-items-center gap-2">
+                <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
+
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary game-card-filter active"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Filter players by this game"
+                  data-visitor-team-id="<%= game.visitor_team_id %>"
+                  data-home-team-id="<%= game.home_team_id %>">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
 
             </div>
 
@@ -100,63 +114,23 @@
         title="Player stats use last 5 games. Defense ranks use last 10. For Defense Rankings: Green = weak defense (good matchup), Red = strong defense (tough matchup).">
       </i>
 
-      <%= button_to update_injuries_path, method: :post,
-          class: "btn btn-link p-0 ms-2 text-primary",
-          form: { "data-turbo-confirm": "Run injury update now?" },
-          data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries" } do %>
-          <i class="bi bi-hospital text-danger" style="font-size: 1.2rem;"></i>
-      <% end %>
     </h4>
 
     <div class="d-flex align-items-center mb-2">
+            <%= button_to update_injuries_path, method: :post,
+                class: "btn btn-link p-0 me-2 text-primary",
+                form: { "data-turbo-confirm": "Run injury update now?" },
+                data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries" } do %>
+                <i class="bi bi-hospital text-danger" style="font-size: 1.2rem;"></i>
+            <% end %>
       <!-- Toggle button for hiding/showing players with "Out" status -->
       <button id="toggle-out-players" 
               class="btn btn-outline-primary btn-sm me-2" 
               data-bs-toggle="tooltip" 
               data-bs-placement="top" 
               title="Show/Hide (O) Players">
-        <i class="bi bi-eye"></i>
+        <i class="bi bi-heart-pulse"></i>
       </button>
-
-      <!-- Dropdown for filtering by games -->
-      <div class="dropdown">
-        <button 
-          class="btn btn-outline-primary btn-sm dropdown-toggle" 
-          type="button" 
-          id="filter-games-dropdown" 
-          data-bs-toggle="dropdown" 
-          aria-expanded="false">
-          Games
-        </button>
-        <ul class="dropdown-menu p-2 text-center" aria-labelledby="filter-games-dropdown" id="games-filter-menu">
-          <li>
-            <div class="form-check">
-              <input class="form-check-input game-filter-checkbox" type="checkbox" value="all" id="select-all-games" checked>
-              <label class="form-check-label" for="select-all-games">Select All</label>
-            </div>
-          </li>
-          <hr>
-          <% @todays_games.each do |game| %>
-            <li>
-              <div class="form-check">
-                <input 
-                  class="form-check-input game-filter-checkbox" 
-                  type="checkbox" 
-                  value="<%= game.visitor_team_id %>,<%= game.home_team_id %>" 
-                  id="game-<%= game.id %>" 
-                  checked>
-                <label class="form-check-label" for="game-<%= game.id %>">
-                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-<%= @current_season.end_year %>.png" 
-                       width="30" alt="<%= game.visitor_team.name %>">
-                  vs
-                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-<%= @current_season.end_year %>.png" 
-                       width="30" alt="<%= game.home_team.name %>">
-                </label>
-              </div>
-            </li>
-          <% end %>
-        </ul>
-      </div>
     </div>
   </div>
 
@@ -355,45 +329,65 @@ document.addEventListener("turbo:load", function () {
     });
   }
 
-  // --- Game filter dropdown logic ---
-  const selectAllGamesCheckbox = document.querySelector("#select-all-games");
-  const gameFilterCheckboxes = document.querySelectorAll(".game-filter-checkbox:not(#select-all-games)");
+  // --- Game card filtering logic (first click isolates, then multi-select) ---
+  const gameFilterButtons = document.querySelectorAll(".game-card-filter");
+  let hasIsolatedOnce = false; // tracks whether we've done the first-click isolate behavior
 
-  if (selectAllGamesCheckbox) {
-    selectAllGamesCheckbox.addEventListener("change", function () {
-      const isChecked = this.checked;
-      selectedGameTeams.clear();
+  function seedSelectedTeamsFromActiveGameCards() {
+    selectedGameTeams.clear();
 
-      gameFilterCheckboxes.forEach((checkbox) => {
-        checkbox.checked = isChecked;
-        if (isChecked) {
-          const [visitorId, homeId] = checkbox.value.split(",");
-          selectedGameTeams.add(visitorId);
-          selectedGameTeams.add(homeId);
-        }
-      });
+    gameFilterButtons.forEach((btn) => {
+      if (!btn.classList.contains("active")) return;
 
-      redrawTables();
+      const visitorId = btn.dataset.visitorTeamId;
+      const homeId = btn.dataset.homeTeamId;
+
+      if (visitorId) selectedGameTeams.add(visitorId.toString());
+      if (homeId) selectedGameTeams.add(homeId.toString());
     });
   }
 
-  gameFilterCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", function () {
-      const [visitorId, homeId] = this.value.split(",");
-      if (this.checked) {
-        selectedGameTeams.add(visitorId);
-        selectedGameTeams.add(homeId);
-      } else {
-        selectedGameTeams.delete(visitorId);
-        selectedGameTeams.delete(homeId);
-        // Uncheck "Select All" if not all games are selected
-        if (selectAllGamesCheckbox && selectAllGamesCheckbox.checked) {
-          selectAllGamesCheckbox.checked = false;
-        }
+  function setOnlyThisGameActive(clickedBtn) {
+    gameFilterButtons.forEach((btn) => btn.classList.remove("active"));
+    clickedBtn.classList.add("active");
+    seedSelectedTeamsFromActiveGameCards();
+
+  }
+
+  function ensureAtLeastOneSelectedOrShowAll() {
+    const anyActive = Array.from(gameFilterButtons).some((b) => b.classList.contains("active"));
+
+    // If user turns everything off, revert to "show all"
+    if (!anyActive) {
+      gameFilterButtons.forEach((b) => b.classList.add("active"));
+      hasIsolatedOnce = false; // optional: make next click isolate again
+      seedSelectedTeamsFromActiveGameCards();
+    }
+  }
+
+  // Seed once on page load (all active => show all)
+  seedSelectedTeamsFromActiveGameCards();
+
+  gameFilterButtons.forEach((btn) => {
+    btn.addEventListener("click", function () {
+      // If everything is currently active (initial state), first click isolates to this one game
+      const allActive = Array.from(gameFilterButtons).every((b) => b.classList.contains("active"));
+
+      if (!hasIsolatedOnce && allActive) {
+        setOnlyThisGameActive(this);
+        hasIsolatedOnce = true;
+        redrawTables();
+        return;
       }
+
+      // After isolate has happened (or not all active anymore), normal multi-select toggle
+      this.classList.toggle("active");
+      seedSelectedTeamsFromActiveGameCards();
+      ensureAtLeastOneSelectedOrShowAll();
       redrawTables();
     });
   });
+
 
   // --- Helper to redraw tables ---
   function redrawTables() {
@@ -434,15 +428,16 @@ document.addEventListener("turbo:load", function () {
   if (playersTableElement) {
     if (!$.fn.DataTable.isDataTable(playersTableId)) {
       const playersTable = $(playersTableId).DataTable({
+        dom: '<"d-flex w-100 justify-content-between align-items-center gap-2 flex-wrap"lf>rt<"d-flex w-100 justify-content-between align-items-center"ip>',
         order: [[6, "desc"]],
         pageLength: 25,
         lengthChange: true,
         searching: true,
         paging: true,
-        columnDefs: [
-          { className: "no-expansion", targets: "_all" }
-        ]
+        autoWidth: false,
+        columnDefs: [{ className: "no-expansion", targets: "_all" }]
       });
+
 
       // Apply sticky column styling and color coding initially
       applyStickyColumn(playersTableId, "white");
