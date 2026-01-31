@@ -1,65 +1,78 @@
 class HomeController < ApplicationController
-  def index
-    # 1️⃣ Determine date (default: today)
-    @date = params[:date] ? Date.parse(params[:date]) : Date.today
+def index
+  # 1️⃣ Determine date (default: today)
+  @date = params[:date] ? Date.parse(params[:date]) : Date.today
 
-    # 2️⃣ Get the active season
-    @current_season = Season.find_by(current: true)
-    season_id = @current_season&.id
+  # 2️⃣ Get the active season
+  @current_season = Season.find_by(current: true)
+  season_id = @current_season&.id
 
-    # 3️⃣ Load today's games for the current season
-    @todays_games = Game.where(date: @date, season_id: season_id)
-                        .includes(:visitor_team, :home_team)
-
-    # 4️⃣ Collect IDs for today's teams
-    team_ids = @todays_games.pluck(:visitor_team_id, :home_team_id).flatten.uniq
-
-    # Return early if no games today
-    if team_ids.blank?
-      @players_over_15_minutes = []
-      @top_hit_rates = {}
-      @standings = Standing.none
-      return
+  # ✅ Advanced stats lookup (always set, even if no games today)
+  @team_adv_by_team_id = if @current_season.present?
+    Rails.cache.fetch("team_adv_by_team_id_#{season_id}", expires_in: 6.hours) do
+      TeamAdvancedStat
+        .where(season: @current_season)
+        .select(:id, :team_id, :rankings)
+        .index_by(&:team_id)
     end
-
-    # 5️⃣ Build player data (averages, betting info) efficiently and cache it
-    @players_over_15_minutes = Rails.cache.fetch("players_over_15_minutes_#{@date}", expires_in: 20.minutes) do
-      players = Player.where(team_id: team_ids).includes(box_scores: :game)
-
-      # Collect recent box scores in bulk
-      recent_box_scores = BoxScore.joins(:game)
-                                  .where(games: { season_id: season_id })
-                                  .where(player_id: players.ids)
-                                  .where.not(minutes_played: nil)
-                                  .order("games.date DESC")
-
-      # Group last 10 and last 5 by player
-      grouped_by_player = recent_box_scores.group_by(&:player_id)
-
-      # Precompute averages for each player
-      players_data = players.map do |player|
-        box_scores = grouped_by_player[player.id] || []
-        last_five  = box_scores.first(5)
-        last_ten   = box_scores.first(10)
-
-        next if last_five.empty?
-
-        avg5 = compute_bulk_averages(last_five)
-        avg10 = compute_bulk_averages(last_ten)
-
-        if avg5[:minutes_played] > 20
-          { player: player, averages: avg5, last_ten_averages: avg10 }
-        end
-      end.compact
-
-      players_data.sort_by { |data| -data[:averages][:minutes_played] }
-    end
-
-    # 7️⃣ Standings for current season
-    @standings = Standing.where(season_id: season_id)
-                        .includes(:team)
-                        .order(win_percentage: :desc)
+  else
+    {}
   end
+
+  # 3️⃣ Load today's games for the current season
+  @todays_games = Game.where(date: @date, season_id: season_id)
+                      .includes(:visitor_team, :home_team)
+
+  # 4️⃣ Collect IDs for today's teams
+  team_ids = @todays_games.pluck(:visitor_team_id, :home_team_id).flatten.uniq
+
+  # Return early if no games today
+  if team_ids.blank?
+    @players_over_15_minutes = []
+    @top_hit_rates = {}
+    @standings = Standing.none
+    return
+  end
+
+  # 5️⃣ Build player data (averages, betting info) efficiently and cache it
+  @players_over_15_minutes = Rails.cache.fetch("players_over_15_minutes_#{@date}", expires_in: 20.minutes) do
+    players = Player.where(team_id: team_ids).includes(box_scores: :game)
+
+    # Collect recent box scores in bulk
+    recent_box_scores = BoxScore.joins(:game)
+                                .where(games: { season_id: season_id })
+                                .where(player_id: players.ids)
+                                .where.not(minutes_played: nil)
+                                .order("games.date DESC")
+
+    # Group last 10 and last 5 by player
+    grouped_by_player = recent_box_scores.group_by(&:player_id)
+
+    # Precompute averages for each player
+    players_data = players.map do |player|
+      box_scores = grouped_by_player[player.id] || []
+      last_five  = box_scores.first(5)
+      last_ten   = box_scores.first(10)
+
+      next if last_five.empty?
+
+      avg5 = compute_bulk_averages(last_five)
+      avg10 = compute_bulk_averages(last_ten)
+
+      if avg5[:minutes_played] > 20
+        { player: player, averages: avg5, last_ten_averages: avg10 }
+      end
+    end.compact
+
+    players_data.sort_by { |data| -data[:averages][:minutes_played] }
+  end
+
+  # 7️⃣ Standings for current season
+  @standings = Standing.where(season_id: season_id)
+                       .includes(:team)
+                       .order(win_percentage: :desc)
+end
+
 
   def filter_duplicate_thresholds(data)
     seen_players = {}

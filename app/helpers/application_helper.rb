@@ -26,6 +26,15 @@ module ApplicationHelper
     
       "background-color: rgb(#{r}, #{g}, #{b}); color: black;"
     end
+    def reverse_rank_color_class(rank)
+      return '' if rank.nil? || rank < 1 || rank > 30
+
+      # Flip the rank: 1 ↔ 30, 2 ↔ 29, etc.
+      reversed_rank = 31 - rank
+
+      # Reuse the same gradient logic by calling the original helper
+      rank_color_class(reversed_rank)
+    end
 
 
   

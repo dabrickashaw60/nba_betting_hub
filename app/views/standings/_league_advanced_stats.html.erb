@@ -240,60 +240,166 @@
 </div>
 
 <script>
-function initLeagueAdvancedStatsTable() {
+(function () {
   const tableId = "#league-advanced-stats-table";
-  const tableElement = document.querySelector(tableId);
-  if (!tableElement) return;
+  const frameId = "standings_frame";
 
-  // Destroy if exists
-  if ($.fn.DataTable.isDataTable(tableId)) {
-    $(tableId).DataTable().destroy();
+  // Which columns to color + how to rank them
+  // idx = zero-based column index in the table
+  // dir = "desc" means higher value = better (green)
+  // dir = "asc"  means lower value = better (green)
+  const columnsToColor = [
+    { idx: 6, dir: "desc" },
+    { idx: 7, dir: "desc" },
+    { idx: 8, dir: "desc" },
+    { idx: 9, dir: "desc" },
+    { idx: 10, dir: "asc" },
+    { idx: 11, dir: "desc" },
+    { idx: 12, dir: "desc" },
+    { idx: 13, dir: "desc" },
+    { idx: 14, dir: "desc" },
+    { idx: 15, dir: "desc" },
+    { idx: 16, dir: "desc" },
+    { idx: 17, dir: "asc" },
+    { idx: 18, dir: "desc" },
+    { idx: 19, dir: "desc" },
+    { idx: 20, dir: "asc" },
+    { idx: 21, dir: "desc" },
+    { idx: 22, dir: "desc" },
+    { idx: 23, dir: "asc" }            
+  ];
+
+  function initLeagueAdvancedStatsTable() {
+    const tableElement = document.querySelector(tableId);
+    if (!tableElement) return;
+
+    // Destroy if exists
+    if ($.fn.DataTable.isDataTable(tableId)) {
+      $(tableId).DataTable().destroy();
+    }
+
+    const table = $(tableId).DataTable({
+      order: [[8, "desc"]],
+      pageLength: 30,
+      lengthChange: true,
+      searching: true,
+      paging: true,
+      autoWidth: false,
+      columnDefs: [{ className: "no-expansion", targets: "_all" }]
+    });
+
+    // Initial apply
+    applyStickyColumn(tableId, "white");
+    applyBootstrapColorCoding(tableId, columnsToColor);
+
+    // Reapply after each draw
+    table.on("draw", function () {
+      applyStickyColumn(tableId, "white");
+      applyBootstrapColorCoding(tableId, columnsToColor);
+    });
   }
 
-  const table = $(tableId).DataTable({
-    order: [[8, "desc"]],
-    pageLength: 30,
-    lengthChange: true,
-    searching: true,
-    paging: true,
-    autoWidth: false,
-    columnDefs: [
-      { className: "no-expansion", targets: "_all" }
-    ]
-  });
-
-  applyStickyColumn(tableId);
-
-  table.on("draw", function () {
-    applyStickyColumn(tableId);
-  });
-}
-
-function applyStickyColumn(selector) {
-  document.querySelectorAll(selector + " .sticky-col").forEach(function (cell) {
-    cell.style.position = "sticky";
-    cell.style.left = "0";
-    cell.style.backgroundColor = "white";
-    cell.style.zIndex = "2";
-    cell.style.borderRight = "1px solid #ddd";
-  });
-}
-
-// Run when full page loads
-document.addEventListener("turbo:load", initLeagueAdvancedStatsTable);
-
-// Run again when the standings_frame finishes rendering
-document.addEventListener("turbo:frame-load", function (event) {
-  if (event.target.id === "standings_frame") {
-    initLeagueAdvancedStatsTable();
+  function applyStickyColumn(tableId, backgroundColor) {
+    $(`${tableId} .sticky-col`).each(function () {
+      $(this).css({
+        position: "sticky",
+        left: "0",
+        backgroundColor: backgroundColor,
+        zIndex: "2",
+        borderRight: "1px solid #ddd"
+      });
+    });
   }
-});
 
-// Clean up before Turbo caches
-document.addEventListener("turbo:before-cache", function () {
-  const tableId = "#league-advanced-stats-table";
-  if ($.fn.DataTable.isDataTable(tableId)) {
-    $(tableId).DataTable().destroy();
+  // Same gradient idea you already use, but:
+  // - works per-column with asc/desc direction
+  // - parses values robustly (%, commas, +/-, etc.)
+  function applyBootstrapColorCoding(tableId, columnsConfig) {
+    const dt = $(tableId).DataTable();
+
+    // Use filtered rows across all pages for ranking consistency
+    const rows = dt.rows({ search: "applied" }).nodes();
+
+    columnsConfig.forEach(({ idx: columnIndex, dir }) => {
+      const values = Array.from(rows).map((row) => {
+        const cell = row.cells[columnIndex];
+        if (!cell) return null;
+
+        const text = cell.textContent.trim();
+        const num = parseCellNumber(text);
+        return isNaN(num) ? null : num;
+      });
+
+      let rankedRows = values
+        .map((value, index) => ({ value, index }))
+        .filter((entry) => entry.value !== null);
+
+      // Sort for ranking
+      rankedRows.sort((a, b) => {
+        return dir === "asc" ? (a.value - b.value) : (b.value - a.value);
+      });
+
+      rankedRows = rankedRows.map((entry, rank) => ({ ...entry, rank: rank + 1 }));
+
+      if (rankedRows.length === 0) return;
+
+      const maxRank = Math.max(...rankedRows.map((entry) => entry.rank));
+      const midRank = Math.ceil(maxRank / 2);
+
+      rankedRows.forEach(({ index, rank }) => {
+        const cell = rows[index].cells[columnIndex];
+        if (!cell) return;
+
+        let backgroundColor;
+
+        // Top half -> green -> white
+        if (rank <= midRank) {
+          const ratio = midRank === 1 ? 0 : (rank - 1) / (midRank - 1);
+          const red = Math.round(76 + (255 - 76) * ratio);
+          const green = Math.round(175 + (255 - 175) * ratio);
+          const blue = Math.round(80 + (255 - 80) * ratio);
+          backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+        } else {
+          // Bottom half -> white -> red
+          const ratio = maxRank === midRank ? 0 : (rank - midRank) / (maxRank - midRank);
+          const red = Math.round(255 + (162 - 255) * ratio);
+          const green = Math.round(255 + (0 - 255) * ratio);
+          const blue = Math.round(255 + (0 - 255) * ratio);
+          backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+        }
+
+        cell.style.backgroundColor = backgroundColor;
+        cell.style.color = "black";
+      });
+    });
   }
-});
+
+  function parseCellNumber(text) {
+    if (!text || text === "-") return NaN;
+
+    // Remove commas and % signs
+    const cleaned = text.replace(/,/g, "").replace(/%/g, "").trim();
+
+    // Pull first number from the string (handles +4.2, 10.5, etc.)
+    const match = cleaned.match(/[+-]?\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : NaN;
+  }
+
+  // Run on full page load
+  document.addEventListener("turbo:load", initLeagueAdvancedStatsTable);
+
+  // Run again when standings_frame renders
+  document.addEventListener("turbo:frame-load", function (event) {
+    if (event.target.id === frameId) {
+      initLeagueAdvancedStatsTable();
+    }
+  });
+
+  // Cleanup before Turbo caches
+  document.addEventListener("turbo:before-cache", function () {
+    if ($.fn.DataTable.isDataTable(tableId)) {
+      $(tableId).DataTable().destroy();
+    }
+  });
+})();
 </script>

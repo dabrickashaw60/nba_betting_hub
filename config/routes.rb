@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   resources :projections, only: [:index] do
     collection do
       post :generate
+      get  :results
     end
   end
 
@@ -61,5 +62,6 @@ Rails.application.routes.draw do
 
   ### TEMP DEBUG ###
   get "debug/team_stats/:team_id", to: "debug#team_stats"
+
 
 end

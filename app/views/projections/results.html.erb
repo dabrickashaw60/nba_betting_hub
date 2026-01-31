@@ -1,0 +1,181 @@
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">Projection Results</h3>
+
+    <%= form_with url: results_projections_path, method: :get, local: true, class: "d-flex gap-2" do %>
+      <%= date_field_tag :date, @date, class: "form-control" %>
+      <%= hidden_field_tag :game_id, params[:game_id] if params[:game_id].present? %>
+      <%= submit_tag "Go", class: "btn btn-primary" %>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <!-- LEFT: Games list -->
+    <div class="col-md-3">
+      <div class="card the-shadow">
+        <div class="card-header">
+          Games (<%= @games.size %>)
+        </div>
+        <div class="list-group list-group-flush">
+          <% @games.each do |g| %>
+            <% active = (@selected_game && @selected_game.id == g.id) %>
+            <%= link_to results_projections_path(date: @date, game_id: g.id),
+                        class: "list-group-item list-group-item-action #{'active' if active}" do %>
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong><%= g.visitor_team&.abbreviation %></strong> @
+                  <strong><%= g.home_team&.abbreviation %></strong>
+                </div>
+                <div class="text-muted" style="font-size: 12px;">
+                  <%= g.time.present? ? g.time.strftime("%-I:%M %p") : "" %>
+                </div>
+              </div>
+              <% if g.home_points.present? && g.visitor_points.present? %>
+                <div style="font-size: 12px; opacity: 0.9;">
+                  Final: <%= g.visitor_points %>-<%= g.home_points %>
+                </div>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Selected game -->
+    <div class="col-md-9">
+      <% if @selected_game.nil? %>
+        <div class="card the-shadow">
+          <div class="card-body">
+            Select a game to view projections vs actuals.
+          </div>
+        </div>
+      <% else %>
+        <div class="card the-shadow mb-3">
+          <div class="card-body">
+            <h5 class="mb-1">
+              <%= @selected_game.visitor_team&.name %> @ <%= @selected_game.home_team&.name %>
+            </h5>
+            <div class="text-muted">
+              <%= @date.strftime("%B %-d, %Y") %>
+              <% if @selected_game.home_points.present? && @selected_game.visitor_points.present? %>
+                • Final: <%= @selected_game.visitor_points %>-<%= @selected_game.home_points %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <div class="card the-shadow">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <strong>Box Score vs Projections</strong>
+
+              <i
+                class="bi bi-info-circle ms-2 text-muted"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                title="Stats are shown as: Actual stat (projected stat)"
+                style="cursor: pointer;"
+              ></i>
+            </div>
+
+            <span class="text-muted" style="font-size: 12px;">
+              Projections pulled from projections.date = <%= @date %>
+            </span>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Player</th>
+                    <th>Team</th>
+
+                    <th class="text-end">MIN</th>
+                    <th class="text-end">PTS</th>
+                    <th class="text-end">REB</th>
+                    <th class="text-end">AST</th>
+                    <th class="text-end">USG</th>
+                    <th class="text-end">REB%</th>
+                    <th class="text-end">AST%</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <% sorted = @box_scores.sort_by { |bs| -bs.points.to_i } %>
+                  <% sorted.each do |bs| %>
+                    <% proj = @proj_by_player_id[bs.player_id] %>
+
+                    <tr>
+                      <td><%= bs.player&.name %></td>
+                      <td><%= bs.team&.abbreviation %></td>
+
+                      <td class="text-end">
+                        <%= bs.minutes_played.to_s %>
+                        <% if proj&.expected_minutes.present? %>
+                          (<%= proj.expected_minutes.round(1) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.points.to_i %>
+                        <% if proj&.proj_points.present? %>
+                          (<%= proj.proj_points.round(2) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.total_rebounds.to_i %>
+                        <% if proj&.proj_rebounds.present? %>
+                          (<%= proj.proj_rebounds.round(2) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.assists.to_i %>
+                        <% if proj&.proj_assists.present? %>
+                          (<%= proj.proj_assists.round(2) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
+                        <% if proj&.usage_pct.present? %>
+                          (<%= proj.usage_pct.round(1) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
+                        <% if proj&.rebound_pct.present? %>
+                          (<%= proj.rebound_pct.round(1) %>)
+                        <% end %>
+                      </td>
+
+                      <td class="text-end">
+                        <%= bs.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
+                        <% if proj&.assist_pct.present? %>
+                          (<%= proj.assist_pct.round(1) %>)
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+
+                  <% if @box_scores.blank? %>
+                    <tr>
+                      <td colspan="9" class="text-center p-4">
+                        No box score rows found for this game yet.
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

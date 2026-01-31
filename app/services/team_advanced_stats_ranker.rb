@@ -12,6 +12,7 @@ class TeamAdvancedStatsRanker
     opp_tov_pct
     drb_pct
     opp_ft_rate
+    tov_pct
   ]
 
   def initialize(season)

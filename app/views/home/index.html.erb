@@ -111,7 +111,7 @@
       <i class="bi bi-info-circle ms-2 text-info"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        title="Player stats use last 5 games. Defense ranks use last 10. For Defense Rankings: Green = weak defense (good matchup), Red = strong defense (tough matchup).">
+        title="Player stats use last 5 games. Number next to team logo is pace (Green = fast paced).  Defense ranks use last 10 games (Green = weak defense (good matchup) - Red = strong defense (tough matchup).">
       </i>
 
     </h4>
@@ -141,10 +141,11 @@
           <tr>
             <th class="sticky-col">Player</th>
             <th>Team</th>
-            <th>Vs.</th>
+            <th>Vs.</th>         
             <th class="text-center">PtsA</th>
             <th class="text-center">RbsA</th>
             <th class="text-center">AstA</th>
+            <th class="text-center">OpDRtg</th>            
             <th>MP</th>
             <th>USG%</th>       
             <th>PPG</th>
@@ -202,6 +203,13 @@
               rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
               ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
 
+              team_adv = @team_adv_by_team_id[player.team_id]
+              opp_adv  = opponent ? @team_adv_by_team_id[opponent.id] : nil
+
+              team_pace_rank = team_adv&.rankings&.[]("pace_rank")
+              opp_pace_rank  = opp_adv&.rankings&.[]("pace_rank")
+              opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
+
               out_teammates = player.team.players
                                     .where.not(id: player.id)
                                     .joins(:health)
@@ -247,19 +255,40 @@
 
               <td>
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-<%= @current_season.end_year %>.png"
-                    width="20" alt="<%= player.team.name %>">
+                    width="20"
+                    alt="<%= player.team.name %>"
+                    class="me-1">
+
+                <% if team_pace_rank.present? %>
+                  <span style="<%= reverse_rank_color_class(team_pace_rank) %>; font-size: 10px;">
+                    (<%= team_pace_rank %>)
+                  </span>
+                <% end %>
               </td>
+                          
               <td>
                 <% if opponent %>
                   <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-<%= @current_season.end_year %>.png"
-                      width="20" alt="<%= opponent.name %>">
+                      width="20"
+                      alt="<%= opponent.name %>"
+                      class="me-1">
+
+                  <% if opp_pace_rank.present? %>
+                    <span style="<%= reverse_rank_color_class(opp_pace_rank) %>; font-size: 10px;">
+                      (<%= opp_pace_rank %>)
+                    </span>
+                  <% end %>
                 <% else %>
                   N/A
                 <% end %>
               </td>
+             
               <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
               <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
               <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
+              <td class="text-center" style="<%= rank_color_class(opp_def_rtg_rank) %>">
+                <%= opp_def_rtg_rank || "N/A" %>
+              </td>              
               <td><%= averages[:minutes_display] %></td>
               <td><%= averages[:usage_pct]&.round(1) ? "#{averages[:usage_pct].round(1)}%" : "—" %></td>
               <td><%= averages[:points].round(1) %></td>
@@ -429,7 +458,7 @@ document.addEventListener("turbo:load", function () {
     if (!$.fn.DataTable.isDataTable(playersTableId)) {
       const playersTable = $(playersTableId).DataTable({
         dom: '<"d-flex w-100 justify-content-between align-items-center gap-2 flex-wrap"lf>rt<"d-flex w-100 justify-content-between align-items-center"ip>',
-        order: [[6, "desc"]],
+        order: [[7, "desc"]],
         pageLength: 25,
         lengthChange: true,
         searching: true,
@@ -441,12 +470,12 @@ document.addEventListener("turbo:load", function () {
 
       // Apply sticky column styling and color coding initially
       applyStickyColumn(playersTableId, "white");
-      applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+      applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
 
       // Reapply sticky column and color coding after each redraw
       playersTable.on("draw", function () {
         applyStickyColumn(playersTableId, "white");
-        applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+        applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
       });
 
       console.log("DataTable initialized for players over 15 minutes.");

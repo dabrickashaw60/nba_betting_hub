@@ -2,11 +2,16 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Projections for <%= @date.strftime("%B %d, %Y") %></h3>
 
-    <%= button_to "Run Simulation",
+  <%= link_to "Results (Proj vs Actual)",
+        results_projections_path(date: @date),
+        class: "btn btn-outline-primary" %>
+
+    <%= button_to "Run Projections",
           generate_projections_path(date: @date),
           method: :post,
           class: "btn btn-outline-primary d-flex align-items-center",
-          id: "simulate-btn" %>
+          id: "run-projections-btn" %>
+
   </div>
 
   <div id="loading-indicator" class="d-none mt-2 text-primary">
