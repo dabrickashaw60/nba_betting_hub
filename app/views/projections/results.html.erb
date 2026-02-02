@@ -9,7 +9,100 @@
     <% end %>
   </div>
 
+  <%# --- QUICK GUIDE: MAE + Bias boxes for the selected day/game --- %>
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card the-shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Quick Guide (MAE + Bias)</strong>
+            <span class="text-muted ms-2" style="font-size: 12px;">
+              MAE = average absolute error • Bias = average (actual - projected)
+            </span>
+          </div>
+
+          <%= form_with url: results_projections_path, method: :get, local: true, class: "d-flex align-items-center gap-2" do %>
+            <%= hidden_field_tag :date, @date %>
+            <%= hidden_field_tag :game_id, params[:game_id] if params[:game_id].present? %>
+
+            <span class="text-muted" style="font-size: 12px;">View:</span>
+
+            <%= select_tag :scope,
+              options_for_select(
+                [
+                  ["Selected day", "day"],
+                  ["Overall (season)", "overall"],
+                  ["Last 3 days (from today)", "last3"],
+                  ["Last 7 days (from today)", "last7"]
+                ],
+                @guide_scope
+              ),
+              class: "form-select form-select-sm",
+              onchange: "this.form.submit();" %>
+          <% end %>
+        </div>
+
+        <div class="card-body">
+          <div class="row g-2">
+            <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
+
+            <% keys.each do |k| %>
+              <% m = @guide_metric_boxes[k] || {} %>
+
+              <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="border rounded p-2 bg-white h-100">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong><%= m[:label] || k.to_s.upcase %></strong>
+                    <span class="text-muted" style="font-size: 11px;">
+                      n=<%= m[:n].to_i %>
+                    </span>
+                  </div>
+
+                  <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                    <% if m[:mae].present? %>
+                      MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                    <% else %>
+                      <span class="text-muted">MAE —</span>
+                    <% end %>
+                  </div>
+
+                  <div class="text-muted" style="font-size: 12px;">
+                    <% if m[:bias].present? %>
+                      Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                    <% else %>
+                      Bias —
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+
+            <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+              <div class="border rounded p-2 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>NO PROJ</strong>
+                  <span class="text-muted" style="font-size: 11px;">10+ min</span>
+                </div>
+
+                <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                  <%= @guide_missing_projection_count %>
+
+                </div>
+
+                <div class="text-muted" style="font-size: 12px;">
+                  players missing
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
+
     <!-- LEFT: Games list -->
     <div class="col-md-3">
       <div class="card the-shadow">
@@ -61,6 +154,60 @@
                 • Final: <%= @selected_game.visitor_points %>-<%= @selected_game.home_points %>
               <% end %>
             </div>
+
+          <div class="row g-2">
+            <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
+
+            <% keys.each do |k| %>
+              <% m = @metric_boxes[k] || {} %>
+
+              <div class="col-6 col-md-4 col-lg-2 col-xl-2">
+                <div class="border rounded p-2 bg-white h-100">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong><%= m[:label] || k.to_s.upcase %></strong>
+                    <span class="text-muted" style="font-size: 11px;">
+                      n=<%= m[:n].to_i %>
+                    </span>
+                  </div>
+
+                  <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                    <% if m[:mae].present? %>
+                      MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                    <% else %>
+                      <span class="text-muted">MAE —</span>
+                    <% end %>
+                  </div>
+
+                  <div class="text-muted" style="font-size: 12px;">
+                    <% if m[:bias].present? %>
+                      Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                    <% else %>
+                      Bias —
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+
+          <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="border rounded p-2 bg-white h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong>NO PROJ</strong>
+                <span class="text-muted" style="font-size: 11px;">10+ min</span>
+              </div>
+
+              <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                <%= @game_missing_projection_count %>
+              </div>
+
+              <div class="text-muted" style="font-size: 12px;">
+                players missing
+              </div>
+            </div>
+          </div>
+
+          </div>
+
           </div>
         </div>
 

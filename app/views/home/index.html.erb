@@ -19,6 +19,19 @@
 
     <div class="horizontal-scroll-wrapper">
       <% @todays_games.each do |game| %>
+        <%
+          visitor_adv = @team_adv_by_team_id[game.visitor_team_id]
+          home_adv    = @team_adv_by_team_id[game.home_team_id]
+
+          visitor_pace_rank = visitor_adv&.rankings&.[]("pace_rank")
+          home_pace_rank    = home_adv&.rankings&.[]("pace_rank")
+
+          game_pace_rank =
+            if visitor_pace_rank.present? && home_pace_rank.present?
+              ((visitor_pace_rank.to_f + home_pace_rank.to_f) / 2.0).round(1)
+            end
+        %>
+
         <div class="game-card-item">
           <div class="card p-2">
             <!-- ROW 1: Logos + Records -->
@@ -29,7 +42,7 @@
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
                     class="team-logo mb-1">
                 <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
-                <small style="font-size: 11px;">
+                <small style="font-size: 9px;">
                   <% if game.visitor_points.to_i > 0 %>
                     <%= game.visitor_points %>
                   <% else %>
@@ -38,9 +51,19 @@
                 </small>
               </div>
 
-              <!-- @ Separator -->
               <div class="d-flex flex-column align-items-center mx-2">
                 <strong style="font-size: 12px;">@</strong>
+
+                <% if game_pace_rank.present? %>
+                  <small
+                    class="mt-1 px-1 py-1 rounded"
+                    style="<%= reverse_rank_color_class(game_pace_rank.round) %>; font-size: 9px; text-align: center;"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Average pace rank of both teams (lower = faster paced game)">
+                    PACE <%= game_pace_rank %>
+                  </small>
+                <% end %>
               </div>
 
               <!-- Home Team -->
@@ -48,7 +71,7 @@
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
                     class="team-logo mb-1">
                 <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
-                <small style="font-size: 11px;">
+                <small style="font-size: 9px;">
                   <% if game.home_points.to_i > 0 %>
                     <%= game.home_points %>
                   <% else %>
@@ -206,8 +229,6 @@
               team_adv = @team_adv_by_team_id[player.team_id]
               opp_adv  = opponent ? @team_adv_by_team_id[opponent.id] : nil
 
-              team_pace_rank = team_adv&.rankings&.[]("pace_rank")
-              opp_pace_rank  = opp_adv&.rankings&.[]("pace_rank")
               opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
 
               out_teammates = player.team.players
@@ -258,12 +279,6 @@
                     width="20"
                     alt="<%= player.team.name %>"
                     class="me-1">
-
-                <% if team_pace_rank.present? %>
-                  <span style="<%= reverse_rank_color_class(team_pace_rank) %>; font-size: 10px;">
-                    (<%= team_pace_rank %>)
-                  </span>
-                <% end %>
               </td>
                           
               <td>
@@ -272,12 +287,6 @@
                       width="20"
                       alt="<%= opponent.name %>"
                       class="me-1">
-
-                  <% if opp_pace_rank.present? %>
-                    <span style="<%= reverse_rank_color_class(opp_pace_rank) %>; font-size: 10px;">
-                      (<%= opp_pace_rank %>)
-                    </span>
-                  <% end %>
                 <% else %>
                   N/A
                 <% end %>

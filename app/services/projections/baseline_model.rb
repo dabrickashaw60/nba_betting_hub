@@ -14,12 +14,13 @@ module ::Projections
 
     # Eligibility
     MIN_GAMES = 5
-    MIN_AVG_MINUTES = 15.0
+    MIN_AVG_MINUTES = 12.0
 
     # Deterministic micro-variance (small)
     VAR_POINTS   = 0.03
     VAR_REBOUNDS = 0.04
     VAR_ASSISTS  = 0.04
+    VAR_THREES = 0.05
 
     # Minutes tuning
     MINUTES_CLAMP_BAND = 2.0
@@ -131,6 +132,7 @@ module ::Projections
           proj_points: outputs[:points],
           proj_rebounds: outputs[:rebounds],
           proj_assists: outputs[:assists],
+          proj_threes: outputs[:threes],
           proj_pa: outputs[:points] + outputs[:assists],
           proj_pr: outputs[:points] + outputs[:rebounds],
           proj_ra: outputs[:rebounds] + outputs[:assists],
@@ -240,7 +242,7 @@ module ::Projections
 
       if rebound_count_col
         rows = bs_rel.pluck(
-          :minutes_played, :points, rebound_count_col, :assists,
+          :minutes_played, :points, rebound_count_col, :assists, :three_point_field_goals,
           (has_usg ? :usage_pct : nil),
           (has_ast_pct ? :assist_pct : nil),
           (has_trb_pct ? :total_rebound_pct : nil)
@@ -249,7 +251,7 @@ module ::Projections
         o_col = cols.include?("offensive_rebounds") ? :offensive_rebounds : nil
         d_col = cols.include?("defensive_rebounds") ? :defensive_rebounds : nil
         rows = bs_rel.pluck(
-          :minutes_played, :points, o_col, d_col, :assists,
+          :minutes_played, :points, o_col, d_col, :assists, :three_point_field_goals,
           (has_usg ? :usage_pct : nil),
           (has_ast_pct ? :assist_pct : nil),
           (has_trb_pct ? :total_rebound_pct : nil)
@@ -270,6 +272,7 @@ module ::Projections
       ppm_points   = totals[:points].to_f / totals[:total_minutes]
       ppm_rebounds = totals[:rebounds].to_f / totals[:total_minutes]
       ppm_assists  = totals[:assists].to_f / totals[:total_minutes]
+      ppm_threes = totals[:threes].to_f / totals[:total_minutes]
 
       base_usg = totals[:usage_pct_vals].any? ? (totals[:usage_pct_vals].sum / totals[:usage_pct_vals].size) : 0.0
       base_ast = totals[:assist_pct_vals].any? ? (totals[:assist_pct_vals].sum / totals[:assist_pct_vals].size) : 0.0
@@ -283,7 +286,8 @@ module ::Projections
         rates: {
           points_per_min: ppm_points,
           rebounds_per_min: ppm_rebounds,
-          assists_per_min: ppm_assists
+          assists_per_min: ppm_assists,
+          threes_per_min: ppm_threes          
         },
         pcts: {
           usage_pct: base_usg,
@@ -298,6 +302,7 @@ module ::Projections
       points = 0.0
       rebounds = 0.0
       assists = 0.0
+      threes = 0.0
       games = 0
       minutes_list = []
 
@@ -309,21 +314,23 @@ module ::Projections
         mins_str = row[0]
         pts = row[1]
 
-        if rebound_count_col
-          reb = row[2]
-          ast = row[3]
-          usg = row[4]
-          ast_pct = row[5]
-          trb_pct = row[6]
-        else
-          oreb = row[2]
-          dreb = row[3]
-          reb = oreb.to_i + dreb.to_i
-          ast = row[4]
-          usg = row[5]
-          ast_pct = row[6]
-          trb_pct = row[7]
-        end
+      if rebound_count_col
+        reb    = row[2]
+        ast    = row[3]
+        th3    = row[4]
+        usg    = row[5]
+        ast_pct= row[6]
+        trb_pct= row[7]
+      else
+        oreb   = row[2]
+        dreb   = row[3]
+        reb    = oreb.to_i + dreb.to_i
+        ast    = row[4]
+        th3    = row[5]
+        usg    = row[6]
+        ast_pct= row[7]
+        trb_pct= row[8]
+      end
 
         mins = minutes_to_float(mins_str)
         next if mins <= 0.0
@@ -333,6 +340,7 @@ module ::Projections
         points += pts.to_f
         rebounds += reb.to_f
         assists += ast.to_f
+        threes += th3.to_f
         games += 1
 
         usage_pct_vals << usg.to_f if usg.present?
@@ -345,6 +353,7 @@ module ::Projections
         points: points,
         rebounds: rebounds,
         assists: assists,
+        threes: threes,
         games: games,
         minutes_list: minutes_list,
         usage_pct_vals: usage_pct_vals,
@@ -791,23 +800,27 @@ module ::Projections
       pts_rand = 1.0 + rng.rand(-VAR_POINTS..VAR_POINTS)
       reb_rand = 1.0 + rng.rand(-VAR_REBOUNDS..VAR_REBOUNDS)
       ast_rand = 1.0 + rng.rand(-VAR_ASSISTS..VAR_ASSISTS)
+      th3_rand = 1.0 + rng.rand(-VAR_THREES..VAR_THREES)
 
       points   = (rates[:points_per_min]   * minutes * pts_mult     * usg_mult * pts_rand).round(2)
       rebounds = (rates[:rebounds_per_min] * minutes * reb_mult     * trb_mult * reb_rand).round(2)
       assists  = (rates[:assists_per_min]  * minutes * ast_dvp_mult * ast_mult * ast_rand).round(2)
+      threes = (rates[:threes_per_min] * minutes * pts_mult * usg_mult * th3_rand).round(2)
 
       points   = 0.0 if points.nan? || points.infinite?
       rebounds = 0.0 if rebounds.nan? || rebounds.infinite?
       assists  = 0.0 if assists.nan? || assists.infinite?
+      threes = 0.0 if threes.nan? || threes.infinite?
 
       points = [points, 0.0].max
       rebounds = [rebounds, 0.0].max
       assists = [assists, 0.0].max
+      threes = [threes, 0.0].max
 
       points_cap = minutes * 1.25
       points = [points, points_cap].min
 
-      { points: points, rebounds: rebounds, assists: assists }
+      { points: points, rebounds: rebounds, assists: assists, threes: threes }
     end
 
     def rank_to_multiplier_linear(rank)

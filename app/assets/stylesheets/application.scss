@@ -19,7 +19,9 @@
   font-family: 'Signika', Arial, sans-serif !important;
 
  }
-
+.the-shadow {
+  box-shadow: 2px 4px 7px 0px #00000099;
+}
 //DANGER STYLES
 .bg-danger {
   background-color: #dc3545 !important;
@@ -76,11 +78,11 @@
 
   .game-card-item {
     flex: 0 0 auto;
-    width: 125px; // Fixed width
+    width: 150px; // Fixed width
   }
 
   .card {
-    height: 125px;
+    height: auto;
     box-shadow: 2px 4px 7px 0px #00000099;
     transition: all 0.3s ease-in-out;
     border: none;
