@@ -153,6 +153,34 @@ div.dataTables_wrapper div.dataTables_length select{
   width: 65px !important;
 }
 
+/* Always keep sticky column white, even on hover/striped/sort highlight */
+#players-over-15-minutes-table th.sticky-col,
+#players-over-15-minutes-table td.sticky-col {
+  position: sticky;
+  left: 0;
+  background: #fff !important;
+  z-index: 6;
+  background-clip: padding-box;
+  border-right: 1px solid #ddd;
+}
+
+/* Bootstrap table-hover will try to paint the row on hover */
+#players-over-15-minutes-table.table-hover tbody tr:hover td.sticky-col {
+  background: #fff !important;
+}
+
+/* Bootstrap table-striped will try to tint odd rows */
+#players-over-15-minutes-table.table-striped > tbody > tr:nth-of-type(odd) > td.sticky-col {
+  background: #fff !important;
+}
+
+/* DataTables sometimes marks the “sorted” column */
+#players-over-15-minutes-table td.sticky-col.sorting_1,
+#players-over-15-minutes-table th.sticky-col.sorting_1 {
+  background: #fff !important;
+}
+
+
 .player-hit-rates-entry{
   box-shadow: 0px 2px 2px 2px #a9a9a9;
   margin-bottom: 5px;

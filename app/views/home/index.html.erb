@@ -1,22 +1,16 @@
-
 <!-- Date Navigation and Date Picker -->
 <div class="d-flex justify-content-center my-2">
-  <!-- Left Arrow Button for Previous Day -->
   <%= link_to "←", root_path(date: @date - 1.day), class: "btn btn-outline-primary mx-2" %>
 
-  <!-- Date Picker Form -->
   <%= form_with url: root_path, method: :get, local: true, class: "mx-2" do %>
     <%= date_field_tag :date, @date, class: "form-control", onchange: "this.form.submit();" %>
   <% end %>
 
-  <!-- Right Arrow Button for Next Day -->
   <%= link_to "→", root_path(date: @date + 1.day), class: "btn btn-outline-primary mx-2" %>
 </div>
 
-
 <% if @todays_games.present? %>
   <div id="game-card" class="mb-2">
-
     <div class="horizontal-scroll-wrapper">
       <% @todays_games.each do |game| %>
         <%
@@ -34,13 +28,10 @@
 
         <div class="game-card-item">
           <div class="card p-2">
-            <!-- ROW 1: Logos + Records -->
             <div class="d-flex justify-content-between align-items-center mb-2">
-
-              <!-- Away Team -->
               <div class="d-flex flex-column align-items-center">
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
-                    class="team-logo mb-1">
+                     class="team-logo mb-1">
                 <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
                 <small style="font-size: 9px;">
                   <% if game.visitor_points.to_i > 0 %>
@@ -66,10 +57,9 @@
                 <% end %>
               </div>
 
-              <!-- Home Team -->
               <div class="d-flex flex-column align-items-center">
                 <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
-                    class="team-logo mb-1">
+                     class="team-logo mb-1">
                 <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
                 <small style="font-size: 9px;">
                   <% if game.home_points.to_i > 0 %>
@@ -79,12 +69,9 @@
                   <% end %>
                 </small>
               </div>
-
             </div>
 
-            <!-- ROW 2: Time + Info + Filter -->
             <div class="d-flex flex-column align-items-center text-center">
-
               <div class="mb-1" style="font-size: 11px;">
                 <% if game.date < Date.today %>
                   <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
@@ -96,451 +83,429 @@
                 <% end %>
               </div>
 
-              <!-- Info + Eye on same line -->
               <div class="d-flex align-items-center gap-2">
                 <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
 
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-primary game-card-filter active"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="top"
-                  title="Filter players by this game"
-                  data-visitor-team-id="<%= game.visitor_team_id %>"
-                  data-home-team-id="<%= game.home_team_id %>">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
+                <div class="form-check m-0">
+                  <input
+                    class="form-check-input game-card-checkbox"
+                    type="checkbox"
+                    value="1"
+                    id="game-filter-<%= game.id %>"
+                    data-visitor-team-id="<%= game.visitor_team_id %>"
+                    data-home-team-id="<%= game.home_team_id %>">
 
+                  <label class="form-check-label small" for="game-filter-<%= game.id %>">
+                    Filter
+                  </label>
+                </div>
+
+              </div>
             </div>
 
           </div>
-
         </div>
       <% end %>
     </div>
-
   </div>
 <% else %>
   <p class="text-center">No games scheduled for <%= @date.strftime("%B %d, %Y") %>.</p>
 <% end %>
 
-
 <% if @date >= Date.today && @todays_games.any? %>
-<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
-  <div class="card-header pd-bot-0 brdr-bot-0 d-flex justify-content-between align-items-center">
-    <h4 class="mb-0 d-flex align-items-center">
-      Today's Players
-      <i class="bi bi-info-circle ms-2 text-info"
-        data-bs-toggle="tooltip"
-        data-bs-placement="right"
-        title="Player stats use last 5 games. Number next to team logo is pace (Green = fast paced).  Defense ranks use last 10 games (Green = weak defense (good matchup) - Red = strong defense (tough matchup).">
-      </i>
+  <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+    <div class="card-header pd-bot-0 brdr-bot-0 d-flex justify-content-between align-items-center">
+      <h4 class="mb-0 d-flex align-items-center">
+        Today's Players
+        <i class="bi bi-info-circle ms-2 text-info"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           title="Toggle between Last 5 and Projections. Defense ranks use last 10 games. Green = good matchup, Red = tough matchup.">
+        </i>
+      </h4>
 
-    </h4>
+      <div class="d-flex align-items-center mb-2">
+        <%= button_to update_injuries_path, method: :post,
+            class: "btn btn-link p-0 me-2 text-primary",
+            form: { "data-turbo-confirm": "Run injury update now?" },
+            data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries" } do %>
+          <i class="bi bi-hospital text-danger" style="font-size: 1.2rem;"></i>
+        <% end %>
 
-    <div class="d-flex align-items-center mb-2">
-            <%= button_to update_injuries_path, method: :post,
-                class: "btn btn-link p-0 me-2 text-primary",
-                form: { "data-turbo-confirm": "Run injury update now?" },
-                data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries" } do %>
-                <i class="bi bi-hospital text-danger" style="font-size: 1.2rem;"></i>
-            <% end %>
-      <!-- Toggle button for hiding/showing players with "Out" status -->
-      <button id="toggle-out-players" 
-              class="btn btn-outline-primary btn-sm me-2" 
-              data-bs-toggle="tooltip" 
-              data-bs-placement="top" 
-              title="Show/Hide (O) Players">
-        <i class="bi bi-heart-pulse"></i>
-      </button>
+        <button id="toggle-out-players"
+                class="btn btn-outline-primary btn-sm me-2"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="Show/Hide (O) Players">
+          <i class="bi bi-heart-pulse"></i>
+        </button>
+
+      </div>
     </div>
-  </div>
 
-  <div class="card-body" id="pd-sides-none">
-    <div style="max-width: 100%; overflow-x: auto">
-      <table class="table table-hover" id="players-over-15-minutes-table">
-        <thead>
-          <tr>
-            <th class="sticky-col">Player</th>
-            <th>Team</th>
-            <th>Vs.</th>         
-            <th class="text-center">PtsA</th>
-            <th class="text-center">RbsA</th>
-            <th class="text-center">AstA</th>
-            <th class="text-center">OpDRtg</th>            
-            <th>MP</th>
-            <th>USG%</th>       
-            <th>PPG</th>
-            <th>REB</th>
-            <th>REB%</th>              
-            <th>AST</th>
-            <th>AST%</th>               
-            <th>3's</th>
-            <th>P+A</th>
-            <th>P+R</th>
-            <th>R+A</th>
-            <th>P+R+A</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% qualifying_players = @players_over_15_minutes.map { |d| d[:player] } %>
-          <% @players_over_15_minutes.each do |data| %>
-            <% 
-              player = data[:player]
-              averages = data[:averages]
-              health_status = health_status(player.health&.status)
+    <div class="card-body" id="pd-sides-none">
+      <div style="max-width: 100%; overflow-x: auto">
+        <table class="table table-hover" id="players-over-15-minutes-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Player</th>
+              <th>Team</th>
+              <th>Vs.</th>
+              <th class="text-center">PtsA</th>
+              <th class="text-center">RbsA</th>
+              <th class="text-center">AstA</th>
+              <th class="text-center">OpDRtg</th>
 
-              next_game = player.team.games.where("date >= ?", Date.today)
-                                          .where(season_id: @current_season.id)
-                                          .order(:date).first
+              <!-- Last 5 -->
+              <th class="col-last5">MP</th>
+              <th class="col-last5">USG%</th>
+              <th class="col-last5">PPG</th>
+              <th class="col-last5">REB</th>
+              <th class="col-last5">REB%</th>
+              <th class="col-last5">AST</th>
+              <th class="col-last5">AST%</th>
+              <th class="col-last5">3's</th>
+              <th class="col-last5">P+A</th>
+              <th class="col-last5">P+R</th>
+              <th class="col-last5">R+A</th>
+              <th class="col-last5">P+R+A</th>
+            </tr>
+          </thead>
 
-              opponent = if next_game&.home_team_id == player.team_id
-                          next_game.visitor_team
-                        elsif next_game&.visitor_team_id == player.team_id
-                          next_game.home_team
-                        end
+          <tbody>
+            <% qualifying_players = @players_over_15_minutes.map { |d| d[:player] } %>
 
-              opponent_stats = opponent&.defense_data_for(@current_season) || {}
-              relevant_positions = case player.position
-                                  when "PG" then ["PG", "G"]
-                                  when "SG" then ["SG", "G"]
-                                  when "SF" then ["SF", "F"]
-                                  when "PF" then ["PF", "F"]
-                                  when "C"  then ["C"]
-                                  else []
-                                  end
-              alert_positions =
-                case player.position
-                when "PG" then ["PG", "SG"]
-                when "SG" then ["SG", "PG"]
-                when "SF" then ["SF", "PF"]
-                when "PF" then ["PF", "SF"]
-                when "C"  then ["C", "PF"]
-                else []
-                end
-                                  
-              filtered_stats = opponent_stats.slice(*relevant_positions)
+            <% @players_over_15_minutes.each do |data| %>
+              <%
+                player = data[:player]
+                averages = data[:averages]
+                health_status = health_status(player.health&.status)
 
-              pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
-              rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
-              ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
+                proj = @proj_by_player_id[player.id]
 
-              team_adv = @team_adv_by_team_id[player.team_id]
-              opp_adv  = opponent ? @team_adv_by_team_id[opponent.id] : nil
+                next_game = player.team.games.where("date >= ?", Date.today)
+                                  .where(season_id: @current_season.id)
+                                  .order(:date).first
 
-              opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
+                opponent = if next_game&.home_team_id == player.team_id
+                            next_game.visitor_team
+                          elsif next_game&.visitor_team_id == player.team_id
+                            next_game.home_team
+                          end
 
-              out_teammates = player.team.players
-                                    .where.not(id: player.id)
-                                    .joins(:health)
-                                    .where(health: { status: "Out" })
-                                    .where(position: alert_positions)
-                                    .select { |tm| qualifying_players.include?(tm) }
+                opponent_stats = opponent&.defense_data_for(@current_season) || {}
+                relevant_positions = case player.position
+                                    when "PG" then ["PG", "G"]
+                                    when "SG" then ["SG", "G"]
+                                    when "SF" then ["SF", "F"]
+                                    when "PF" then ["PF", "F"]
+                                    when "C"  then ["C"]
+                                    else []
+                                    end
+
+                alert_positions =
+                  case player.position
+                  when "PG" then ["PG", "SG"]
+                  when "SG" then ["SG", "PG"]
+                  when "SF" then ["SF", "PF"]
+                  when "PF" then ["PF", "SF"]
+                  when "C"  then ["C", "PF"]
+                  else []
+                  end
+
+                filtered_stats = opponent_stats.slice(*relevant_positions)
+
+                pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
+                rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
+                ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
+
+                opp_adv  = opponent ? @team_adv_by_team_id[opponent.id] : nil
+                opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
+
+                out_teammates = player.team.players
+                                      .where.not(id: player.id)
+                                      .joins(:health)
+                                      .where(health: { status: "Out" })
+                                      .where(position: alert_positions)
+                                      .select { |tm| qualifying_players.include?(tm) }
 
                 teammates_out = out_teammates.any?
                 out_names = out_teammates.map(&:name).join(", ")
-                tooltip_text = "#{out_names} is Out. Usage may increase."                
-            %>
+                tooltip_text = "#{out_names} is Out. Usage may increase."
 
-            <tr data-team-id="<%= player.team_id %>">
-              <%
-                show_health_tooltip = player.health&.status.present? && player.health.status != "Healthy"
+                proj = @proj_by_player_id[player.id]
+
+                proj_mp      = proj&.expected_minutes
+                proj_usg     = proj&.usage_pct
+                proj_pts     = proj&.proj_points
+                proj_reb     = proj&.proj_rebounds
+                proj_ast     = proj&.proj_assists
+                proj_3s      = proj&.proj_threes
+                proj_reb_pct = proj&.rebound_pct
+                proj_ast_pct = proj&.assist_pct
+
+                proj_pa  = (proj_pts.to_f + proj_ast.to_f) if proj_pts && proj_ast
+                proj_pr  = (proj_pts.to_f + proj_reb.to_f) if proj_pts && proj_reb
+                proj_ra  = (proj_reb.to_f + proj_ast.to_f) if proj_reb && proj_ast
+                proj_pra = (proj_pts.to_f + proj_reb.to_f + proj_ast.to_f) if proj_pts && proj_reb && proj_ast
+
               %>
 
-              <td class="sticky-col">
-                <%= link_to team_player_path(player.team, player),
-                            data: (
-                              show_health_tooltip ?
-                              {
-                                turbo: false,
-                                bs_toggle: "tooltip",
-                                bs_placement: "right",
-                                bs_title: player.health&.description
-                              } :
-                              { turbo: false }
-                            ) do %>
+              <tr data-team-id="<%= player.team_id %>">
+                <%
+                  show_health_tooltip = player.health&.status.present? && player.health.status != "Healthy"
+                %>
 
-                  <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                  <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+                <td class="sticky-col">
+                  <%= link_to team_player_path(player.team, player),
+                              data: (
+                                show_health_tooltip ?
+                                {
+                                  turbo: false,
+                                  bs_toggle: "tooltip",
+                                  bs_placement: "right",
+                                  bs_title: player.health&.description
+                                } :
+                                { turbo: false }
+                              ) do %>
 
-                <% end %>
+                    <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
+                    <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+                  <% end %>
 
-                <% if teammates_out %>
-                  <i class="bi bi-arrow-up-right-square-fill ms-1"
+                  <% if teammates_out %>
+                    <i class="bi bi-arrow-up-right-square-fill ms-1"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="right"
+                       title="<%= tooltip_text %>"></i>
+                  <% end %>
+                </td>
+
+                <td>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-<%= @current_season.end_year %>.png"
+                       width="20"
+                       alt="<%= player.team.name %>"
+                       class="me-1">
+                </td>
+
+                <td>
+                  <% if opponent %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-<%= @current_season.end_year %>.png"
+                         width="20"
+                         alt="<%= opponent.name %>"
+                         class="me-1">
+                  <% else %>
+                    N/A
+                  <% end %>
+                </td>
+
+                <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
+                <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
+                <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
+
+                <td class="text-center" style="<%= rank_color_class(opp_def_rtg_rank) %>">
+                  <%= opp_def_rtg_rank || "N/A" %>
+                </td>
+
+                <!-- Last 5 cells (all have projection tooltips) -->
+                <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
-                    data-bs-placement="right"
-                    title="<%= tooltip_text %>"></i>
-                <% end %>
-              </td>
+                    data-bs-placement="top"
+                    title="<%= proj_mp ? "Proj: #{proj_mp.round(1)}" : "No projection" %>">
+                  <%= averages[:minutes_display] %>
+                </td>
 
-              <td>
-                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= player.team.abbreviation %>-<%= @current_season.end_year %>.png"
-                    width="20"
-                    alt="<%= player.team.name %>"
-                    class="me-1">
-              </td>
-                          
-              <td>
-                <% if opponent %>
-                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent.abbreviation %>-<%= @current_season.end_year %>.png"
-                      width="20"
-                      alt="<%= opponent.name %>"
-                      class="me-1">
-                <% else %>
-                  N/A
-                <% end %>
-              </td>
-             
-              <td style="<%= rank_color_class(pts_rank&.round) %>"><%= pts_rank&.round(1) || "N/A" %></td>
-              <td style="<%= rank_color_class(rbs_rank&.round) %>"><%= rbs_rank&.round(1) || "N/A" %></td>
-              <td style="<%= rank_color_class(ast_rank&.round) %>"><%= ast_rank&.round(1) || "N/A" %></td>
-              <td class="text-center" style="<%= rank_color_class(opp_def_rtg_rank) %>">
-                <%= opp_def_rtg_rank || "N/A" %>
-              </td>              
-              <td><%= averages[:minutes_display] %></td>
-              <td><%= averages[:usage_pct]&.round(1) ? "#{averages[:usage_pct].round(1)}%" : "—" %></td>
-              <td><%= averages[:points].round(1) %></td>
-              <td><%= averages[:rebounds].round(1) %></td>
-              <td><%= averages[:trb_pct]&.round(1)   ? "#{averages[:trb_pct].round(1)}%"   : "—" %></td>              
-              <td><%= averages[:assists].round(1) %></td>
-              <td><%= averages[:ast_pct]&.round(1)   ? "#{averages[:ast_pct].round(1)}%"   : "—" %></td>              
-              <td><%= averages[:three_point_field_goals].round(1) %></td>
-              <td><%= (averages[:points] + averages[:assists]).round(1) %></td>
-              <td><%= (averages[:points] + averages[:rebounds]).round(1) %></td>
-              <td><%= (averages[:rebounds] + averages[:assists]).round(1) %></td>
-              <td><%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_usg ? "Proj: #{proj_usg.round(1)}%" : "No projection" %>">
+                  <%= averages[:usage_pct]&.round(1) ? "#{averages[:usage_pct].round(1)}%" : "—" %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_pts ? "Proj: #{proj_pts.round(1)}" : "No projection" %>">
+                  <%= averages[:points].round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_reb ? "Proj: #{proj_reb.round(1)}" : "No projection" %>">
+                  <%= averages[:rebounds].round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_reb_pct ? "Proj: #{proj_reb_pct.round(1)}%" : "Proj: —" %>">
+                  <%= averages[:trb_pct]&.round(1) ? "#{averages[:trb_pct].round(1)}%" : "—" %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_ast ? "Proj: #{proj_ast.round(1)}" : "No projection" %>">
+                  <%= averages[:assists].round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_ast_pct ? "Proj: #{proj_ast_pct.round(1)}%" : "Proj: —" %>">
+                  <%= averages[:ast_pct]&.round(1) ? "#{averages[:ast_pct].round(1)}%" : "—" %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_3s ? "Proj: #{proj_3s.round(1)}" : "No projection" %>">
+                  <%= averages[:three_point_field_goals].round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_pa ? "Proj: #{proj_pa.round(1)}" : "No projection" %>">
+                  <%= (averages[:points] + averages[:assists]).round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_pr ? "Proj: #{proj_pr.round(1)}" : "No projection" %>">
+                  <%= (averages[:points] + averages[:rebounds]).round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_ra ? "Proj: #{proj_ra.round(1)}" : "No projection" %>">
+                  <%= (averages[:rebounds] + averages[:assists]).round(1) %>
+                </td>
+
+                <td class="col-last5 text-center"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="<%= proj_pra ? "Proj: #{proj_pra.round(1)}" : "No projection" %>">
+                  <%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %>
+                </td>
+
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 <% else %>
   <div class="alert alert-info text-center">
     No Last 5 Player stats available for a past date.
   </div>
 <% end %>
 
-
-
 <script>
 document.addEventListener("turbo:load", function () {
-  console.log("Initializing DataTable for players over 15 minutes...");
-
-  // Initialize Bootstrap tooltips
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-    new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-
-  // Auto-hide tooltips after 5 seconds (fix mobile lingering)
-  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-    el.addEventListener('shown.bs.tooltip', function () {
-      const tip = bootstrap.Tooltip.getInstance(el);
-      if (!tip) return;
-
-      // Clear any existing timeout
-      if (el._tooltipTimeout) {
-        clearTimeout(el._tooltipTimeout);
-      }
-
-      // Hide after 5 seconds
-      el._tooltipTimeout = setTimeout(function () {
-        tip.hide();
-      }, 5000);
-    });
-  });
-
-
-  let hideOutPlayers = false; // Track if 'Out' players should be hidden
-  let selectedGameTeams = new Set(); // Track selected teams for filtering
-
-  // --- Toggle injured players ---
-  const toggleButton = document.querySelector("#toggle-out-players");
-  if (toggleButton) {
-    toggleButton.addEventListener("click", function () {
-      hideOutPlayers = !hideOutPlayers;
-      toggleButton.classList.toggle("active", hideOutPlayers);
-      redrawTables();
-    });
-  }
-
-  // --- Game card filtering logic (first click isolates, then multi-select) ---
-  const gameFilterButtons = document.querySelectorAll(".game-card-filter");
-  let hasIsolatedOnce = false; // tracks whether we've done the first-click isolate behavior
-
-  function seedSelectedTeamsFromActiveGameCards() {
-    selectedGameTeams.clear();
-
-    gameFilterButtons.forEach((btn) => {
-      if (!btn.classList.contains("active")) return;
-
-      const visitorId = btn.dataset.visitorTeamId;
-      const homeId = btn.dataset.homeTeamId;
-
-      if (visitorId) selectedGameTeams.add(visitorId.toString());
-      if (homeId) selectedGameTeams.add(homeId.toString());
-    });
-  }
-
-  function setOnlyThisGameActive(clickedBtn) {
-    gameFilterButtons.forEach((btn) => btn.classList.remove("active"));
-    clickedBtn.classList.add("active");
-    seedSelectedTeamsFromActiveGameCards();
-
-  }
-
-  function ensureAtLeastOneSelectedOrShowAll() {
-    const anyActive = Array.from(gameFilterButtons).some((b) => b.classList.contains("active"));
-
-    // If user turns everything off, revert to "show all"
-    if (!anyActive) {
-      gameFilterButtons.forEach((b) => b.classList.add("active"));
-      hasIsolatedOnce = false; // optional: make next click isolate again
-      seedSelectedTeamsFromActiveGameCards();
-    }
-  }
-
-  // Seed once on page load (all active => show all)
-  seedSelectedTeamsFromActiveGameCards();
-
-  gameFilterButtons.forEach((btn) => {
-    btn.addEventListener("click", function () {
-      // If everything is currently active (initial state), first click isolates to this one game
-      const allActive = Array.from(gameFilterButtons).every((b) => b.classList.contains("active"));
-
-      if (!hasIsolatedOnce && allActive) {
-        setOnlyThisGameActive(this);
-        hasIsolatedOnce = true;
-        redrawTables();
-        return;
-      }
-
-      // After isolate has happened (or not all active anymore), normal multi-select toggle
-      this.classList.toggle("active");
-      seedSelectedTeamsFromActiveGameCards();
-      ensureAtLeastOneSelectedOrShowAll();
-      redrawTables();
-    });
-  });
-
-
-  // --- Helper to redraw tables ---
-  function redrawTables() {
-    if ($.fn.DataTable.isDataTable(playersTableId)) {
-      const table = $(playersTableId).DataTable();
-      table.draw();
-      table.page('first').draw('page');
-    }
-  }
-
-  // --- Custom DataTables filtering logic ---
-  $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-    const tableId = settings.nTable.getAttribute("id");
-    const row = settings.aoData[dataIndex].nTr;
-
-    if (tableId === "players-over-15-minutes-table") {
-      const teamId = $(row).data("team-id")?.toString();
-      const healthStatus = $(row).find("td:first-child").text().includes("(O)");
-
-      // Filter out injured players if toggle is active
-      if (hideOutPlayers && healthStatus) {
-        return false;
-      }
-
-      // Filter rows based on selected game teams
-      if (selectedGameTeams.size > 0 && teamId && !selectedGameTeams.has(teamId)) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  // --- Initialize DataTable for players ---
   const playersTableId = "#players-over-15-minutes-table";
-  const playersTableElement = document.querySelector(playersTableId);
+  const playersTableEl = document.querySelector(playersTableId);
+  if (!playersTableEl) return;
 
-  if (playersTableElement) {
-    if (!$.fn.DataTable.isDataTable(playersTableId)) {
-      const playersTable = $(playersTableId).DataTable({
-        dom: '<"d-flex w-100 justify-content-between align-items-center gap-2 flex-wrap"lf>rt<"d-flex w-100 justify-content-between align-items-center"ip>',
-        order: [[7, "desc"]],
-        pageLength: 25,
-        lengthChange: true,
-        searching: true,
-        paging: true,
-        autoWidth: false,
-        columnDefs: [{ className: "no-expansion", targets: "_all" }]
-      });
+  // ----------------------------
+  // Tooltips (works with DataTables redraw)
+  // ----------------------------
+  function initTooltips() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      if (bootstrap.Tooltip.getInstance(el)) return;
 
+      const tip = new bootstrap.Tooltip(el);
 
-      // Apply sticky column styling and color coding initially
-      applyStickyColumn(playersTableId, "white");
-      applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+      // auto-hide after 5s (mobile lingering)
+      el.addEventListener("shown.bs.tooltip", function () {
+        const inst = bootstrap.Tooltip.getInstance(el);
+        if (!inst) return;
 
-      // Reapply sticky column and color coding after each redraw
-      playersTable.on("draw", function () {
-        applyStickyColumn(playersTableId, "white");
-        applyBootstrapColorCoding(playersTableId, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
-      });
-
-      console.log("DataTable initialized for players over 15 minutes.");
-    } else {
-      console.log("DataTable already initialized for players over 15 minutes.");
-    }
-  } else {
-    console.warn("Table not found for players over 15 minutes.");
-  }
-
-  // --- Sticky column helper ---
-  function applyStickyColumn(tableId, backgroundColor) {
-    $(`${tableId} .sticky-col`).each(function () {
-      $(this).css({
-        position: "sticky",
-        left: "0",
-        backgroundColor: backgroundColor,
-        zIndex: "2",
-        borderRight: "1px solid #ddd"
+        if (el._tooltipTimeout) clearTimeout(el._tooltipTimeout);
+        el._tooltipTimeout = setTimeout(function () { inst.hide(); }, 5000);
       });
     });
   }
 
-  // --- Apply color gradients to ranked columns ---
-  function applyBootstrapColorCoding(tableId, columnsToColor) {
-    const table = $(tableId).DataTable();
-    const rows = table.rows({ filter: "applied" }).nodes();
+  // ----------------------------
+  // Sticky first column
+  // ----------------------------
+  function applyStickyColumn(tableId, backgroundColor) {
+    const $table = $(tableId);
 
-    columnsToColor.forEach((columnIndex) => {
+    $table.find("thead .sticky-col").css({
+      position: "sticky",
+      left: "0",
+      backgroundColor: backgroundColor,
+      zIndex: "3",
+      borderRight: "1px solid #ddd"
+    });
+
+    $table.find("tbody .sticky-col").css({
+      position: "sticky",
+      left: "0",
+      backgroundColor: backgroundColor,
+      zIndex: "2",
+      borderRight: "1px solid #ddd"
+    });
+  }
+
+  // ----------------------------
+  // Color coding - class based
+  // Only color the columns that are .col-last5
+  // ----------------------------
+  function colorCodeLast5Columns(dt) {
+    const rows = dt.rows({ filter: "applied" }).nodes();
+    if (!rows || rows.length === 0) return;
+
+    const last5Indexes = [];
+    $(`${playersTableId} thead th`).each(function (idx) {
+      if (this.classList.contains("col-last5")) last5Indexes.push(idx);
+    });
+
+    last5Indexes.forEach((colIdx) => {
+      if (!rows[0].cells[colIdx]) return;
+
       const values = Array.from(rows).map((row) => {
-        const cell = row.cells[columnIndex];
-        const text = cell.textContent.trim();
-        return text === "-" ? null : parseFloat(text);
+        const cell = row.cells[colIdx];
+        if (!cell) return null;
+
+        const t = cell.textContent.trim();
+        if (t === "-" || t === "—" || t === "N/A" || t === "") return null;
+
+        const cleaned = t.replace("%", "");
+        const num = parseFloat(cleaned);
+        return Number.isFinite(num) ? num : null;
       });
 
-      const rankedRows = values
+      const ranked = values
         .map((value, index) => ({ value, index }))
-        .filter((entry) => entry.value !== null)
+        .filter((x) => x.value !== null)
         .sort((a, b) => b.value - a.value)
-        .map((entry, rank) => ({ ...entry, rank: rank + 1 }));
+        .map((x, i) => ({ ...x, rank: i + 1 }));
 
-      const maxRank = Math.max(...rankedRows.map((entry) => entry.rank));
+      if (ranked.length === 0) return;
+
+      const maxRank = ranked.length;
       const midRank = Math.ceil(maxRank / 2);
 
-      rankedRows.forEach(({ value, index, rank }) => {
-        const cell = rows[index].cells[columnIndex];
-        let backgroundColor;
+      ranked.forEach(({ index, rank }) => {
+        const cell = rows[index].cells[colIdx];
+        if (!cell) return;
 
+        let backgroundColor;
         if (rank <= midRank) {
-          const ratio = (rank - 1) / (midRank - 1);
+          const ratio = (rank - 1) / Math.max(1, (midRank - 1));
           const red = Math.round(76 + (255 - 76) * ratio);
           const green = Math.round(175 + (255 - 175) * ratio);
           const blue = Math.round(80 + (255 - 80) * ratio);
           backgroundColor = `rgb(${red}, ${green}, ${blue})`;
         } else {
-          const ratio = (rank - midRank) / (maxRank - midRank);
+          const ratio = (rank - midRank) / Math.max(1, (maxRank - midRank));
           const red = Math.round(255 + (162 - 255) * ratio);
           const green = Math.round(255 + (0 - 255) * ratio);
           const blue = Math.round(255 + (0 - 255) * ratio);
@@ -553,23 +518,155 @@ document.addEventListener("turbo:load", function () {
     });
   }
 
-  // --- Cleanup before Turbo caches the page ---
+  // ----------------------------
+  // GAME FILTER (checkboxes in game cards)
+  // Filters rows by <tr data-team-id="...">
+  // ----------------------------
+  function selectedTeamIdsFromGames() {
+    const checked = Array.from(document.querySelectorAll(".game-card-checkbox:checked"));
+    const ids = new Set();
+
+    checked.forEach((cb) => {
+      const v = cb.dataset.visitorTeamId;
+      const h = cb.dataset.homeTeamId;
+      if (v) ids.add(String(v));
+      if (h) ids.add(String(h));
+    });
+
+    return ids;
+  }
+
+  let selectedTeamIds = new Set();
+
+  const dtGameFilterFn = function (settings, data, dataIndex) {
+    const tableId = settings.nTable.getAttribute("id");
+    if (tableId !== "players-over-15-minutes-table") return true;
+
+    if (!selectedTeamIds || selectedTeamIds.size === 0) return true;
+
+    const row = settings.aoData[dataIndex].nTr;
+    const teamId = row && row.dataset ? row.dataset.teamId : null;
+    if (!teamId) return true;
+
+    return selectedTeamIds.has(String(teamId));
+  };
+
+  // ----------------------------
+  // OUT toggle filter (text-based "(O)")
+  // ----------------------------
+  let hideOutPlayers = false;
+
+  const dtOutFilterFn = function (settings, data, dataIndex) {
+    const tableId = settings.nTable.getAttribute("id");
+    if (tableId !== "players-over-15-minutes-table") return true;
+
+    if (!hideOutPlayers) return true;
+
+    const row = settings.aoData[dataIndex].nTr;
+    const isOut = $(row).find("td:first-child").text().includes("(O)");
+    return !isOut;
+  };
+
+  // ----------------------------
+  // Register DataTables global filters (Turbo-safe)
+  // ----------------------------
+  function registerGlobalFilters() {
+    $.fn.dataTable.ext.search = $.fn.dataTable.ext.search
+      .filter((fn) => fn !== dtOutFilterFn && fn !== dtGameFilterFn);
+
+    $.fn.dataTable.ext.search.push(dtOutFilterFn);
+    $.fn.dataTable.ext.search.push(dtGameFilterFn);
+  }
+
+  registerGlobalFilters();
+
+  // ----------------------------
+  // Initialize DataTable
+  // ----------------------------
+  let dt;
+  if (!$.fn.DataTable.isDataTable(playersTableId)) {
+    dt = $(playersTableId).DataTable({
+      dom: '<"d-flex w-100 justify-content-between align-items-center gap-2 flex-wrap"lf>rt<"d-flex w-100 justify-content-between align-items-center"ip>',
+      order: [],
+      pageLength: 25,
+      lengthChange: true,
+      searching: true,
+      paging: true,
+      autoWidth: false,
+      columnDefs: [{ className: "no-expansion", targets: "_all" }]
+    });
+
+    const firstLast5Idx = Array.from(
+      document.querySelectorAll("#players-over-15-minutes-table thead th")
+    ).findIndex((th) => th.classList.contains("col-last5"));
+
+    if (firstLast5Idx >= 0) {
+      dt.order([firstLast5Idx, "desc"]).draw(false);
+    }
+
+    dt.on("draw", function () {
+      applyStickyColumn(playersTableId, "white");
+      colorCodeLast5Columns(dt);
+      initTooltips();
+    });
+  } else {
+    dt = $(playersTableId).DataTable();
+  }
+
+  // ----------------------------
+  // UI events
+  // ----------------------------
+  function redrawPlayers() {
+    if ($.fn.DataTable.isDataTable(playersTableId)) {
+      $(playersTableId).DataTable().draw(false);
+    }
+  }
+
+  function applyGameFilterAndRedraw() {
+    selectedTeamIds = selectedTeamIdsFromGames();
+    redrawPlayers();
+  }
+
+  const toggleOutButton = document.querySelector("#toggle-out-players");
+  if (toggleOutButton) {
+    toggleOutButton.addEventListener("click", function () {
+      hideOutPlayers = !hideOutPlayers;
+      toggleOutButton.classList.toggle("active", hideOutPlayers);
+      redrawPlayers();
+    });
+  }
+
+  // Event delegation: game checkbox changes
+  document.addEventListener("change", function (e) {
+    if (!e.target.classList.contains("game-card-checkbox")) return;
+    applyGameFilterAndRedraw();
+  });
+
+  // ----------------------------
+  // Initial enhancements
+  // ----------------------------
+  applyStickyColumn(playersTableId, "white");
+  colorCodeLast5Columns(dt);
+  initTooltips();
+  applyGameFilterAndRedraw();
+
+  // ----------------------------
+  // Turbo cache cleanup
+  // ----------------------------
   document.addEventListener("turbo:before-cache", function () {
-    // Dispose Bootstrap tooltips so they don't get stuck on mobile
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
       const tip = bootstrap.Tooltip.getInstance(el);
       if (tip) tip.dispose();
     });
 
-    // Destroy DataTable before cache
+    // Remove our global filters to prevent stacking
+    $.fn.dataTable.ext.search = $.fn.dataTable.ext.search
+      .filter((fn) => fn !== dtOutFilterFn && fn !== dtGameFilterFn);
+
     if ($.fn.DataTable.isDataTable(playersTableId)) {
-      console.log(`Destroying DataTable for ${playersTableId} before Turbo caches the page...`);
       $(playersTableId).DataTable().destroy();
     }
   });
-
 });
 </script>
-
-
 
