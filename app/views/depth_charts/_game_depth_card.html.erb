@@ -1,0 +1,23 @@
+<div class="card the-shadow h-100">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="fw-bold">
+      <%= game.visitor_team.name %> @ <%= game.home_team.name %>
+    </div>
+
+    <div class="text-muted" style="font-size: 12px;">
+      <%= game.time.strftime("%I:%M %p") if game.time.present? %>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <%= render partial: "team_depth_card", locals: { team: game.visitor_team } %>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <%= render partial: "team_depth_card", locals: { team: game.home_team } %>
+      </div>
+    </div>
+  </div>
+</div>

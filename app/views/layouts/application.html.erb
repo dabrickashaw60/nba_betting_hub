@@ -55,34 +55,46 @@
         <li class="nav-item">
           <%= link_to "Home", root_path, class: "nav-link #{'active' if current_page?(root_path)}" %>
         </li>
+
         <li class="nav-item">
           <%= link_to "Projections", projections_path, class: "nav-link #{'active' if current_page?(projections_path)}" %>
-        </li>        
-        <li class="nav-item">
-          <%= link_to "Standings", standings_path, class: "nav-link #{'active' if current_page?(standings_path)}" %>
         </li>
+
+        <li class="nav-item">
+          <%= link_to "Depth", depth_charts_path, class: "nav-link #{'active' if current_page?(depth_charts_path)}" %>
+        </li>
+
+        <!-- Teams dropdown (unchanged behavior) -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="teamsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Teams
           </a>
+
           <div class="dropdown-menu p-3 ps-0 pe-0" aria-labelledby="teamsDropdown" style="width: 350px;">
             <div class="row">
-              <!-- Eastern Conference Teams -->
+              <!-- Eastern Conference -->
               <div class="col">
                 <h6 class="dropdown-header">Eastern Conference</h6>
                 <% Team.joins(:standings).where(standings: { conference: 'Eastern', season: 2025 }).order(:name).each do |team| %>
                   <%= link_to team_path(team), class: "dropdown-item d-flex align-items-center", style: "font-size: 10px;" do %>
-                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png" alt="<%= team.name %> logo" width="20" height="20" class="me-2">
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
+                        alt="<%= team.name %> logo"
+                        width="20" height="20"
+                        class="me-2">
                     <%= team.name %>
                   <% end %>
                 <% end %>
               </div>
-              <!-- Western Conference Teams -->
+
+              <!-- Western Conference -->
               <div class="col">
                 <h6 class="dropdown-header">Western Conference</h6>
                 <% Team.joins(:standings).where(standings: { conference: 'Western', season: 2025 }).order(:name).each do |team| %>
                   <%= link_to team_path(team), class: "dropdown-item d-flex align-items-center", style: "font-size: 10px;" do %>
-                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png" alt="<%= team.name %> logo" width="20" height="20" class="me-2">
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
+                        alt="<%= team.name %> logo"
+                        width="20" height="20"
+                        class="me-2">
                     <%= team.name %>
                   <% end %>
                 <% end %>
@@ -90,11 +102,23 @@
             </div>
           </div>
         </li>
-        <!-- DvsP Button -->
-        <li class="nav-item">
-          <%= link_to "DvsP", defense_vs_position_teams_path, class: "nav-link #{'active' if current_page?(defense_vs_position_teams_path)}" %>
+
+        <!-- MORE dropdown -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            More
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="moreDropdown">
+            <li>
+              <%= link_to "Standings", standings_path, class: "dropdown-item" %>
+            </li>
+            <li>
+              <%= link_to "DvsP", defense_vs_position_teams_path, class: "dropdown-item" %>
+            </li>
+          </ul>
         </li>
       </ul>
+
 
       <!-- Live Search Bar -->
       <form class="d-flex position-relative">

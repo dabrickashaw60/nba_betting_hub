@@ -1,0 +1,113 @@
+<% rows = build_depth_rows_for(team.id) %>
+
+<%
+  roster_all = (@all_players_by_team[team.id] || [])
+
+  status_for = ->(player) do
+    s = player&.health&.status.to_s.strip
+    s.present? ? s : "Healthy"
+  end
+
+  out_players = roster_all.select { |p| status_for.call(p) == "Out" }
+
+%>
+
+<div class="card h-100">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+      <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2025.png"
+           alt="<%= team.name %> logo"
+           width="26" height="26"
+           class="me-2">
+      <div class="fw-bold"><%= team.name %></div>
+    </div>
+
+    <%= link_to "View", depth_chart_path(team.id), class: "btn btn-sm btn-outline-secondary" %>
+  </div>
+
+  <div class="card-body">
+    <% total_minutes = rows.sum { |r| r[:expected_minutes].to_f } %>
+
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Player</th>
+          <th style="width: 55px;">Pos</th>
+          <th class="text-end" style="width: 90px;">Min</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% rows.each_with_index do |r, idx| %>
+
+          <% if idx == 5 %>
+            <tr>
+              <td colspan="3" class="py-1">
+                <div class="d-flex align-items-center">
+                  <div class="flex-grow-1 border-top"></div>
+                  <div class="px-2 text-muted small fw-bold">Bench</div>
+                  <div class="flex-grow-1 border-top"></div>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+
+          <% player = r[:player] %>
+          <% p_status = player ? status_for.call(player) : nil %>
+
+          <tr>
+            <td>
+              <% if player %>
+                <div class="d-flex align-items-center justify-content-between">
+                  <span><%= player.name %></span>
+
+                  <% if p_status.present? && p_status != "Healthy" %>
+                    <span class="badge bg-warning text-dark ms-2"><%= p_status %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="text-muted">—</span>
+              <% end %>
+            </td>
+
+            <td><%= r[:pos] || "—" %></td>
+
+            <td class="text-end">
+              <% if r[:expected_minutes] %>
+                <%= r[:expected_minutes].round(1) %>
+              <% else %>
+                <span class="text-muted">—</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+
+      <tfoot>
+        <tr class="table-light">
+          <th colspan="2" class="text-end">Total</th>
+          <th class="text-end">
+            <strong><%= total_minutes.round(1) %></strong>
+          </th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="card-footer bg-white">
+    <div class="small fw-bold text-muted mb-1">Out</div>
+
+    <% if out_players.any? %>
+      <div class="d-flex flex-wrap gap-2">
+        <% out_players.sort_by { |p| p.name.to_s }.each do |p| %>
+          <span class="badge bg-light text-dark border">
+            <%= p.name %>: <span class="fw-bold">Out</span>
+          </span>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="small text-muted">No players listed as Out.</div>
+    <% end %>
+  </div>
+
+</div>

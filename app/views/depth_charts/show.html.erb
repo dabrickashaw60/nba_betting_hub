@@ -1,0 +1,51 @@
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0"><%= @team.name %> Depth Chart</h1>
+
+    <div class="d-flex gap-2">
+      <%= link_to "All Teams", depth_charts_path, class: "btn btn-outline-secondary btn-sm" %>
+    </div>
+  </div>
+
+  <div class="text-muted mb-2">
+    Date: <%= @date.strftime("%Y-%m-%d") %>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Live Depth Chart (Projection-sorted, Out excluded)</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 60px;">Slot</th>
+            <th>Player</th>
+            <th style="width: 60px;">Pos</th>
+            <th class="text-end" style="width: 120px;">Min (Proj)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @depth_rows.each do |r| %>
+            <tr>
+              <td><strong><%= r[:slot] %></strong></td>
+              <td>
+                <% if r[:player] %>
+                  <%= r[:player].name %>
+                <% else %>
+                  <span class="text-muted">—</span>
+                <% end %>
+              </td>
+              <td><%= r[:pos] || "—" %></td>
+              <td class="text-end">
+                <% if r[:expected_minutes] %>
+                  <%= r[:expected_minutes].round(1) %>
+                <% else %>
+                  <span class="text-muted">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

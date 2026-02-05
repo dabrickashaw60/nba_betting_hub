@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_11_19_190716) do
+ActiveRecord::Schema.define(version: 2026_02_05_182722) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -102,6 +102,23 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["player_id"], name: "index_healths_on_player_id"
+  end
+
+  create_table "player_season_roles", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "season_id", null: false
+    t.bigint "player_id", null: false
+    t.integer "team_id"
+    t.string "position"
+    t.integer "games_played", default: 0, null: false
+    t.integer "games_started", default: 0, null: false
+    t.integer "bench_games", default: 0, null: false
+    t.decimal "start_rate", precision: 6, scale: 4, default: "0.0", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["player_id"], name: "index_player_season_roles_on_player_id"
+    t.index ["season_id", "player_id"], name: "index_player_season_roles_on_season_id_and_player_id", unique: true
+    t.index ["season_id", "team_id"], name: "index_player_season_roles_on_season_id_and_team_id"
+    t.index ["season_id"], name: "index_player_season_roles_on_season_id"
   end
 
   create_table "player_stats", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
@@ -211,7 +228,7 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
     t.datetime "updated_at", precision: 6, null: false
     t.float "assist_pct"
     t.float "rebound_pct"
-    t.json "explain"
+    t.text "explain", size: :long, collation: "utf8mb4_bin"
     t.index ["date", "opponent_team_id"], name: "index_projections_on_date_and_opponent_team_id"
     t.index ["date", "player_id"], name: "index_projections_on_date_and_player_id", unique: true
     t.index ["date", "team_id"], name: "index_projections_on_date_and_team_id"
@@ -219,6 +236,7 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
     t.index ["player_id"], name: "index_projections_on_player_id"
     t.index ["projection_run_id"], name: "index_projections_on_projection_run_id"
     t.index ["team_id"], name: "index_projections_on_team_id"
+    t.check_constraint "son_valid(`explain`", name: "projections_chk_1"
   end
 
   create_table "seasons", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
@@ -285,6 +303,8 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
   add_foreign_key "defense_vs_positions", "teams"
   add_foreign_key "games", "teams", column: "home_team_id"
   add_foreign_key "healths", "players"
+  add_foreign_key "player_season_roles", "players"
+  add_foreign_key "player_season_roles", "seasons"
   add_foreign_key "player_stats", "players"
   add_foreign_key "players", "teams"
   add_foreign_key "projections", "players"

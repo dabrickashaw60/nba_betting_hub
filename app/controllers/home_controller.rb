@@ -63,7 +63,7 @@ class HomeController < ApplicationController
     # ------------------------------------------------------------
     team_totals_cache_key = "proj_team_totals_#{@date}_teams#{team_ids.sort.join('-')}_proj#{proj_bust}"
 
-    @proj_team_totals = Rails.cache.fetch(team_totals_cache_key, expires_in: 20.minutes) do
+    @proj_team_totals = Rails.cache.fetch(team_totals_cache_key, expires_in: 15.minutes) do
       Projection.where(date: @date, team_id: team_ids)
                 .group(:team_id)
                 .pluck(
@@ -81,7 +81,7 @@ class HomeController < ApplicationController
     # ------------------------------------------------------------
     players_cache_key = "players_over_15_minutes_#{@date}_proj#{proj_bust}"
 
-    @players_over_15_minutes = Rails.cache.fetch(players_cache_key, expires_in: 20.minutes) do
+    @players_over_15_minutes = Rails.cache.fetch(players_cache_key, expires_in: 15.minutes) do
       players = Player.where(team_id: team_ids).includes(box_scores: :game)
 
       recent_box_scores =
@@ -103,7 +103,7 @@ class HomeController < ApplicationController
         avg5  = compute_bulk_averages(last_five)
         avg10 = compute_bulk_averages(last_ten)
 
-        next unless avg5[:minutes_played] > 20
+        next unless avg5[:minutes_played] > 15
 
         { player: player, averages: avg5, last_ten_averages: avg10 }
       end.compact

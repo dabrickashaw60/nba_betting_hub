@@ -1,0 +1,29 @@
+<div class="container-fluid my-4">
+  <div class="d-flex justify-content-between align-items-end mb-3">
+    <div>
+      <h1 class="mb-1">NBA Projected Minutes</h1>
+      <div class="text-muted">
+        Projected minutes for <%= @date.strftime("%B %-d, %Y") %>
+      </div>
+    </div>
+
+    <div class="btn-group" role="group" aria-label="Depth date toggle">
+      <%= link_to "Today", depth_charts_path(date: Date.current), class: "btn btn-outline-secondary #{'active' if @date == Date.current}" %>
+      <%= link_to "Tomorrow", depth_charts_path(date: Date.current + 1), class: "btn btn-outline-secondary #{'active' if @date == (Date.current + 1)}" %>
+    </div>
+  </div>
+
+  <% if @games.blank? %>
+    <div class="alert alert-secondary">
+      No games found for <%= @date.strftime("%Y-%m-%d") %>.
+    </div>
+  <% else %>
+    <div class="row g-4">
+      <% @games.each do |game| %>
+        <div class="col-12 col-xl-6">
+          <%= render partial: "game_depth_card", locals: { game: game } %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

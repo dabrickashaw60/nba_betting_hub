@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get 'depth_charts/index'
+  get 'depth_charts/show'
   root 'home#index' # This is your main landing page
 
   resources :teams, only: [:index, :show] do
@@ -62,6 +64,8 @@ Rails.application.routes.draw do
 
   ### TEMP DEBUG ###
   get "debug/team_stats/:team_id", to: "debug#team_stats"
+
+  resources :depth_charts, only: [:index, :show]
 
 
 end
