@@ -6,4 +6,5 @@ class Projection < ApplicationRecord
   belongs_to :opponent_team, class_name: "Team"
 
   validates :date, :player_id, :team_id, :opponent_team_id, presence: true
+  attribute :explain, :json
 end

@@ -211,6 +211,7 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
     t.datetime "updated_at", precision: 6, null: false
     t.float "assist_pct"
     t.float "rebound_pct"
+    t.json "explain"
     t.index ["date", "opponent_team_id"], name: "index_projections_on_date_and_opponent_team_id"
     t.index ["date", "player_id"], name: "index_projections_on_date_and_player_id", unique: true
     t.index ["date", "team_id"], name: "index_projections_on_date_and_team_id"
@@ -247,15 +248,25 @@ ActiveRecord::Schema.define(version: 2025_11_19_190716) do
     t.index ["team_id"], name: "index_standings_on_team_id"
   end
 
-  create_table "team_advanced_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "team_advanced_stats", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "team_id", null: false
     t.bigint "season_id", null: false
-    t.json "stats"
+    t.text "stats", size: :long
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.json "rankings"
+    t.text "rankings", size: :long
     t.index ["season_id"], name: "index_team_advanced_stats_on_season_id"
     t.index ["team_id"], name: "index_team_advanced_stats_on_team_id"
+  end
+
+  create_table "team_advanced_stats_backup", id: false, charset: "latin1", force: :cascade do |t|
+    t.bigint "id", default: 0, null: false
+    t.bigint "team_id", null: false
+    t.bigint "season_id", null: false
+    t.text "stats", size: :long, collation: "utf8mb4_unicode_ci"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.text "rankings", size: :long, collation: "utf8mb4_unicode_ci"
   end
 
   create_table "teams", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|

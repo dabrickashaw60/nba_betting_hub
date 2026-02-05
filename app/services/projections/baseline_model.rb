@@ -1,9 +1,12 @@
 # app/services/projections/baseline_model.rb
 require "zlib"
+require "set"
 
 module ::Projections
   class BaselineModel
     MODEL_VERSION = "baseline_v1".freeze
+
+    TEAM_TOTAL_MINUTES = 240.0
 
     # DVP impact: rank 1..30 -> multiplier
     DVP_MIN_MULT = 0.8
@@ -20,7 +23,7 @@ module ::Projections
     VAR_POINTS   = 0.03
     VAR_REBOUNDS = 0.04
     VAR_ASSISTS  = 0.04
-    VAR_THREES = 0.05
+    VAR_THREES   = 0.05
 
     # Minutes tuning
     MINUTES_CLAMP_BAND = 2.0
@@ -32,13 +35,11 @@ module ::Projections
     REB_BOOST_CAP = 2.0
     AST_BOOST_CAP = 2.0
 
-    OUT_MINUTES_TRANSFER = 0.65
+    # How much of OUT minutes / rates are considered "transferable" vs "lost" (rotation tightening / uncertainty)
+    OUT_MINUTES_TRANSFER = 0.75
     OUT_USAGE_TRANSFER   = 0.65
     OUT_REB_TRANSFER     = 0.60
     OUT_AST_TRANSFER     = 0.60
-
-    # NEW: cap minutes delta so redistribution cannot blow players to 40 every time
-    INJURY_MINUTES_BOOST_CAP = 4
 
     # On/Off history tuning
     # NOTE: With your scraper, OUT players typically have NO BoxScore row at all.
@@ -56,11 +57,10 @@ module ::Projections
     end
 
     def run!
-# delete child rows first, then parent rows (FK-safe)
+      # delete child rows first, then parent rows (FK-safe)
       runs_to_delete = ProjectionRun.where(date: @date, model_version: MODEL_VERSION).pluck(:id)
       Projection.where(date: @date, projection_run_id: runs_to_delete).delete_all
       ProjectionRun.where(id: runs_to_delete).delete_all
-
 
       run = ::ProjectionRun.find_or_initialize_by(date: @date, model_version: MODEL_VERSION)
       run.update!(
@@ -85,18 +85,50 @@ module ::Projections
       count = 0
 
       players.find_each do |player|
+        explainer = Projections::Explainer.new
+
         opp = next_opponent_for(player, todays_games)
         next unless opp
 
         inputs = gather_inputs(player, opp)
         next if inputs.blank?
 
+        explainer.add(
+          step: "Inputs",
+          detail: "Recent #{WINDOW_GAMES} game baselines",
+          data: {
+            position: inputs[:position],
+            base_minutes: inputs[:minutes].round(2),
+            ppm_points: inputs[:rates][:points_per_min].round(4),
+            ppm_rebounds: inputs[:rates][:rebounds_per_min].round(4),
+            ppm_assists: inputs[:rates][:assists_per_min].round(4),
+            ppm_threes: inputs[:rates][:threes_per_min].round(4),
+            base_usg: inputs[:pcts][:usage_pct].round(2),
+            base_reb_pct: inputs[:pcts][:rebound_pct].round(2),
+            base_ast_pct: inputs[:pcts][:assist_pct].round(2)
+          }
+        )
+
         team_injury = injury_map_by_team[player.team_id] || {}
         deltas = team_injury[player.id] || {}
 
         raw_minutes_delta = deltas.fetch(:minutes_delta, 0.0)
-        capped_minutes_delta = clamp_delta(raw_minutes_delta, INJURY_MINUTES_BOOST_CAP)
-        expected_minutes = clamp_minutes(inputs[:minutes] + capped_minutes_delta)
+        expected_minutes = clamp_minutes(inputs[:minutes] + raw_minutes_delta)
+
+        if raw_minutes_delta.to_f != 0.0
+          explainer.add(
+            step: "Injury Minutes (240-normalized)",
+            detail: "Team minutes redistribution constrained to 240 total",
+            deltas: {
+              minutes_delta_raw: raw_minutes_delta.round(2)
+            },
+            data: {
+              minutes_before: inputs[:minutes].round(2),
+              minutes_after: expected_minutes.round(2),
+              team_total_minutes: TEAM_TOTAL_MINUTES
+            }
+          )
+        end
 
         base_usg = inputs[:pcts][:usage_pct]
         base_reb = inputs[:pcts][:rebound_pct]
@@ -106,16 +138,33 @@ module ::Projections
         adj_reb = clamp_pct(base_reb + deltas.fetch(:rebound_delta, 0.0), base_reb, REB_BOOST_CAP)
         adj_ast = clamp_pct(base_ast + deltas.fetch(:assist_delta, 0.0), base_ast, AST_BOOST_CAP)
 
+        if deltas.present?
+          explainer.add(
+            step: "Injury Rates",
+            detail: "Usage/Reb/Ast % deltas applied and capped",
+            deltas: {
+              usage_delta: deltas.fetch(:usage_delta, 0.0).round(2),
+              rebound_delta: deltas.fetch(:rebound_delta, 0.0).round(2),
+              assist_delta: deltas.fetch(:assist_delta, 0.0).round(2)
+            },
+            data: {
+              usg_before: base_usg.round(2),
+              usg_after: adj_usg.round(2),
+              reb_before: base_reb.round(2),
+              reb_after: adj_reb.round(2),
+              ast_before: base_ast.round(2),
+              ast_after: adj_ast.round(2),
+              caps: { usg: USG_BOOST_CAP, reb: REB_BOOST_CAP, ast: AST_BOOST_CAP }
+            }
+          )
+        end
+
         inputs_for_projection = inputs.merge(
           minutes: expected_minutes,
-          pcts: {
-            usage_pct: adj_usg,
-            rebound_pct: adj_reb,
-            assist_pct: adj_ast
-          }
+          pcts: { usage_pct: adj_usg, rebound_pct: adj_reb, assist_pct: adj_ast }
         )
 
-        outputs = project_stats(inputs_for_projection)
+        outputs = project_stats(inputs_for_projection, explainer: explainer)
 
         projection = Projection.find_or_initialize_by(date: @date, player_id: player.id)
         projection.assign_attributes(
@@ -136,7 +185,8 @@ module ::Projections
           proj_pa: outputs[:points] + outputs[:assists],
           proj_pr: outputs[:points] + outputs[:rebounds],
           proj_ra: outputs[:rebounds] + outputs[:assists],
-          proj_pra: outputs[:points] + outputs[:rebounds] + outputs[:assists]
+          proj_pra: outputs[:points] + outputs[:rebounds] + outputs[:assists],
+          explain: explainer.steps.to_json
         )
         projection.save!
         count += 1
@@ -178,12 +228,6 @@ module ::Projections
     def mark_success(run)
       run.update!(status: :success, finished_at: Time.current)
       run
-    end
-
-    def clamp_delta(delta, cap)
-      d = delta.to_f
-      c = cap.to_f
-      [[d, -c].max, c].min
     end
 
     # -------------------------
@@ -272,7 +316,7 @@ module ::Projections
       ppm_points   = totals[:points].to_f / totals[:total_minutes]
       ppm_rebounds = totals[:rebounds].to_f / totals[:total_minutes]
       ppm_assists  = totals[:assists].to_f / totals[:total_minutes]
-      ppm_threes = totals[:threes].to_f / totals[:total_minutes]
+      ppm_threes   = totals[:threes].to_f / totals[:total_minutes]
 
       base_usg = totals[:usage_pct_vals].any? ? (totals[:usage_pct_vals].sum / totals[:usage_pct_vals].size) : 0.0
       base_ast = totals[:assist_pct_vals].any? ? (totals[:assist_pct_vals].sum / totals[:assist_pct_vals].size) : 0.0
@@ -287,7 +331,7 @@ module ::Projections
           points_per_min: ppm_points,
           rebounds_per_min: ppm_rebounds,
           assists_per_min: ppm_assists,
-          threes_per_min: ppm_threes          
+          threes_per_min: ppm_threes
         },
         pcts: {
           usage_pct: base_usg,
@@ -314,23 +358,23 @@ module ::Projections
         mins_str = row[0]
         pts = row[1]
 
-      if rebound_count_col
-        reb    = row[2]
-        ast    = row[3]
-        th3    = row[4]
-        usg    = row[5]
-        ast_pct= row[6]
-        trb_pct= row[7]
-      else
-        oreb   = row[2]
-        dreb   = row[3]
-        reb    = oreb.to_i + dreb.to_i
-        ast    = row[4]
-        th3    = row[5]
-        usg    = row[6]
-        ast_pct= row[7]
-        trb_pct= row[8]
-      end
+        if rebound_count_col
+          reb     = row[2]
+          ast     = row[3]
+          th3     = row[4]
+          usg     = row[5]
+          ast_pct = row[6]
+          trb_pct = row[7]
+        else
+          oreb    = row[2]
+          dreb    = row[3]
+          reb     = oreb.to_i + dreb.to_i
+          ast     = row[4]
+          th3     = row[5]
+          usg     = row[6]
+          ast_pct = row[7]
+          trb_pct = row[8]
+        end
 
         mins = minutes_to_float(mins_str)
         next if mins <= 0.0
@@ -403,7 +447,9 @@ module ::Projections
     end
 
     # -------------------------
-    # Injury adjustments (on/off + redistribution blend)
+    # Injury adjustments
+    # - Minutes: team-level redistribution normalized to 240
+    # - Rates: blend redistribution (pool-based) with on/off history
     # -------------------------
     def build_injury_adjustments(team_ids)
       result = {}
@@ -426,21 +472,37 @@ module ::Projections
           next
         end
 
-        redistribution = build_redistribution_deltas(team, roster, out_players, active_players)
+        # Baselines for roster (minutes + pcts), used for both minutes weights and rates redistribution
+        roster_ids = roster.map(&:id)
+        roster_baseline = baseline_avgs_for_players(
+          roster_ids,
+          has_usg: has_usg,
+          has_ast_pct: has_ast_pct,
+          has_trb_pct: has_trb_pct
+        )
+
+        # Minutes deltas (team constrained to 240)
+        minute_deltas = build_team_minutes_deltas(team, roster, out_players, active_players, roster_baseline)
+
+        # Rate deltas (pool-based)
+        redistribution_rates = build_redistribution_rate_deltas(team, roster, out_players, active_players, roster_baseline)
+
+        # On/Off rate deltas (no minutes delta here; minutes handled by team-240 system)
         onoff = build_onoff_deltas(team, active_players, out_players, has_usg: has_usg, has_ast_pct: has_ast_pct, has_trb_pct: has_trb_pct)
 
-        deltas_for_team = Hash.new { |h, k| h[k] = { minutes_delta: 0.0, usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0 } }
+        deltas_for_team = Hash.new do |h, k|
+          h[k] = { minutes_delta: 0.0, usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0 }
+        end
 
         active_players.each do |p|
-          ro = redistribution[p.id] || {}
+          ro = redistribution_rates[p.id] || {}
           oo = onoff[p.id] || {}
 
           w = oo.fetch(:weight, 0.0)
           w = ONOFF_BLEND_MAX if w > ONOFF_BLEND_MAX
           w = ONOFF_BLEND_MIN if w < ONOFF_BLEND_MIN
 
-          deltas_for_team[p.id][:minutes_delta] =
-            (oo.fetch(:minutes_delta, 0.0) * w) + (ro.fetch(:minutes_delta, 0.0) * (1.0 - w))
+          deltas_for_team[p.id][:minutes_delta] = minute_deltas.fetch(p.id, 0.0)
 
           deltas_for_team[p.id][:usage_delta] =
             (oo.fetch(:usage_delta, 0.0) * w) + (ro.fetch(:usage_delta, 0.0) * (1.0 - w))
@@ -458,67 +520,199 @@ module ::Projections
       result
     end
 
-    def build_redistribution_deltas(team, roster, out_players, active_players)
-      cols = BoxScore.column_names
-      has_usg = cols.include?("usage_pct")
-      has_ast_pct = cols.include?("assist_pct")
-      has_trb_pct = cols.include?("total_rebound_pct")
-
-      player_ids = roster.map(&:id)
-
-      bs_rows = BoxScore
-        .joins(:game)
-        .where(player_id: player_ids, games: { season_id: @season.id })
-        .where.not(minutes_played: [nil, "", "0:00"])
-        .order("games.date DESC")
-        .limit(WINDOW_GAMES * player_ids.size)
-        .pluck(
-          :player_id,
-          :minutes_played,
-          (has_usg ? :usage_pct : nil),
-          (has_ast_pct ? :assist_pct : nil),
-          (has_trb_pct ? :total_rebound_pct : nil)
-        )
-
-      mins_map = Hash.new { |h, k| h[k] = [] }
-      usg_map  = Hash.new { |h, k| h[k] = [] }
-      ast_map  = Hash.new { |h, k| h[k] = [] }
-      trb_map  = Hash.new { |h, k| h[k] = [] }
-
-      bs_rows.each do |pid, mp, usg, astp, trbp|
-        next if mins_map[pid].size >= WINDOW_GAMES
-        m = minutes_to_float(mp)
-        next if m <= 0.0
-
-        mins_map[pid] << m
-        usg_map[pid] << usg.to_f if usg.present?
-        ast_map[pid] << astp.to_f if astp.present?
-        trb_map[pid] << trbp.to_f if trbp.present?
+    # -------------------------
+    # Minutes: team-level redistribution constrained to 240
+    # -------------------------
+    def build_team_minutes_deltas(team, roster, out_players, active_players, baseline_map)
+      # 1) Start from roster baseline minutes (scaled to 240)
+      raw_minutes = {}
+      roster.each do |p|
+        raw_minutes[p.id] = (baseline_map[p.id] || {})[:minutes].to_f
       end
 
-      avg_mins = ->(pid) { mins_map[pid].any? ? (mins_map[pid].sum / mins_map[pid].size) : 0.0 }
-      avg_usg  = ->(pid) { usg_map[pid].any? ? (usg_map[pid].sum / usg_map[pid].size) : 0.0 }
-      avg_ast  = ->(pid) { ast_map[pid].any? ? (ast_map[pid].sum / ast_map[pid].size) : 0.0 }
-      avg_trb  = ->(pid) { trb_map[pid].any? ? (trb_map[pid].sum / trb_map[pid].size) : 0.0 }
+      # Avoid all-zero rosters
+      sum_raw = raw_minutes.values.sum.to_f
+      return {} if sum_raw <= 0.0
 
-      pool_minutes = out_players.sum { |p| avg_mins.call(p.id) } * OUT_MINUTES_TRANSFER
-      pool_usg     = out_players.sum { |p| avg_usg.call(p.id) }  * OUT_USAGE_TRANSFER
-      pool_ast     = out_players.sum { |p| avg_ast.call(p.id) }  * OUT_AST_TRANSFER
-      pool_trb     = out_players.sum { |p| avg_trb.call(p.id) }  * OUT_REB_TRANSFER
+      # Scale roster baseline to 240
+      scale = TEAM_TOTAL_MINUTES / sum_raw
+      base_scaled = raw_minutes.transform_values { |m| clamp_minutes(m * scale) }
 
-      group_for = ->(pos) do
-        case pos
-        when "PG", "SG" then "G"
-        when "SF", "PF" then "F"
-        when "C"        then "C"
-        else "OTHER"
+      # After clamp, re-normalize to 240 again (small correction)
+      base_scaled = renormalize_minutes(base_scaled, target_total: TEAM_TOTAL_MINUTES)
+
+      out_ids = out_players.map(&:id)
+      active_ids = active_players.map(&:id)
+
+      # If somehow outs have 0 baseline minutes, nothing to do
+      out_sum = out_ids.sum { |pid| base_scaled[pid].to_f }
+      return {} if out_sum <= 0.0
+
+      # 2) Decide how many OUT minutes are transferable
+      transferable = out_sum * OUT_MINUTES_TRANSFER
+      locked_out = out_sum - transferable # treated as "lost" (tightened rotation / uncertainty)
+      target_active_total = TEAM_TOTAL_MINUTES - locked_out
+
+      # Baseline active minutes (when everyone plays)
+      active_base = {}
+      active_ids.each { |pid| active_base[pid] = base_scaled[pid].to_f }
+
+      base_active_sum = active_base.values.sum.to_f
+      return {} if base_active_sum <= 0.0
+
+      # 3) Distribute transferable minutes to actives using position-aware pools
+      #    Pools are derived from OUT minutes by group; each pool goes primarily to that group first.
+      out_by_group = out_players.group_by { |p| minutes_group_for(p.position) }
+      active_by_group = active_players.group_by { |p| minutes_group_for(p.position) }
+
+      # Weight function: minutes * (1 + usage influence)
+      weight_for = lambda do |pid|
+        m = active_base[pid].to_f
+        usg = (baseline_map[pid] || {})[:usage_pct].to_f
+        w = (m > 0 ? m : 8.0)
+        w *= (1.0 + (usg / 100.0) * 0.35)
+        [w, 5.0].max
+      end
+
+      added = Hash.new(0.0)
+
+      distribute_pool = lambda do |pool_minutes, receiver_players|
+        return if pool_minutes.to_f <= 0.0
+        return if receiver_players.blank?
+
+        weights = {}
+        receiver_players.each { |p| weights[p.id] = weight_for.call(p.id) }
+        wsum = weights.values.sum.to_f
+        return if wsum <= 0.0
+
+        weights.each do |pid, w|
+          added[pid] += pool_minutes.to_f * (w / wsum)
         end
       end
 
-      active_by_group = active_players.group_by { |p| group_for.call(p.position) }
-      out_by_group    = out_players.group_by { |p| group_for.call(p.position) }
+      remaining_pool = transferable.to_f
 
-      deltas_for_team = Hash.new { |h, k| h[k] = { minutes_delta: 0.0, usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0 } }
+      %w[G F C OTHER].each do |grp|
+        outs = out_by_group[grp] || []
+        next if outs.blank?
+
+        grp_out_sum = outs.sum { |p| base_scaled[p.id].to_f }
+        grp_pool = grp_out_sum * OUT_MINUTES_TRANSFER
+        next if grp_pool <= 0.0
+
+        receivers = active_by_group[grp] || []
+        distribute_pool.call(grp_pool, receivers)
+
+        remaining_pool -= grp_pool
+      end
+
+      # Any leftover goes to all active (bench-to-starters etc.)
+      if remaining_pool > 0.0
+        distribute_pool.call(remaining_pool, active_players)
+      end
+
+      # 4) Build new active minutes and renormalize to target_active_total
+      new_active = {}
+      active_ids.each do |pid|
+        new_active[pid] = active_base[pid].to_f + added[pid].to_f
+      end
+
+      new_active = renormalize_minutes(new_active, target_total: target_active_total)
+
+      # Final clamp + re-normalize (a couple passes)
+      new_active = clamp_and_renormalize_minutes(new_active, target_total: target_active_total)
+
+      # 5) Return deltas vs baseline active minutes
+      deltas = {}
+      active_ids.each do |pid|
+        deltas[pid] = new_active[pid].to_f - active_base[pid].to_f
+      end
+
+      deltas
+    end
+
+    def minutes_group_for(pos)
+      case pos
+      when "PG", "SG" then "G"
+      when "SF", "PF" then "F"
+      when "C"        then "C"
+      else "OTHER"
+      end
+    end
+
+    def renormalize_minutes(minutes_hash, target_total:)
+      total = minutes_hash.values.sum.to_f
+      return minutes_hash if total <= 0.0
+      factor = target_total.to_f / total
+      minutes_hash.transform_values { |m| m.to_f * factor }
+    end
+
+    def clamp_and_renormalize_minutes(minutes_hash, target_total:)
+      h = minutes_hash.dup
+
+      3.times do
+        # clamp
+        h.each do |pid, m|
+          h[pid] = clamp_minutes(m)
+        end
+
+        total = h.values.sum.to_f
+        break if total <= 0.0
+
+        diff = target_total.to_f - total
+        break if diff.abs < 0.01
+
+        if diff > 0
+          # add minutes only to players not already at max
+          elig = h.select { |_pid, m| m < MINUTES_MAX - 0.001 }
+          elig_total = elig.values.sum.to_f
+          break if elig_total <= 0.0
+
+          elig.each do |pid, m|
+            share = (m.to_f / elig_total)
+            h[pid] = [h[pid] + diff * share, MINUTES_MAX].min
+          end
+        else
+          # remove minutes only from players above min
+          diff_abs = diff.abs
+          elig = h.select { |_pid, m| m > MINUTES_MIN + 0.001 }
+          elig_total = elig.values.sum.to_f
+          break if elig_total <= 0.0
+
+          elig.each do |pid, m|
+            share = (m.to_f / elig_total)
+            h[pid] = [h[pid] - diff_abs * share, MINUTES_MIN].max
+          end
+        end
+
+        # re-normalize softly toward target
+        h = renormalize_minutes(h, target_total: target_total)
+      end
+
+      h
+    end
+
+    # -------------------------
+    # Rates redistribution (pool-based) - no minutes here
+    # -------------------------
+    def build_redistribution_rate_deltas(team, roster, out_players, active_players, baseline_map)
+      out_ids = out_players.map(&:id)
+      active_ids = active_players.map(&:id)
+      return {} if out_ids.blank? || active_ids.blank?
+
+      avg_usg  = ->(pid) { (baseline_map[pid] || {})[:usage_pct].to_f }
+      avg_ast  = ->(pid) { (baseline_map[pid] || {})[:assist_pct].to_f }
+      avg_trb  = ->(pid) { (baseline_map[pid] || {})[:rebound_pct].to_f }
+      avg_mins = ->(pid) { (baseline_map[pid] || {})[:minutes].to_f }
+
+      pool_usg = out_players.sum { |p| avg_usg.call(p.id) } * OUT_USAGE_TRANSFER
+      pool_ast = out_players.sum { |p| avg_ast.call(p.id) } * OUT_AST_TRANSFER
+      pool_trb = out_players.sum { |p| avg_trb.call(p.id) } * OUT_REB_TRANSFER
+
+      active_by_group = active_players.group_by { |p| minutes_group_for(p.position) }
+      out_by_group    = out_players.group_by { |p| minutes_group_for(p.position) }
+
+      deltas = Hash.new { |h, k| h[k] = { usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0 } }
 
       distribute = lambda do |pool, receiver_players|
         return {} if pool.to_f <= 0.0 || receiver_players.blank?
@@ -534,7 +728,6 @@ module ::Projections
 
         wsum = weights.values.sum.to_f
         return {} if wsum <= 0.0
-
         weights.transform_values { |w| pool.to_f * (w / wsum) }
       end
 
@@ -543,31 +736,30 @@ module ::Projections
         recs = active_by_group[grp] || []
         next if outs.blank?
 
-        grp_pool_minutes = outs.sum { |p| avg_mins.call(p.id) } * OUT_MINUTES_TRANSFER
-        grp_pool_usg     = outs.sum { |p| avg_usg.call(p.id) }  * OUT_USAGE_TRANSFER
-        grp_pool_ast     = outs.sum { |p| avg_ast.call(p.id) }  * OUT_AST_TRANSFER
-        grp_pool_trb     = outs.sum { |p| avg_trb.call(p.id) }  * OUT_REB_TRANSFER
+        grp_pool_usg = outs.sum { |p| avg_usg.call(p.id) } * OUT_USAGE_TRANSFER
+        grp_pool_ast = outs.sum { |p| avg_ast.call(p.id) } * OUT_AST_TRANSFER
+        grp_pool_trb = outs.sum { |p| avg_trb.call(p.id) } * OUT_REB_TRANSFER
 
-        distribute.call(grp_pool_minutes, recs).each { |pid, v| deltas_for_team[pid][:minutes_delta] += v }
-        distribute.call(grp_pool_usg, recs).each    { |pid, v| deltas_for_team[pid][:usage_delta] += v / 5.0 }
-        distribute.call(grp_pool_trb, recs).each    { |pid, v| deltas_for_team[pid][:rebound_delta] += v / 5.0 }
-        distribute.call(grp_pool_ast, recs).each    { |pid, v| deltas_for_team[pid][:assist_delta] += v / 5.0 }
+        distribute.call(grp_pool_usg, recs).each { |pid, v| deltas[pid][:usage_delta] += v / 5.0 }
+        distribute.call(grp_pool_trb, recs).each { |pid, v| deltas[pid][:rebound_delta] += v / 5.0 }
+        distribute.call(grp_pool_ast, recs).each { |pid, v| deltas[pid][:assist_delta] += v / 5.0 }
 
-        pool_minutes -= grp_pool_minutes
-        pool_usg     -= grp_pool_usg
-        pool_ast     -= grp_pool_ast
-        pool_trb     -= grp_pool_trb
+        pool_usg -= grp_pool_usg
+        pool_ast -= grp_pool_ast
+        pool_trb -= grp_pool_trb
       end
 
-      all_active = active_players
-      distribute.call(pool_minutes, all_active).each { |pid, v| deltas_for_team[pid][:minutes_delta] += v } if pool_minutes > 0.0
-      distribute.call(pool_usg, all_active).each     { |pid, v| deltas_for_team[pid][:usage_delta] += v / 6.0 } if pool_usg > 0.0
-      distribute.call(pool_trb, all_active).each     { |pid, v| deltas_for_team[pid][:rebound_delta] += v / 6.0 } if pool_trb > 0.0
-      distribute.call(pool_ast, all_active).each     { |pid, v| deltas_for_team[pid][:assist_delta] += v / 6.0 } if pool_ast > 0.0
+      # leftover to all active
+      distribute.call(pool_usg, active_players).each { |pid, v| deltas[pid][:usage_delta] += v / 6.0 } if pool_usg > 0.0
+      distribute.call(pool_trb, active_players).each { |pid, v| deltas[pid][:rebound_delta] += v / 6.0 } if pool_trb > 0.0
+      distribute.call(pool_ast, active_players).each { |pid, v| deltas[pid][:assist_delta] += v / 6.0 } if pool_ast > 0.0
 
-      deltas_for_team
+      deltas
     end
 
+    # -------------------------
+    # On/Off history deltas (rates only)
+    # -------------------------
     def build_onoff_deltas(team, active_players, out_players, has_usg:, has_ast_pct:, has_trb_pct:)
       out_ids = out_players.map(&:id)
       return {} if out_ids.blank? || active_players.blank?
@@ -621,7 +813,6 @@ module ::Projections
           rebound_pct: trbp
         }
 
-        # Track that this player has a row in this game (important for "out = no row")
         by_player_game_ids[pid] << gid
       end
 
@@ -646,7 +837,7 @@ module ::Projections
       return {} if first_active_date_by_out_pid.blank?
 
       deltas = Hash.new do |h, k|
-        h[k] = { minutes_delta: 0.0, usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0, samples: 0 }
+        h[k] = { usage_delta: 0.0, rebound_delta: 0.0, assist_delta: 0.0, samples: 0 }
       end
 
       first_active_date_by_out_pid.each do |out_pid, first_active_date|
@@ -655,9 +846,6 @@ module ::Projections
           d && d >= first_active_date
         end
 
-        # OUT definition aligned with your scraper:
-        # - out if NO box score row exists for out player in that game
-        # - OR minutes <= 0.0 (covers legacy rows that might exist with 0:00)
         out_games = eligible_game_ids.select do |gid|
           has_row = by_player_game_ids[out_pid].include?(gid)
           if !has_row
@@ -675,8 +863,6 @@ module ::Projections
           rows = out_games.map { |gid| by_game[gid][pid] }.compact
           next if rows.size < ONOFF_SAMPLE_MIN
 
-          avg_mins = rows.sum { |r| r[:minutes].to_f } / rows.size
-
           usg_arr = has_usg ? rows.map { |r| r[:usage_pct] }.compact.map(&:to_f) : []
           ast_arr = has_ast_pct ? rows.map { |r| r[:assist_pct] }.compact.map(&:to_f) : []
           trb_arr = has_trb_pct ? rows.map { |r| r[:rebound_pct] }.compact.map(&:to_f) : []
@@ -685,9 +871,8 @@ module ::Projections
           ast_val = ast_arr.any? ? (ast_arr.sum / ast_arr.size) : nil
           trb_val = trb_arr.any? ? (trb_arr.sum / trb_arr.size) : nil
 
-          base = baseline[pid] || { minutes: 0.0, usage_pct: 0.0, assist_pct: 0.0, rebound_pct: 0.0 }
+          base = baseline[pid] || { usage_pct: 0.0, assist_pct: 0.0, rebound_pct: 0.0 }
 
-          deltas[pid][:minutes_delta] += (avg_mins - base[:minutes])
           deltas[pid][:usage_delta]   += ((usg_val.nil? ? base[:usage_pct] : usg_val) - base[:usage_pct]) if has_usg
           deltas[pid][:assist_delta]  += ((ast_val.nil? ? base[:assist_pct] : ast_val) - base[:assist_pct]) if has_ast_pct
           deltas[pid][:rebound_delta] += ((trb_val.nil? ? base[:rebound_pct] : trb_val) - base[:rebound_pct]) if has_trb_pct
@@ -703,7 +888,6 @@ module ::Projections
         samples = h[:samples].to_i
         next if samples <= 0
 
-        minutes_delta = h[:minutes_delta] / out_count
         usage_delta   = h[:usage_delta] / out_count
         rebound_delta = h[:rebound_delta] / out_count
         assist_delta  = h[:assist_delta] / out_count
@@ -713,7 +897,6 @@ module ::Projections
         w = 0.0 if w < 0.0
 
         output[pid] = {
-          minutes_delta: minutes_delta,
           usage_delta: usage_delta,
           rebound_delta: rebound_delta,
           assist_delta: assist_delta,
@@ -756,7 +939,7 @@ module ::Projections
       player_ids.each do |pid|
         mins = mins_map[pid]
         out[pid] = {
-          minutes: (mins.any? ? (mins.sum / mins.size) : 0.0),
+          minutes: (mins.any? ? projected_minutes_from_recent(mins) : 0.0),
           usage_pct: (usg_map[pid].any? ? (usg_map[pid].sum / usg_map[pid].size) : 0.0),
           assist_pct: (ast_map[pid].any? ? (ast_map[pid].sum / ast_map[pid].size) : 0.0),
           rebound_pct: (trb_map[pid].any? ? (trb_map[pid].sum / trb_map[pid].size) : 0.0)
@@ -768,19 +951,32 @@ module ::Projections
     # -------------------------
     # Projection: minutes -> stats
     # -------------------------
-    def project_stats(inputs)
+    def project_stats(inputs, explainer: nil)
       opponent = inputs[:opponent]
       pos = inputs[:position]
       minutes = inputs[:minutes]
       rates = inputs[:rates]
 
-      usg = inputs[:pcts][:usage_pct].to_f
-      trb = inputs[:pcts][:rebound_pct].to_f
+      usg  = inputs[:pcts][:usage_pct].to_f
+      trb  = inputs[:pcts][:rebound_pct].to_f
       astp = inputs[:pcts][:assist_pct].to_f
 
       usg_mult = 1.0 + ((usg - 20.0) / 100.0) * 0.25
       trb_mult = 1.0 + ((trb - 10.0) / 100.0) * 0.25
       ast_mult = 1.0 + ((astp - 15.0) / 100.0) * 0.20
+
+      explainer&.add(
+        step: "Multipliers (Role)",
+        detail: "Multipliers derived from USG/TRB/AST %",
+        data: {
+          usg: usg.round(2),
+          trb: trb.round(2),
+          ast_pct: astp.round(2),
+          usg_mult: usg_mult.round(4),
+          trb_mult: trb_mult.round(4),
+          ast_mult: ast_mult.round(4)
+        }
+      )
 
       dvp = opponent.defense_data_for(@season) || {}
       groups = position_buckets(pos)
@@ -790,11 +986,27 @@ module ::Projections
       reb_rank = avg_of(slice.values.map { |h| h["rebounds_rank"] })
       ast_rank = avg_of(slice.values.map { |h| h["assists_rank"] })
 
-      pts_mult = rank_to_multiplier_linear(pts_rank)
-      reb_mult = rank_to_multiplier_linear(reb_rank)
+      pts_mult_raw = rank_to_multiplier_linear(pts_rank)
+      reb_mult     = rank_to_multiplier_linear(reb_rank)
       ast_dvp_mult = rank_to_multiplier_linear(ast_rank)
 
-      pts_mult = 1.0 + ((pts_mult - 1.0) * 0.6)
+      pts_mult = 1.0 + ((pts_mult_raw - 1.0) * 0.6)
+
+      explainer&.add(
+        step: "Matchup (DVP)",
+        detail: "Position bucket DVP ranks -> multipliers",
+        data: {
+          pos: pos,
+          buckets: groups,
+          pts_rank: pts_rank&.round(2),
+          reb_rank: reb_rank&.round(2),
+          ast_rank: ast_rank&.round(2),
+          pts_mult_raw: pts_mult_raw.round(4),
+          pts_mult_used: pts_mult.round(4),
+          reb_mult: reb_mult.round(4),
+          ast_mult_dvp: ast_dvp_mult.round(4)
+        }
+      )
 
       rng = seeded_rng(inputs[:player].id)
       pts_rand = 1.0 + rng.rand(-VAR_POINTS..VAR_POINTS)
@@ -802,23 +1014,46 @@ module ::Projections
       ast_rand = 1.0 + rng.rand(-VAR_ASSISTS..VAR_ASSISTS)
       th3_rand = 1.0 + rng.rand(-VAR_THREES..VAR_THREES)
 
+      explainer&.add(
+        step: "Micro Variance",
+        detail: "Deterministic small RNG variance",
+        data: {
+          pts_rand: pts_rand.round(4),
+          reb_rand: reb_rand.round(4),
+          ast_rand: ast_rand.round(4),
+          th3_rand: th3_rand.round(4)
+        }
+      )
+
       points   = (rates[:points_per_min]   * minutes * pts_mult     * usg_mult * pts_rand).round(2)
       rebounds = (rates[:rebounds_per_min] * minutes * reb_mult     * trb_mult * reb_rand).round(2)
       assists  = (rates[:assists_per_min]  * minutes * ast_dvp_mult * ast_mult * ast_rand).round(2)
-      threes = (rates[:threes_per_min] * minutes * pts_mult * usg_mult * th3_rand).round(2)
+      threes   = (rates[:threes_per_min]   * minutes * pts_mult     * usg_mult * th3_rand).round(2)
 
-      points   = 0.0 if points.nan? || points.infinite?
+      points   = 0.0 if points.nan?   || points.infinite?
       rebounds = 0.0 if rebounds.nan? || rebounds.infinite?
-      assists  = 0.0 if assists.nan? || assists.infinite?
-      threes = 0.0 if threes.nan? || threes.infinite?
+      assists  = 0.0 if assists.nan?  || assists.infinite?
+      threes   = 0.0 if threes.nan?   || threes.infinite?
 
-      points = [points, 0.0].max
+      points   = [points, 0.0].max
       rebounds = [rebounds, 0.0].max
-      assists = [assists, 0.0].max
-      threes = [threes, 0.0].max
+      assists  = [assists, 0.0].max
+      threes   = [threes, 0.0].max
 
       points_cap = minutes * 1.25
       points = [points, points_cap].min
+
+      explainer&.add(
+        step: "Final Outputs",
+        detail: "Rates * minutes * multipliers",
+        data: {
+          minutes: minutes.round(2),
+          points: points.round(2),
+          rebounds: rebounds.round(2),
+          assists: assists.round(2),
+          threes: threes.round(2)
+        }
+      )
 
       { points: points, rebounds: rebounds, assists: assists, threes: threes }
     end
