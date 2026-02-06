@@ -204,9 +204,25 @@ class HomeController < ApplicationController
   end
 
   def update_injuries
+    date = params[:date].present? ? Date.parse(params[:date]) : Date.today
+
+    # 1) Update injury statuses
     Scrapers::InjuryScraper.scrape_and_update_injuries
-    redirect_to root_path, notice: "Player injuries updated successfully."
+
+    # 2) Re-run projections for that date
+    Projection.where(date: date).delete_all
+    ProjectionRun.where(date: date, model_version: Projections::BaselineModel::MODEL_VERSION).delete_all
+
+    run = Projections::BaselineModel.new(date: date).run!
+
+    redirect_to root_path(date: date),
+                notice: "Player injuries updated and projections re-run (#{run.projections_count} players) for #{date.strftime("%m/%d/%Y")}."
+  rescue => e
+    Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}"
+    redirect_to root_path(date: (params[:date] rescue nil)),
+                alert: "Injury update/projection run failed: #{e.message}"
   end
+
 
   def scrape_previous_day_games
     require 'rake'

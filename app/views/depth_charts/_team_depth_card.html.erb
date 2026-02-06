@@ -37,20 +37,7 @@
       </thead>
 
       <tbody>
-        <% rows.each_with_index do |r, idx| %>
-
-          <% if idx == 5 %>
-            <tr>
-              <td colspan="3" class="py-1">
-                <div class="d-flex align-items-center">
-                  <div class="flex-grow-1 border-top"></div>
-                  <div class="px-2 text-muted small fw-bold">Bench</div>
-                  <div class="flex-grow-1 border-top"></div>
-                </div>
-              </td>
-            </tr>
-          <% end %>
-
+        <% rows.each do |r| %>
           <% player = r[:player] %>
           <% p_status = player ? status_for.call(player) : nil %>
 
@@ -79,7 +66,6 @@
                     <span>
                       <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}" %>
                     </span>
-
                   <% end %>
 
                   <% if p_status.present? && p_status != "Healthy" %>
@@ -94,15 +80,12 @@
             <td><%= r[:pos] || "—" %></td>
 
             <td class="text-end">
-              <% if r[:expected_minutes] %>
-                <%= r[:expected_minutes].round(1) %>
-              <% else %>
-                <span class="text-muted">—</span>
-              <% end %>
+              <%= r[:expected_minutes].to_f.round(1) %>
             </td>
           </tr>
         <% end %>
       </tbody>
+
 
       <tfoot>
         <tr class="table-light">

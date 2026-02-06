@@ -125,9 +125,12 @@
       </h4>
 
       <div class="d-flex align-items-center mb-2">
-        <%= button_to update_injuries_path, method: :post,
+        <%= button_to update_injuries_path(date: @date), method: :post,
             class: "btn btn-link p-0 me-2 text-primary",
-            form: { "data-turbo-confirm": "Run injury update now?" },
+            form: {
+              "data-turbo-confirm": "Run injury update now?",
+              "data-loading-overlay": "true"
+            },
             data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries" } do %>
           <i class="bi bi-hospital text-danger" style="font-size: 1.2rem;"></i>
         <% end %>

@@ -65,21 +65,28 @@ class DepthChartsController < ApplicationController
   private
 
   def build_depth_rows_for(team_id)
-    roster   = @players_by_team[team_id] || []
-    proj_map = @proj_minutes_by_team[team_id] || {}
-    role_map = @role_by_team_player_id[team_id] || {}
+    roster_all = @all_players_by_team[team_id] || []
+    proj_map   = @proj_minutes_by_team[team_id] || {}
 
-    # Sort roster by projection minutes if we have them; else by roles fallback
-    players_sorted =
-      if proj_map.any?
-        roster.sort_by { |p| -proj_map.fetch(p.id, 0.0).to_f }
-      else
-        (@role_sorted_players_by_team[team_id] || roster)
-      end
+    # Active only (keep Out in footer, not in list)
+    roster_active = roster_all.reject { |p| p.health&.status.to_s == "Out" }
 
-    starters = pick_starters(team_id, roster, proj_map, role_map, players_sorted)
-    fill_depth_slots(players_sorted, proj_map, starters: starters)
+    rows =
+      roster_active.map do |p|
+        mins = proj_map.fetch(p.id, 0.0).to_f
+        next if mins <= 0.0
+
+        {
+          player: p,
+          pos: p.position,
+          expected_minutes: mins
+        }
+      end.compact
+
+    # Sort by projected minutes descending
+    rows.sort_by { |r| -r[:expected_minutes].to_f }
   end
+
 
 
   def fill_depth_slots(players_sorted, proj_map, starters:)

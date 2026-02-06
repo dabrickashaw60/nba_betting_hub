@@ -146,6 +146,13 @@
     </div>
   <% end %>
 
+  <div id="global-loading-overlay" style="display:none;">
+    <div class="loading-card">
+      <div class="spinner-border" role="status" aria-hidden="true"></div>
+      <div class="loading-text">Updating…</div>
+      <div class="loading-subtext">Please wait</div>
+    </div>
+  </div>
 
   <%= yield %>
 
@@ -166,104 +173,131 @@
     });
 
     const dropdownToggle = document.getElementById("teamsDropdown");
-    const dropdownMenu = dropdownToggle.nextElementSibling;
+    const dropdownMenu = dropdownToggle?.nextElementSibling;
 
     // Show the dropdown when hovering over the toggle or menu
     function showDropdown() {
+      if (!dropdownToggle) return;
       const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
       bootstrapDropdown.show();
     }
 
     // Hide the dropdown when not hovering over the toggle or menu
     function hideDropdown() {
+      if (!dropdownToggle) return;
       const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
       bootstrapDropdown.hide();
     }
 
     // Add event listeners for hover functionality
-    dropdownToggle.addEventListener("mouseenter", showDropdown);
-    dropdownMenu.addEventListener("mouseenter", showDropdown);
-    dropdownToggle.addEventListener("mouseleave", function(event) {
-      // Delay hiding to allow moving to menu
-      setTimeout(() => {
-        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
-          hideDropdown();
-        }
-      }, 100);
-    });
-    dropdownMenu.addEventListener("mouseleave", function(event) {
-      setTimeout(() => {
-        if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
-          hideDropdown();
-        }
-      }, 100);
-    });
+    if (dropdownToggle && dropdownMenu) {
+      dropdownToggle.addEventListener("mouseenter", showDropdown);
+      dropdownMenu.addEventListener("mouseenter", showDropdown);
 
-    // Support for toggle on click (for touch devices or click-based access)
-    dropdownToggle.addEventListener('click', function(event) {
-      event.preventDefault(); // Prevent default navigation
-      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-      bootstrapDropdown.toggle();
-    });
-
-
-    document.addEventListener("turbo:load", function () {
-      console.log("Turbo:load triggered - Forcing DataTables reload...");
-
-      function initializeDataTable(tableId, options = {}) {
-        // Ensure the table exists
-        const tableElement = document.querySelector(tableId);
-        if (tableElement) {
-          // Destroy any existing DataTable instance
-          if ($.fn.DataTable.isDataTable(tableElement)) {
-            console.log(`Destroying existing DataTable for ${tableId}...`);
-            $(tableElement).DataTable().destroy();
+      dropdownToggle.addEventListener("mouseleave", function() {
+        setTimeout(() => {
+          if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+            hideDropdown();
           }
+        }, 100);
+      });
 
-          console.log(`Initializing DataTable for ${tableId}...`);
+      dropdownMenu.addEventListener("mouseleave", function() {
+        setTimeout(() => {
+          if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
+            hideDropdown();
+          }
+        }, 100);
+      });
 
-          // Default options
-          const defaultOptions = {
-            order: [[1, "desc"]],
-            pageLength: -1,
-            lengthChange: false,
-            searching: false,
-            paging: false,
-          };
+      // Support for toggle on click (for touch devices or click-based access)
+      dropdownToggle.addEventListener("click", function(event) {
+        event.preventDefault(); // Prevent default navigation
+        const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+        bootstrapDropdown.toggle();
+      });
+    }
 
-          // Merge default options with custom options
-          const finalOptions = Object.assign({}, defaultOptions, options);
+    // ------------------------------------------------------------
+    // GLOBAL LOADING OVERLAY (shows on marked form submits)
+    // ------------------------------------------------------------
+    const overlay = document.getElementById("global-loading-overlay");
 
-          // Initialize the DataTable
-          $(tableElement).DataTable(finalOptions);
+    function showOverlay() {
+      if (!overlay) return;
+      overlay.style.display = "flex";
+    }
 
-          console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
-        } else {
-          console.warn(`Table with ID ${tableId} not found on the page.`);
+    function hideOverlay() {
+      if (!overlay) return;
+      overlay.style.display = "none";
+    }
+
+    if (overlay) {
+      // Show overlay for any form you mark with: data-loading-overlay="true"
+      document.querySelectorAll('form[data-loading-overlay="true"]').forEach((form) => {
+        form.addEventListener("submit", () => {
+          showOverlay();
+        });
+      });
+    }
+
+    // Hide overlay before Turbo caches the page (safety)
+    document.addEventListener("turbo:before-cache", function () {
+      hideOverlay();
+    });
+
+    // ------------------------------------------------------------
+    // DATATABLES INIT / DESTROY
+    // NOTE: removed nested turbo:load listener (it was duplicating handlers)
+    // ------------------------------------------------------------
+    console.log("Turbo:load triggered - Forcing DataTables reload...");
+
+    function initializeDataTable(tableId, options = {}) {
+      const tableElement = document.querySelector(tableId);
+      if (tableElement) {
+        if ($.fn.DataTable.isDataTable(tableElement)) {
+          console.log(`Destroying existing DataTable for ${tableId}...`);
+          $(tableElement).DataTable().destroy();
         }
+
+        console.log(`Initializing DataTable for ${tableId}...`);
+
+        const defaultOptions = {
+          order: [[1, "desc"]],
+          pageLength: -1,
+          lengthChange: false,
+          searching: false,
+          paging: false,
+        };
+
+        const finalOptions = Object.assign({}, defaultOptions, options);
+        $(tableElement).DataTable(finalOptions);
+
+        console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
+      } else {
+        // keep this quiet if you visit pages without those tables
+        // console.warn(`Table with ID ${tableId} not found on the page.`);
       }
+    }
 
-      // Force reload and initialize DataTables for specific tables
-      initializeDataTable('#visitor-last5-table');
-      initializeDataTable('#home-last5-table');
-      initializeDataTable('#player-stats-table', {
-        order: [[2, "desc"]], // Custom sort order for this table
-      });
+    initializeDataTable('#visitor-last5-table');
+    initializeDataTable('#home-last5-table');
+    initializeDataTable('#player-stats-table', {
+      order: [[2, "desc"]],
+    });
 
-      // Debugging to check if DataTables are active
-      console.log("Active DataTables on the page:");
-      $('table.dataTable').each(function () {
-        if ($.fn.DataTable.isDataTable(this)) {
-          console.log(`DataTable found for table ID: ${this.id}`);
-        } else {
-          console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
-        }
-      });
+    console.log("Active DataTables on the page:");
+    $('table.dataTable').each(function () {
+      if ($.fn.DataTable.isDataTable(this)) {
+        console.log(`DataTable found for table ID: ${this.id}`);
+      } else {
+        console.warn(`DataTable NOT initialized for table ID: ${this.id}`);
+      }
     });
 
     document.addEventListener("turbo:before-cache", function () {
       console.log("Turbo:before-cache - Destroying all DataTables...");
-      // Find all tables with initialized DataTables and destroy them
       $('table.dataTable').each(function () {
         if ($.fn.DataTable.isDataTable(this)) {
           console.log(`Destroying DataTable for table ID: ${this.id}`);
@@ -272,10 +306,8 @@
       });
     });
 
-
   });
 </script>
 
-  
 </body>
 </html>

@@ -342,6 +342,51 @@ table.dataTable tbody th, table.dataTable tbody td{
   white-space: nowrap;
 }
 
+#global-loading-overlay {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  z-index: 999999; /* higher than navbar, modals, tooltips */
+  background: rgba(0, 0, 0, 0.6);
+
+  display: none;          /* toggled via JS */
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: all;    /* blocks clicks underneath */
+}
+
+#global-loading-overlay .loading-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 26px 30px;
+  min-width: 280px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+#global-loading-overlay .spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+#global-loading-overlay .loading-text {
+  margin-top: 14px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+#global-loading-overlay .loading-subtext {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+
+
 @media (max-width: 625px) {
     body{
         font-size: 12px !important;

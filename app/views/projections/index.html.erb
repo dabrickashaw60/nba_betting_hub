@@ -6,11 +6,12 @@
         results_projections_path(date: @date),
         class: "btn btn-outline-primary" %>
 
-    <%= button_to "Run Projections",
-          generate_projections_path(date: @date),
-          method: :post,
-          class: "btn btn-outline-primary d-flex align-items-center",
-          id: "run-projections-btn" %>
+  <%= button_to "Run Projections",
+        generate_projections_path(date: @date),
+        method: :post,
+        class: "btn btn-outline-primary d-flex align-items-center",
+        form: { "data-loading-overlay": "true" },
+        id: "run-projections-btn" %>
 
   </div>
 

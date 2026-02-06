@@ -56,253 +56,359 @@ module ::Projections
       raise "No current season" unless @season
     end
 
-def run!
-  # delete child rows first, then parent rows (FK-safe)
-  runs_to_delete = ProjectionRun.where(date: @date, model_version: MODEL_VERSION).pluck(:id)
-  Projection.where(date: @date, projection_run_id: runs_to_delete).delete_all
-  ProjectionRun.where(id: runs_to_delete).delete_all
+    def run!
+      # delete child rows first, then parent rows (FK-safe)
+      runs_to_delete = ProjectionRun.where(date: @date, model_version: MODEL_VERSION).pluck(:id)
+      Projection.where(date: @date, projection_run_id: runs_to_delete).delete_all
+      ProjectionRun.where(id: runs_to_delete).delete_all
 
-  run = ::ProjectionRun.find_or_initialize_by(date: @date, model_version: MODEL_VERSION)
-  run.update!(
-    status: :running,
-    started_at: Time.current,
-    finished_at: nil,
-    notes: nil,
-    projections_count: 0
-  )
-
-  todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
-  team_ids = todays_games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.uniq
-  return mark_success(run) if team_ids.blank?
-
-  eligible_player_ids = eligible_players_for(team_ids)
-
-  # IMPORTANT: use to_a so we can group_by team and avoid find_each (find_each ignores ordering and batches)
-  players = Player.where(id: eligible_player_ids).includes(:team, :health).to_a
-
-  puts "[BASELINE] Eligible players (>#{MIN_AVG_MINUTES} min avg, >=#{MIN_GAMES} games, not Out): #{players.size}"
-
-  injury_map_by_team = build_injury_adjustments(team_ids)
-
-  count = 0
-
-  players_by_team = players.group_by(&:team_id)
-
-  players_by_team.each do |team_id, team_players|
-    # Determine opponent for the team from todays_games
-    game = todays_games.detect { |g| g.home_team_id == team_id || g.visitor_team_id == team_id }
-    next unless game
-
-    opp_team = (game.home_team_id == team_id) ? game.visitor_team : game.home_team
-    next unless opp_team
-
-    # 1) Build per-player inputs + pre-normalized minutes
-    inputs_by_pid = {}
-    explainer_by_pid = {}
-    pre_minutes_by_pid = {}
-    adj_pcts_by_pid = {}
-
-    team_injury = injury_map_by_team[team_id] || {}
-
-    team_players.each do |player|
-      explainer = Projections::Explainer.new
-
-      inputs = gather_inputs(player, opp_team)
-      next if inputs.blank?
-
-      explainer.add(
-        step: "Inputs",
-        detail: "Recent #{WINDOW_GAMES} game baselines",
-        data: {
-          position: inputs[:position],
-          base_minutes: inputs[:minutes].round(2),
-          ppm_points: inputs[:rates][:points_per_min].round(4),
-          ppm_rebounds: inputs[:rates][:rebounds_per_min].round(4),
-          ppm_assists: inputs[:rates][:assists_per_min].round(4),
-          ppm_threes: inputs[:rates][:threes_per_min].round(4),
-          base_usg: inputs[:pcts][:usage_pct].round(2),
-          base_reb_pct: inputs[:pcts][:rebound_pct].round(2),
-          base_ast_pct: inputs[:pcts][:assist_pct].round(2)
-        }
+      run = ::ProjectionRun.find_or_initialize_by(date: @date, model_version: MODEL_VERSION)
+      run.update!(
+        status: :running,
+        started_at: Time.current,
+        finished_at: nil,
+        notes: nil,
+        projections_count: 0
       )
 
-      deltas = team_injury[player.id] || {}
+      todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
+      team_ids = todays_games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.uniq
+      return mark_success(run) if team_ids.blank?
 
-      raw_minutes_delta = deltas.fetch(:minutes_delta, 0.0)
-      pre_minutes = clamp_minutes(inputs[:minutes] + raw_minutes_delta)
+      eligible_player_ids = eligible_players_for(team_ids)
 
-      if raw_minutes_delta.to_f != 0.0
-        explainer.add(
-          step: "Injury Minutes (240-normalized)",
-          detail: "Team minutes redistribution constrained to 240 total (delta phase)",
-          deltas: { minutes_delta_raw: raw_minutes_delta.round(2) },
-          data: {
-            minutes_before: inputs[:minutes].round(2),
-            minutes_after_pre_norm: pre_minutes.round(2),
-            team_total_minutes: TEAM_TOTAL_MINUTES
-          }
-        )
+      # IMPORTANT: use to_a so we can group_by team and avoid find_each (find_each ignores ordering and batches)
+      players = Player.where(id: eligible_player_ids).includes(:team, :health).to_a
+
+      puts "[BASELINE] Eligible players (>#{MIN_AVG_MINUTES} min avg, >=#{MIN_GAMES} games, not Out): #{players.size}"
+
+      injury_map_by_team = build_injury_adjustments(team_ids)
+
+      count = 0
+      players_by_team = players.group_by(&:team_id)
+
+      players_by_team.each do |team_id, team_players|
+        # Determine opponent for the team from todays_games
+        game = todays_games.detect { |g| g.home_team_id == team_id || g.visitor_team_id == team_id }
+        next unless game
+
+        opp_team = (game.home_team_id == team_id) ? game.visitor_team : game.home_team
+        next unless opp_team
+
+        # 1) Build per-player inputs + pre-normalized minutes
+        inputs_by_pid = {}
+        explainer_by_pid = {}
+        pre_minutes_by_pid = {}
+        adj_pcts_by_pid = {}
+
+        team_injury = injury_map_by_team[team_id] || {}
+
+        team_players.each do |player|
+          explainer = Projections::Explainer.new
+
+          inputs = gather_inputs(player, opp_team)
+          next if inputs.blank?
+
+          explainer.add(
+            step: "Inputs",
+            detail: "Recent #{WINDOW_GAMES} game baselines",
+            data: {
+              position: inputs[:position],
+              base_minutes: inputs[:minutes].round(2),
+              ppm_points: inputs[:rates][:points_per_min].round(4),
+              ppm_rebounds: inputs[:rates][:rebounds_per_min].round(4),
+              ppm_assists: inputs[:rates][:assists_per_min].round(4),
+              ppm_threes: inputs[:rates][:threes_per_min].round(4),
+              base_usg: inputs[:pcts][:usage_pct].round(2),
+              base_reb_pct: inputs[:pcts][:rebound_pct].round(2),
+              base_ast_pct: inputs[:pcts][:assist_pct].round(2)
+            }
+          )
+
+          deltas = team_injury[player.id] || {}
+
+          raw_minutes_delta = deltas.fetch(:minutes_delta, 0.0)
+          pre_minutes = clamp_minutes(inputs[:minutes] + raw_minutes_delta)
+
+          if raw_minutes_delta.to_f != 0.0
+            explainer.add(
+              step: "Injury Minutes (240-normalized)",
+              detail: "Team minutes redistribution constrained to 240 total (delta phase)",
+              deltas: { minutes_delta_raw: raw_minutes_delta.round(2) },
+              data: {
+                minutes_before: inputs[:minutes].round(2),
+                minutes_after_pre_norm: pre_minutes.round(2),
+                team_total_minutes: TEAM_TOTAL_MINUTES
+              }
+            )
+          end
+
+          base_usg = inputs[:pcts][:usage_pct]
+          base_reb = inputs[:pcts][:rebound_pct]
+          base_ast = inputs[:pcts][:assist_pct]
+
+          adj_usg = clamp_pct(base_usg + deltas.fetch(:usage_delta, 0.0), base_usg, USG_BOOST_CAP)
+          adj_reb = clamp_pct(base_reb + deltas.fetch(:rebound_delta, 0.0), base_reb, REB_BOOST_CAP)
+          adj_ast = clamp_pct(base_ast + deltas.fetch(:assist_delta, 0.0), base_ast, AST_BOOST_CAP)
+
+          if deltas.present?
+            explainer.add(
+              step: "Injury Rates",
+              detail: "Usage/Reb/Ast % deltas applied and capped",
+              deltas: {
+                usage_delta: deltas.fetch(:usage_delta, 0.0).round(2),
+                rebound_delta: deltas.fetch(:rebound_delta, 0.0).round(2),
+                assist_delta: deltas.fetch(:assist_delta, 0.0).round(2)
+              },
+              data: {
+                usg_before: base_usg.round(2),
+                usg_after: adj_usg.round(2),
+                reb_before: base_reb.round(2),
+                reb_after: adj_reb.round(2),
+                ast_before: base_ast.round(2),
+                ast_after: adj_ast.round(2),
+                caps: { usg: USG_BOOST_CAP, reb: REB_BOOST_CAP, ast: AST_BOOST_CAP }
+              }
+            )
+          end
+
+          inputs_by_pid[player.id] = inputs
+          explainer_by_pid[player.id] = explainer
+          pre_minutes_by_pid[player.id] = pre_minutes
+          adj_pcts_by_pid[player.id] = { usage_pct: adj_usg, rebound_pct: adj_reb, assist_pct: adj_ast }
+        rescue => e
+          Rails.logger.warn "[::Projections::BaselineModel] #{player&.name || 'player'} inputs failed: #{e.message}"
+          next
+        end
+
+        next if inputs_by_pid.blank?
+
+        # ------------------------------------------------------------
+        # 2) Rotation pruning + bench dilution control (competitive-game assumption)
+        #
+        # Goal:
+        # - Keep true rotation bodies
+        # - Drop pure “garbage-time” guys (sub-10 minute profiles)
+        # - Compress minutes away from deep bench so starters aren’t taxed down
+        # ------------------------------------------------------------
+        # Always keep at least N bodies (to avoid weird short-handed slates)
+        min_rotation_bodies = 9
+
+        # Sort by pre minutes (already includes injury deltas)
+        ordered_pids = pre_minutes_by_pid.sort_by { |_pid, m| -m.to_f }.map(&:first)
+
+        keep = Set.new
+
+        # 2a) Always keep top N by pre-minutes
+        ordered_pids.first(min_rotation_bodies).each { |pid| keep << pid }
+
+        # 2b) Keep anyone with “real rotation” recent minutes
+        inputs_by_pid.each do |pid, inputs|
+          mp = (inputs[:minutes_profile] || {})
+          last5  = mp[:last5_avg].to_f
+          season = mp[:season_avg].to_f
+          pre_m  = pre_minutes_by_pid[pid].to_f
+
+          # Rotation signal rules (tunable):
+          # - last5 >= 10 OR season >= 12 OR pre >= 12 => keep
+          # This knocks out the “played only in blowouts” guys without needing blowout logic.
+          if last5 >= 10.0 || season >= 12.0 || pre_m >= 12.0
+            keep << pid
+          end
+        end
+
+        # Apply keep set (drop others)
+        drop_pids = inputs_by_pid.keys - keep.to_a
+        drop_pids.each do |pid|
+          inputs_by_pid.delete(pid)
+          explainer_by_pid.delete(pid)
+          pre_minutes_by_pid.delete(pid)
+          adj_pcts_by_pid.delete(pid)
+        end
+
+        next if inputs_by_pid.blank?
+
+        # 2c) Bench decay to prevent “14-man equalization”
+        # After the top 8-ish bodies, taper pre-minutes down so normalization
+        # doesn’t steal minutes from starters to fund deep bench.
+        #
+        # This is NOT blowout logic — it is “competitive rotation compression.”
+        ordered_pids = pre_minutes_by_pid.sort_by { |_pid, m| -m.to_f }.map(&:first)
+
+        ordered_pids.each_with_index do |pid, idx|
+          m = pre_minutes_by_pid[pid].to_f
+          mult =
+            if idx <= 7
+              1.00
+            elsif idx <= 9
+              0.85
+            elsif idx <= 11
+              0.70
+            else
+              0.55
+            end
+
+          new_m = clamp_minutes(m * mult)
+
+          if mult < 1.0
+            ex = explainer_by_pid[pid]
+            ex&.add(
+              step: "Rotation Compression",
+              detail: "Competitive-game bench taper to prevent deep bench dilution",
+              data: { rank_by_minutes: idx + 1, pre_minutes_before: m.round(2), multiplier: mult, pre_minutes_after: new_m.round(2) }
+            )
+          end
+
+          pre_minutes_by_pid[pid] = new_m
+        end
+
+        # ------------------------------------------------------------
+        # 3) Build floors (starter protection)
+        #
+        # Your old floors only protected true 33–35 MPG stars.
+        # This expands protection to “normal starters” too (Heat example).
+        # ------------------------------------------------------------
+        floors_by_pid = {}
+
+        # Identify “starter-like” group as top 5 by a blend of last5 + season-like minutes
+        starter_candidates =
+          inputs_by_pid.map do |pid, inputs|
+            mp = (inputs[:minutes_profile] || {})
+            last5  = mp[:last5_avg].to_f
+            season = mp[:season_avg].to_f
+            score = (0.65 * last5) + (0.35 * season)
+            [pid, score, last5, season]
+          end
+          .sort_by { |(_pid, score, _l5, _s)| -score }
+
+        starter_pids = starter_candidates.first(5).map(&:first).to_set
+
+        inputs_by_pid.each do |pid, inputs|
+          mp = (inputs[:minutes_profile] || {})
+          last5  = mp[:last5_avg].to_f
+          season = mp[:season_avg].to_f
+
+          floor = 0.0
+
+          # Expanded starter protection:
+          # - For the top 5 “starter-like” players, floor near last5-2 (but not below 20)
+          if starter_pids.include?(pid)
+            floor = [last5 - 2.0, season - 1.0, 20.0].max
+          end
+
+          # Keep your stricter star floors as an override upward
+          if last5 >= 35.0 && season >= 35.0
+            floor = [floor, 35.0].max
+          elsif last5 >= 33.0 && season >= 33.0
+            floor = [floor, 33.0].max
+          elsif last5 >= 31.0 && season >= 32.0
+            floor = [floor, 31.0].max
+          end
+
+          floor = clamp_minutes(floor)
+
+          if floor > 0.0
+            floors_by_pid[pid] = floor
+          end
+
+          ex = explainer_by_pid[pid]
+          ex&.add(
+            step: "Minute Floors",
+            detail: "Starter/star protection floors based on last5 + season-like minutes",
+            data: {
+              is_starter_like: starter_pids.include?(pid),
+              last5_avg: last5.round(2),
+              season_like_avg: season.round(2),
+              floor_minutes: (floor > 0 ? floor.round(2) : nil)
+            }
+          )
+        end
+
+        # ------------------------------------------------------------
+        # 4) Normalize team minutes to 240 (WITH floors)
+        # ------------------------------------------------------------
+        pre_total = pre_minutes_by_pid.values.sum.to_f
+        norm_minutes_by_pid =
+          normalize_minutes_to_team_total(
+            pre_minutes_by_pid,
+            target_total: TEAM_TOTAL_MINUTES,
+            floors_by_pid: floors_by_pid
+          )
+        post_total = norm_minutes_by_pid.values.sum.to_f
+        norm_factor = pre_total > 0 ? (TEAM_TOTAL_MINUTES / pre_total) : 1.0
+
+        # add a normalization explainer step per player
+        norm_minutes_by_pid.each do |pid, norm_mins|
+          ex = explainer_by_pid[pid]
+          next unless ex
+
+          ex.add(
+            step: "Team Minutes Normalization",
+            detail: "Scaled team minutes to #{TEAM_TOTAL_MINUTES} total (with floors)",
+            data: {
+              team_pre_total: pre_total.round(2),
+              team_post_total: post_total.round(2),
+              naive_normalization_factor: norm_factor.round(4),
+              minutes_pre_norm: pre_minutes_by_pid[pid].to_f.round(2),
+              minutes_post_norm: norm_mins.to_f.round(2),
+              floor_applied: (floors_by_pid[pid].present? ? floors_by_pid[pid].to_f.round(2) : nil)
+            }
+          )
+        end
+
+        # ------------------------------------------------------------
+        # 5) Project stats + save rows
+        # ------------------------------------------------------------
+        inputs_by_pid.each do |pid, inputs|
+          player = inputs[:player]
+          explainer = explainer_by_pid[pid]
+          norm_minutes = norm_minutes_by_pid.fetch(pid, 0.0).to_f
+          pcts = adj_pcts_by_pid[pid] || inputs[:pcts]
+
+          inputs_for_projection = inputs.merge(
+            minutes: clamp_minutes(norm_minutes),
+            pcts: pcts
+          )
+
+          outputs = project_stats(inputs_for_projection, explainer: explainer)
+
+          projection = Projection.find_or_initialize_by(date: @date, player_id: player.id)
+          projection.assign_attributes(
+            projection_run_id: run.id,
+            team_id: team_id,
+            opponent_team_id: opp_team.id,
+            position: inputs[:position],
+
+            expected_minutes: inputs_for_projection[:minutes],
+            usage_pct: pcts[:usage_pct],
+            rebound_pct: pcts[:rebound_pct],
+            assist_pct: pcts[:assist_pct],
+
+            proj_points: outputs[:points],
+            proj_rebounds: outputs[:rebounds],
+            proj_assists: outputs[:assists],
+            proj_threes: outputs[:threes],
+            proj_pa: outputs[:points] + outputs[:assists],
+            proj_pr: outputs[:points] + outputs[:rebounds],
+            proj_ra: outputs[:rebounds] + outputs[:assists],
+            proj_pra: outputs[:points] + outputs[:rebounds] + outputs[:assists],
+            explain: explainer&.steps&.to_json
+          )
+          projection.save!
+          count += 1
+        rescue => e
+          Rails.logger.warn "[::Projections::BaselineModel] #{player&.name || 'player'} save failed: #{e.message}"
+          next
+        end
       end
 
-      base_usg = inputs[:pcts][:usage_pct]
-      base_reb = inputs[:pcts][:rebound_pct]
-      base_ast = inputs[:pcts][:assist_pct]
-
-      adj_usg = clamp_pct(base_usg + deltas.fetch(:usage_delta, 0.0), base_usg, USG_BOOST_CAP)
-      adj_reb = clamp_pct(base_reb + deltas.fetch(:rebound_delta, 0.0), base_reb, REB_BOOST_CAP)
-      adj_ast = clamp_pct(base_ast + deltas.fetch(:assist_delta, 0.0), base_ast, AST_BOOST_CAP)
-
-      if deltas.present?
-        explainer.add(
-          step: "Injury Rates",
-          detail: "Usage/Reb/Ast % deltas applied and capped",
-          deltas: {
-            usage_delta: deltas.fetch(:usage_delta, 0.0).round(2),
-            rebound_delta: deltas.fetch(:rebound_delta, 0.0).round(2),
-            assist_delta: deltas.fetch(:assist_delta, 0.0).round(2)
-          },
-          data: {
-            usg_before: base_usg.round(2),
-            usg_after: adj_usg.round(2),
-            reb_before: base_reb.round(2),
-            reb_after: adj_reb.round(2),
-            ast_before: base_ast.round(2),
-            ast_after: adj_ast.round(2),
-            caps: { usg: USG_BOOST_CAP, reb: REB_BOOST_CAP, ast: AST_BOOST_CAP }
-          }
-        )
-      end
-
-      inputs_by_pid[player.id] = inputs
-      explainer_by_pid[player.id] = explainer
-      pre_minutes_by_pid[player.id] = pre_minutes
-      adj_pcts_by_pid[player.id] = { usage_pct: adj_usg, rebound_pct: adj_reb, assist_pct: adj_ast }
+      run.update!(projections_count: count)
+      mark_success(run)
     rescue => e
-      Rails.logger.warn "[::Projections::BaselineModel] #{player&.name || 'player'} inputs failed: #{e.message}"
-      next
+      run&.update!(status: :error, finished_at: Time.current, notes: e.message)
+      raise
     end
 
-    next if inputs_by_pid.blank?
-
-    # 2) Build "star floors" (protect high-minute guys from being taxed down too hard)
-    floors_by_pid = {}
-
-    inputs_by_pid.each do |pid, inputs|
-      mp = (inputs[:minutes_profile] || {})
-      last5 = mp[:last5_avg].to_f
-      season = mp[:season_avg].to_f
-
-      floor = 0.0
-
-      # Strict "true star" floor
-      if last5 >= 35.0 && season >= 35.0
-        floor = 35.0
-      # Strong minute-eater floor (helps primary guys)
-      elsif last5 >= 33.0 && season >= 33.0
-        floor = 33.0
-      # Soft protection band (prevents 31–32 guys from becoming 27)
-      elsif last5 >= 31.0 && season >= 32.0
-        floor = 31.0
-      end
-
-      if floor > 0.0
-        floors_by_pid[pid] = floor
-      end
-
-      ex = explainer_by_pid[pid]
-      next unless ex
-
-      ex.add(
-        step: "Minute Floors",
-        detail: "Star protection floors based on last5 + season-like minutes",
-        data: {
-          last5_avg: last5.round(2),
-          season_like_avg: season.round(2),
-          floor_minutes: (floor > 0 ? floor : nil)
-        }
-      )
-    end
-
-    # 3) Normalize team minutes to 240 (WITH floors)
-    pre_total = pre_minutes_by_pid.values.sum.to_f
-    norm_minutes_by_pid =
-      normalize_minutes_to_team_total(
-        pre_minutes_by_pid,
-        target_total: TEAM_TOTAL_MINUTES,
-        floors_by_pid: floors_by_pid
-      )
-    post_total = norm_minutes_by_pid.values.sum.to_f
-    norm_factor = pre_total > 0 ? (TEAM_TOTAL_MINUTES / pre_total) : 1.0
-
-    # add a normalization explainer step per player
-    norm_minutes_by_pid.each do |pid, norm_mins|
-      ex = explainer_by_pid[pid]
-      next unless ex
-
-      ex.add(
-        step: "Team Minutes Normalization",
-        detail: "Scaled team minutes to #{TEAM_TOTAL_MINUTES} total (with floors)",
-        data: {
-          team_pre_total: pre_total.round(2),
-          team_post_total: post_total.round(2),
-          naive_normalization_factor: norm_factor.round(4),
-          minutes_pre_norm: pre_minutes_by_pid[pid].to_f.round(2),
-          minutes_post_norm: norm_mins.to_f.round(2),
-          floor_applied: (floors_by_pid[pid].present? ? floors_by_pid[pid].to_f.round(2) : nil)
-        }
-      )
-    end
-
-    # 4) Project stats + save rows
-    inputs_by_pid.each do |pid, inputs|
-      player = inputs[:player]
-      explainer = explainer_by_pid[pid]
-      norm_minutes = norm_minutes_by_pid.fetch(pid, 0.0).to_f
-      pcts = adj_pcts_by_pid[pid] || inputs[:pcts]
-
-      inputs_for_projection = inputs.merge(
-        minutes: clamp_minutes(norm_minutes),
-        pcts: pcts
-      )
-
-      outputs = project_stats(inputs_for_projection, explainer: explainer)
-
-      projection = Projection.find_or_initialize_by(date: @date, player_id: player.id)
-      projection.assign_attributes(
-        projection_run_id: run.id,
-        team_id: team_id,
-        opponent_team_id: opp_team.id,
-        position: inputs[:position],
-
-        expected_minutes: inputs_for_projection[:minutes],
-        usage_pct: pcts[:usage_pct],
-        rebound_pct: pcts[:rebound_pct],
-        assist_pct: pcts[:assist_pct],
-
-        proj_points: outputs[:points],
-        proj_rebounds: outputs[:rebounds],
-        proj_assists: outputs[:assists],
-        proj_threes: outputs[:threes],
-        proj_pa: outputs[:points] + outputs[:assists],
-        proj_pr: outputs[:points] + outputs[:rebounds],
-        proj_ra: outputs[:rebounds] + outputs[:assists],
-        proj_pra: outputs[:points] + outputs[:rebounds] + outputs[:assists],
-        explain: explainer&.steps&.to_json
-      )
-      projection.save!
-      count += 1
-    rescue => e
-      Rails.logger.warn "[::Projections::BaselineModel] #{player&.name || 'player'} save failed: #{e.message}"
-      next
-    end
-  end
-
-  run.update!(projections_count: count)
-  mark_success(run)
-rescue => e
-  run&.update!(status: :error, finished_at: Time.current, notes: e.message)
-  raise
-end
 
 
 
@@ -334,51 +440,55 @@ end
       run
     end
 
-    # -------------------------
-    # Eligibility / schedule
-    # -------------------------
-def eligible_players_for(team_ids)
-  # "Active enough to matter" rules:
-  # - Not Out (health table)
-  # - Has appeared recently (last 30 days) OR in last 10 team games (covers weird schedule gaps)
-  # - Has at least MIN_GAMES box scores with non-zero minutes this season
-  # - Has a small minimum avg minutes so we don't include pure DNP bodies
-  #
-  # NOTE: We intentionally lower the minutes requirement so 8–14 MPG guys get projected.
+    def eligible_players_for(team_ids)
+      recent_date_cutoff = (@date - 30.days).to_date
+      last14_cutoff      = (@date - 14.days).to_date
 
-  recent_date_cutoff = @date - 30.days
+      recent_game_ids = Game
+        .where(season_id: @season.id)
+        .where("date <= ?", @date)
+        .where("home_team_id IN (?) OR visitor_team_id IN (?)", team_ids, team_ids)
+        .order(date: :desc)
+        .limit(10 * team_ids.size)
+        .pluck(:id)
 
-  # last 10 games per team (by date desc), so we can treat "recent" by team context too
-  recent_game_ids = Game
-    .where(season_id: @season.id)
-    .where("date <= ?", @date)
-    .where("home_team_id IN (?) OR visitor_team_id IN (?)", team_ids, team_ids)
-    .order(date: :desc)
-    .limit(10 * team_ids.size) # safe upper bound, we only use ids
-    .pluck(:id)
+      recent_game_ids_sql = recent_game_ids.any? ? recent_game_ids.join(",") : "NULL"
 
-  Player
-    .joins(box_scores: :game)
-    .where(players: { team_id: team_ids })
-    .where(games: { season_id: @season.id })
-    .where.not(box_scores: { minutes_played: [nil, "", "0:00"] })
-    .joins("LEFT JOIN healths ON healths.player_id = players.id")
-    .where('COALESCE(healths.status, "Healthy") <> "Out"')
-    .group("players.id")
-    .having(<<~SQL.squish)
-      COUNT(box_scores.id) >= #{MIN_GAMES}
-      AND AVG(
-        (CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", 1) AS UNSIGNED) * 60) +
-        CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", -1) AS UNSIGNED)
-      ) >= #{(4.0 * 60).to_i}
-      AND (
-        MAX(games.date) >= '#{recent_date_cutoff.to_date}'
-        OR SUM(CASE WHEN box_scores.game_id IN (#{recent_game_ids.presence&.join(",") || "NULL"}) THEN 1 ELSE 0 END) >= 1
-      )
-    SQL
-    .pluck(:id)
-end
+      minutes_seconds_sql = %Q(
+        (
+          (CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", 1) AS UNSIGNED) * 60) +
+          CAST(SUBSTRING_INDEX(box_scores.minutes_played, ":", -1) AS UNSIGNED)
+        )
+      ).squish
 
+      Player
+        .joins(box_scores: :game)
+        .where(players: { team_id: team_ids })
+        .where(games: { season_id: @season.id })
+        .where("games.date <= ?", @date)
+        .where.not(box_scores: { minutes_played: [nil, "", "0:00"] })
+        .joins("LEFT JOIN healths ON healths.player_id = players.id")
+        .where('COALESCE(healths.status, "Healthy") <> "Out"')
+        .group("players.id")
+        .having(<<~SQL.squish)
+          COUNT(box_scores.id) >= #{MIN_GAMES}
+          AND (
+            MAX(games.date) >= '#{recent_date_cutoff}'
+            OR SUM(CASE WHEN box_scores.game_id IN (#{recent_game_ids_sql}) THEN 1 ELSE 0 END) >= 1
+          )
+          AND (
+            AVG(#{minutes_seconds_sql}) >= #{(MIN_AVG_MINUTES * 60).to_i}
+            OR SUM(
+              CASE
+                WHEN games.date >= '#{last14_cutoff}'
+                AND #{minutes_seconds_sql} >= #{(10.0 * 60).to_i}
+                THEN 1 ELSE 0
+              END
+            ) >= 2
+          )
+        SQL
+        .pluck(:id)
+    end
 
 
     def next_opponent_for(player, todays_games)
@@ -390,127 +500,127 @@ end
     # -------------------------
     # Inputs: per-minute baselines
     # -------------------------
-def gather_inputs(player, opponent)
-  bs_rel = player.box_scores
-                 .joins(:game)
-                 .where(games: { season_id: @season.id })
-                 .where("games.date <= ?", @date)
-                 .where.not(minutes_played: [nil, "", "0:00"])
-                 .where.not(points: nil)
-                 .order("games.date DESC")
+    def gather_inputs(player, opponent)
+      bs_rel = player.box_scores
+                    .joins(:game)
+                    .where(games: { season_id: @season.id })
+                    .where("games.date <= ?", @date)
+                    .where.not(minutes_played: [nil, "", "0:00"])
+                    .where.not(points: nil)
+                    .order("games.date DESC")
 
-  # Use a wider set for "season-like" minutes baseline, but still recent-ish
-  # so we don't pull in early-season role noise forever.
-  bs_for_minutes = bs_rel.limit(30)
+      # Use a wider set for "season-like" minutes baseline, but still recent-ish
+      # so we don't pull in early-season role noise forever.
+      bs_for_minutes = bs_rel.limit(30)
 
-  last5_rows = bs_for_minutes.limit(5).pluck(:minutes_played)
-  all_rows   = bs_for_minutes.pluck(:minutes_played)
+      last5_rows = bs_for_minutes.limit(5).pluck(:minutes_played)
+      all_rows   = bs_for_minutes.pluck(:minutes_played)
 
-  last5_mins = last5_rows.map { |m| minutes_to_float(m) }.select { |v| v > 0.0 }
-  all_mins   = all_rows.map { |m| minutes_to_float(m) }.select { |v| v > 0.0 }
+      last5_mins = last5_rows.map { |m| minutes_to_float(m) }.select { |v| v > 0.0 }
+      all_mins   = all_rows.map { |m| minutes_to_float(m) }.select { |v| v > 0.0 }
 
-  return nil if all_mins.blank?
-  return nil if all_mins.size < MIN_GAMES
+      return nil if all_mins.blank?
+      return nil if all_mins.size < MIN_GAMES
 
-  last5_avg  = (last5_mins.any? ? (last5_mins.sum / last5_mins.size.to_f) : 0.0)
-  season_avg = (all_mins.sum / all_mins.size.to_f)
+      last5_avg  = (last5_mins.any? ? (last5_mins.sum / last5_mins.size.to_f) : 0.0)
+      season_avg = (all_mins.sum / all_mins.size.to_f)
 
-  # Blend: lean on last5, but anchor with season_avg
-  # If we have fewer than 3 games in last5 sample, lean more on season.
-  last5_weight =
-    if last5_mins.size >= 4
-      0.70
-    elsif last5_mins.size == 3
-      0.60
-    elsif last5_mins.size == 2
-      0.45
-    else
-      0.25
+      # Blend: lean on last5, but anchor with season_avg
+      # If we have fewer than 3 games in last5 sample, lean more on season.
+      last5_weight =
+        if last5_mins.size >= 4
+          0.70
+        elsif last5_mins.size == 3
+          0.60
+        elsif last5_mins.size == 2
+          0.45
+        else
+          0.25
+        end
+
+      blended_minutes = (last5_avg * last5_weight) + (season_avg * (1.0 - last5_weight))
+
+      # Keep your clamp band concept, but center around season_avg to protect stars,
+      # while still allowing last5 to pull them up/down modestly.
+      lower = [season_avg - 3.0, 0.0].max
+      upper = season_avg + 3.0
+
+      expected_minutes = [[blended_minutes, lower].max, upper].min
+      expected_minutes = clamp_minutes(expected_minutes)
+
+      # Now pull the stat columns for the WINDOW used for rates/pcts
+      bs_rates = bs_rel.limit(WINDOW_GAMES)
+
+      cols = BoxScore.column_names
+      rebound_count_col =
+        if cols.include?("total_rebounds")
+          :total_rebounds
+        elsif cols.include?("rebounds")
+          :rebounds
+        else
+          nil
+        end
+
+      has_usg = cols.include?("usage_pct")
+      has_ast_pct = cols.include?("assist_pct")
+      has_trb_pct = cols.include?("total_rebound_pct")
+
+      if rebound_count_col
+        rows = bs_rates.pluck(
+          :minutes_played, :points, rebound_count_col, :assists, :three_point_field_goals,
+          (has_usg ? :usage_pct : nil),
+          (has_ast_pct ? :assist_pct : nil),
+          (has_trb_pct ? :total_rebound_pct : nil)
+        )
+      else
+        o_col = cols.include?("offensive_rebounds") ? :offensive_rebounds : nil
+        d_col = cols.include?("defensive_rebounds") ? :defensive_rebounds : nil
+        rows = bs_rates.pluck(
+          :minutes_played, :points, o_col, d_col, :assists, :three_point_field_goals,
+          (has_usg ? :usage_pct : nil),
+          (has_ast_pct ? :assist_pct : nil),
+          (has_trb_pct ? :total_rebound_pct : nil)
+        )
+      end
+
+      return nil if rows.blank?
+
+      totals = accumulate_totals(rows, rebound_count_col: rebound_count_col)
+      return nil if totals[:games] < [MIN_GAMES, 3].min
+      return nil if totals[:total_minutes] <= 0.0
+
+      ppm_points   = totals[:points].to_f / totals[:total_minutes]
+      ppm_rebounds = totals[:rebounds].to_f / totals[:total_minutes]
+      ppm_assists  = totals[:assists].to_f / totals[:total_minutes]
+      ppm_threes   = totals[:threes].to_f / totals[:total_minutes]
+
+      base_usg = totals[:usage_pct_vals].any? ? (totals[:usage_pct_vals].sum / totals[:usage_pct_vals].size) : 0.0
+      base_ast = totals[:assist_pct_vals].any? ? (totals[:assist_pct_vals].sum / totals[:assist_pct_vals].size) : 0.0
+      base_trb = totals[:trb_pct_vals].any? ? (totals[:trb_pct_vals].sum / totals[:trb_pct_vals].size) : 0.0
+
+      {
+        player: player,
+        opponent: opponent,
+        position: player.position,
+        minutes: expected_minutes,
+        minutes_profile: {
+          last5_avg: last5_avg,
+          season_avg: season_avg,
+          last5_weight: last5_weight
+        },
+        rates: {
+          points_per_min: ppm_points,
+          rebounds_per_min: ppm_rebounds,
+          assists_per_min: ppm_assists,
+          threes_per_min: ppm_threes
+        },
+        pcts: {
+          usage_pct: base_usg,
+          assist_pct: base_ast,
+          rebound_pct: base_trb
+        }
+      }
     end
-
-  blended_minutes = (last5_avg * last5_weight) + (season_avg * (1.0 - last5_weight))
-
-  # Keep your clamp band concept, but center around season_avg to protect stars,
-  # while still allowing last5 to pull them up/down modestly.
-  lower = [season_avg - 3.0, 0.0].max
-  upper = season_avg + 3.0
-
-  expected_minutes = [[blended_minutes, lower].max, upper].min
-  expected_minutes = clamp_minutes(expected_minutes)
-
-  # Now pull the stat columns for the WINDOW used for rates/pcts
-  bs_rates = bs_rel.limit(WINDOW_GAMES)
-
-  cols = BoxScore.column_names
-  rebound_count_col =
-    if cols.include?("total_rebounds")
-      :total_rebounds
-    elsif cols.include?("rebounds")
-      :rebounds
-    else
-      nil
-    end
-
-  has_usg = cols.include?("usage_pct")
-  has_ast_pct = cols.include?("assist_pct")
-  has_trb_pct = cols.include?("total_rebound_pct")
-
-  if rebound_count_col
-    rows = bs_rates.pluck(
-      :minutes_played, :points, rebound_count_col, :assists, :three_point_field_goals,
-      (has_usg ? :usage_pct : nil),
-      (has_ast_pct ? :assist_pct : nil),
-      (has_trb_pct ? :total_rebound_pct : nil)
-    )
-  else
-    o_col = cols.include?("offensive_rebounds") ? :offensive_rebounds : nil
-    d_col = cols.include?("defensive_rebounds") ? :defensive_rebounds : nil
-    rows = bs_rates.pluck(
-      :minutes_played, :points, o_col, d_col, :assists, :three_point_field_goals,
-      (has_usg ? :usage_pct : nil),
-      (has_ast_pct ? :assist_pct : nil),
-      (has_trb_pct ? :total_rebound_pct : nil)
-    )
-  end
-
-  return nil if rows.blank?
-
-  totals = accumulate_totals(rows, rebound_count_col: rebound_count_col)
-  return nil if totals[:games] < [MIN_GAMES, 3].min
-  return nil if totals[:total_minutes] <= 0.0
-
-  ppm_points   = totals[:points].to_f / totals[:total_minutes]
-  ppm_rebounds = totals[:rebounds].to_f / totals[:total_minutes]
-  ppm_assists  = totals[:assists].to_f / totals[:total_minutes]
-  ppm_threes   = totals[:threes].to_f / totals[:total_minutes]
-
-  base_usg = totals[:usage_pct_vals].any? ? (totals[:usage_pct_vals].sum / totals[:usage_pct_vals].size) : 0.0
-  base_ast = totals[:assist_pct_vals].any? ? (totals[:assist_pct_vals].sum / totals[:assist_pct_vals].size) : 0.0
-  base_trb = totals[:trb_pct_vals].any? ? (totals[:trb_pct_vals].sum / totals[:trb_pct_vals].size) : 0.0
-
-  {
-    player: player,
-    opponent: opponent,
-    position: player.position,
-    minutes: expected_minutes,
-    minutes_profile: {
-      last5_avg: last5_avg,
-      season_avg: season_avg,
-      last5_weight: last5_weight
-    },
-    rates: {
-      points_per_min: ppm_points,
-      rebounds_per_min: ppm_rebounds,
-      assists_per_min: ppm_assists,
-      threes_per_min: ppm_threes
-    },
-    pcts: {
-      usage_pct: base_usg,
-      assist_pct: base_ast,
-      rebound_pct: base_trb
-    }
-  }
-end
 
 
 
@@ -591,35 +701,35 @@ end
       0.0
     end
 
-def projected_minutes_from_recent(minutes_list, last5_avg: nil, season_avg: nil)
-  return 0.0 if minutes_list.blank?
+    def projected_minutes_from_recent(minutes_list, last5_avg: nil, season_avg: nil)
+      return 0.0 if minutes_list.blank?
 
-  n = minutes_list.size
-  weights = n.downto(1).to_a
-  weighted = minutes_list.zip(weights).sum { |m, w| m.to_f * w } / weights.sum.to_f
+      n = minutes_list.size
+      weights = n.downto(1).to_a
+      weighted = minutes_list.zip(weights).sum { |m, w| m.to_f * w } / weights.sum.to_f
 
-  avg_window = minutes_list.sum.to_f / n
+      avg_window = minutes_list.sum.to_f / n
 
-  l5 = last5_avg.to_f
-  sea = season_avg.to_f
+      l5 = last5_avg.to_f
+      sea = season_avg.to_f
 
-  # Blend target:
-  # - last 5 is most important
-  # - weighted window next
-  # - season-like keeps stars from being “taxed” too hard
-  # Feel free to tweak weights later.
-  blended =
-    (0.55 * (l5 > 0 ? l5 : avg_window)) +
-    (0.25 * weighted) +
-    (0.20 * (sea > 0 ? sea : avg_window))
+      # Blend target:
+      # - last 5 is most important
+      # - weighted window next
+      # - season-like keeps stars from being “taxed” too hard
+      # Feel free to tweak weights later.
+      blended =
+        (0.55 * (l5 > 0 ? l5 : avg_window)) +
+        (0.25 * weighted) +
+        (0.20 * (sea > 0 ? sea : avg_window))
 
-  # Clamp around the blended value (instead of the window avg)
-  lower = [blended - MINUTES_CLAMP_BAND, 0.0].max
-  upper = blended + MINUTES_CLAMP_BAND
+      # Clamp around the blended value (instead of the window avg)
+      lower = [blended - MINUTES_CLAMP_BAND, 0.0].max
+      upper = blended + MINUTES_CLAMP_BAND
 
-  out = [[blended, lower].max, upper].min
-  clamp_minutes(out)
-end
+      out = [[blended, lower].max, upper].min
+      clamp_minutes(out)
+    end
 
 
     def clamp_minutes(mins)
@@ -1200,90 +1310,90 @@ end
       output
     end
 
-def normalize_minutes_to_team_total(mins_by_pid, target_total: TEAM_TOTAL_MINUTES, floors_by_pid: {})
-  # mins_by_pid is "pre minutes" already clamped.
-  # floors_by_pid optional, but we also apply smart floors/caps based on player history
-  # if gather_inputs provides minutes_profile via inputs (we store that in mins_by_pid only),
-  # so caps/floors MUST be computed elsewhere.
-  #
-  # Since this method only receives mins_by_pid, we implement generic behavior:
-  # - Apply explicit floors_by_pid (your "star floors" if you want them later)
-  # - Apply a soft cap to stop unrealistic inflation
-  #
-  # For caps, we use a conservative rule:
-  #   cap = [pre_minutes + 6, 38].min
-  # Which prevents someone from being normalized from 24 -> 38 just because the pool is missing.
-  #
-  # You can tighten/loosen the +6.
+    def normalize_minutes_to_team_total(mins_by_pid, target_total: TEAM_TOTAL_MINUTES, floors_by_pid: {})
+      # mins_by_pid is "pre minutes" already clamped.
+      # floors_by_pid optional, but we also apply smart floors/caps based on player history
+      # if gather_inputs provides minutes_profile via inputs (we store that in mins_by_pid only),
+      # so caps/floors MUST be computed elsewhere.
+      #
+      # Since this method only receives mins_by_pid, we implement generic behavior:
+      # - Apply explicit floors_by_pid (your "star floors" if you want them later)
+      # - Apply a soft cap to stop unrealistic inflation
+      #
+      # For caps, we use a conservative rule:
+      #   cap = [pre_minutes + 6, 38].min
+      # Which prevents someone from being normalized from 24 -> 38 just because the pool is missing.
+      #
+      # You can tighten/loosen the +6.
 
-  return mins_by_pid if mins_by_pid.blank?
+      return mins_by_pid if mins_by_pid.blank?
 
-  mins = mins_by_pid.transform_values { |v| v.to_f }
+      mins = mins_by_pid.transform_values { |v| v.to_f }
 
-  # 1) Apply explicit floors (if any)
-  floors_by_pid.each do |pid, floor|
-    next unless mins.key?(pid)
-    mins[pid] = [mins[pid], floor.to_f].max
-  end
-
-  # 2) Apply soft caps relative to the player’s pre minutes
-  caps_by_pid = {}
-  mins.each do |pid, m|
-    caps_by_pid[pid] = [m.to_f + 6.0, MINUTES_MAX].min
-  end
-
-  # 3) Now scale toward target_total, but respect floors/caps.
-  # Iterative water-filling:
-  5.times do
-    total = mins.values.sum.to_f
-    break if total <= 0.0
-
-    diff = target_total.to_f - total
-    break if diff.abs < 0.01
-
-    if diff > 0
-      # Need to add minutes to those under cap
-      receivers = mins.select { |pid, m| m.to_f < (caps_by_pid[pid].to_f - 0.001) }
-      break if receivers.blank?
-
-      wsum = receivers.values.sum.to_f
-      wsum = receivers.size.to_f if wsum <= 0.0
-
-      receivers.each do |pid, m|
-        w = (m.to_f > 0 ? m.to_f : 1.0)
-        w = w / wsum
-        mins[pid] = [mins[pid] + (diff * w), caps_by_pid[pid]].min
+      # 1) Apply explicit floors (if any)
+      floors_by_pid.each do |pid, floor|
+        next unless mins.key?(pid)
+        mins[pid] = [mins[pid], floor.to_f].max
       end
-    else
-      # Need to remove minutes from those above floor (explicit floor if present, else 0)
-      diff_abs = diff.abs
-      floors = floors_by_pid.transform_values(&:to_f)
-      donors = mins.select { |pid, m| m.to_f > (floors.fetch(pid, 0.0) + 0.001) }
-      break if donors.blank?
 
-      dsum = donors.values.sum.to_f
-      dsum = donors.size.to_f if dsum <= 0.0
-
-      donors.each do |pid, m|
-        w = (m.to_f > 0 ? m.to_f : 1.0)
-        w = w / dsum
-        new_m = mins[pid] - (diff_abs * w)
-        mins[pid] = [new_m, floors.fetch(pid, 0.0)].max
+      # 2) Apply soft caps relative to the player’s pre minutes
+      caps_by_pid = {}
+      mins.each do |pid, m|
+        caps_by_pid[pid] = [m.to_f + 6.0, MINUTES_MAX].min
       end
+
+      # 3) Now scale toward target_total, but respect floors/caps.
+      # Iterative water-filling:
+      5.times do
+        total = mins.values.sum.to_f
+        break if total <= 0.0
+
+        diff = target_total.to_f - total
+        break if diff.abs < 0.01
+
+        if diff > 0
+          # Need to add minutes to those under cap
+          receivers = mins.select { |pid, m| m.to_f < (caps_by_pid[pid].to_f - 0.001) }
+          break if receivers.blank?
+
+          wsum = receivers.values.sum.to_f
+          wsum = receivers.size.to_f if wsum <= 0.0
+
+          receivers.each do |pid, m|
+            w = (m.to_f > 0 ? m.to_f : 1.0)
+            w = w / wsum
+            mins[pid] = [mins[pid] + (diff * w), caps_by_pid[pid]].min
+          end
+        else
+          # Need to remove minutes from those above floor (explicit floor if present, else 0)
+          diff_abs = diff.abs
+          floors = floors_by_pid.transform_values(&:to_f)
+          donors = mins.select { |pid, m| m.to_f > (floors.fetch(pid, 0.0) + 0.001) }
+          break if donors.blank?
+
+          dsum = donors.values.sum.to_f
+          dsum = donors.size.to_f if dsum <= 0.0
+
+          donors.each do |pid, m|
+            w = (m.to_f > 0 ? m.to_f : 1.0)
+            w = w / dsum
+            new_m = mins[pid] - (diff_abs * w)
+            mins[pid] = [new_m, floors.fetch(pid, 0.0)].max
+          end
+        end
+      end
+
+      # 4) Final clamp and final renormalize (small drift)
+      mins = mins.transform_values { |m| clamp_minutes(m) }
+
+      total = mins.values.sum.to_f
+      if total > 0.0 && (target_total.to_f - total).abs > 0.05
+        factor = target_total.to_f / total
+        mins = mins.transform_values { |m| clamp_minutes(m.to_f * factor) }
+      end
+
+      mins
     end
-  end
-
-  # 4) Final clamp and final renormalize (small drift)
-  mins = mins.transform_values { |m| clamp_minutes(m) }
-
-  total = mins.values.sum.to_f
-  if total > 0.0 && (target_total.to_f - total).abs > 0.05
-    factor = target_total.to_f / total
-    mins = mins.transform_values { |m| clamp_minutes(m.to_f * factor) }
-  end
-
-  mins
-end
 
 
 

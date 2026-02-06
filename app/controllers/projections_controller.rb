@@ -97,9 +97,9 @@ class ProjectionsController < ApplicationController
     # Games for the date
     # -------------------------
     @games = Game.where(date: @date, season_id: @season.id)
-                 .includes(:home_team, :visitor_team)
-                 .order(:time)
-                 .to_a
+                .includes(:home_team, :visitor_team)
+                .order(:time)
+                .to_a
 
     Rails.logger.info "[PROJECTIONS RESULTS] date param=#{params[:date].inspect}"
     Rails.logger.info "[PROJECTIONS RESULTS] parsed date=#{@date.inspect}"
@@ -114,8 +114,8 @@ class ProjectionsController < ApplicationController
       day_team_ids = @games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.compact.uniq
 
       day_box_scores = BoxScore.where(game_id: day_game_ids)
-                               .includes(:player, :team)
-                               .to_a
+                              .includes(:player, :team)
+                              .to_a
 
       day_projections = Projection.where(date: @date)
                                   .where(team_id: day_team_ids)
@@ -124,9 +124,9 @@ class ProjectionsController < ApplicationController
 
       day_proj_by_player_id = day_projections.index_by(&:player_id)
 
-      minutes_cutoff = 10
+      minutes_cutoff = 10.0
       day_missing = day_box_scores.select do |bs|
-        bs.minutes_played.to_f >= minutes_cutoff && day_proj_by_player_id[bs.player_id].nil?
+        minutes_to_float(bs.minutes_played) >= minutes_cutoff && day_proj_by_player_id[bs.player_id].nil?
       end
 
       @day_missing_projection_count = day_missing.size
@@ -134,7 +134,7 @@ class ProjectionsController < ApplicationController
         {
           player_name: bs.player&.name,
           team: bs.team&.abbreviation,
-          minutes: bs.minutes_played.to_f
+          minutes: minutes_to_float(bs.minutes_played)
         }
       end
 
@@ -180,14 +180,14 @@ class ProjectionsController < ApplicationController
 
     # All box scores for game
     all_box_scores = BoxScore.where(game_id: @selected_game.id)
-                             .includes(:player, :team)
-                             .to_a
+                            .includes(:player, :team)
+                            .to_a
 
     @away_box_scores = all_box_scores.select { |bs| bs.team_id == away_id }
-                                     .sort_by { |bs| -bs.minutes_played.to_f }
+                                    .sort_by { |bs| -minutes_to_float(bs.minutes_played) }
 
     @home_box_scores = all_box_scores.select { |bs| bs.team_id == home_id }
-                                     .sort_by { |bs| -bs.minutes_played.to_f }
+                                    .sort_by { |bs| -minutes_to_float(bs.minutes_played) }
 
     # Projections for both teams
     projections = Projection.where(date: @date)
@@ -221,29 +221,29 @@ class ProjectionsController < ApplicationController
     # -------------------------
     @away_display_rows =
       (@away_box_scores.map { |bs| { type: :box, bs: bs, proj: @away_proj_by_player_id[bs.player_id] } } +
-       away_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
+      away_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
         .sort_by do |r|
-          r[:bs] ? -r[:bs].minutes_played.to_f : -r[:proj].expected_minutes.to_f
+          r[:bs] ? -minutes_to_float(r[:bs].minutes_played) : -r[:proj].expected_minutes.to_f
         end
 
     @home_display_rows =
       (@home_box_scores.map { |bs| { type: :box, bs: bs, proj: @home_proj_by_player_id[bs.player_id] } } +
-       home_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
+      home_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
         .sort_by do |r|
-          r[:bs] ? -r[:bs].minutes_played.to_f : -r[:proj].expected_minutes.to_f
+          r[:bs] ? -minutes_to_float(r[:bs].minutes_played) : -r[:proj].expected_minutes.to_f
         end
 
     # -------------------------
     # Missing projections (box score exists, projection missing)
     # -------------------------
-    minutes_cutoff = 10
+    minutes_cutoff = 10.0
 
     away_missing = @away_box_scores.select do |bs|
-      bs.minutes_played.to_f >= minutes_cutoff && @away_proj_by_player_id[bs.player_id].nil?
+      minutes_to_float(bs.minutes_played) >= minutes_cutoff && @away_proj_by_player_id[bs.player_id].nil?
     end
 
     home_missing = @home_box_scores.select do |bs|
-      bs.minutes_played.to_f >= minutes_cutoff && @home_proj_by_player_id[bs.player_id].nil?
+      minutes_to_float(bs.minutes_played) >= minutes_cutoff && @home_proj_by_player_id[bs.player_id].nil?
     end
 
     @away_missing_projection_count = away_missing.size
@@ -251,18 +251,17 @@ class ProjectionsController < ApplicationController
 
     # -------------------------
     # Metric cards (per team)
-    # NOTE: build_metric_boxes only uses rows where a projection exists,
-    # so proj-only rows don't belong here (no actuals).
     # -------------------------
     @away_metric_boxes = build_metric_boxes(@away_box_scores, @away_proj_by_player_id, minutes_threshold: 0)
     @home_metric_boxes = build_metric_boxes(@home_box_scores, @home_proj_by_player_id, minutes_threshold: 0)
 
     # -------------------------
-    # Backward compat (if anything still references these)
+    # Backward compat
     # -------------------------
     @box_scores        = all_box_scores
     @proj_by_player_id = all_proj_by_player_id
   end
+
 
 
   def generate
@@ -281,8 +280,28 @@ class ProjectionsController < ApplicationController
 
   private
 
+  def minutes_to_float(val)
+    return 0.0 if val.nil?
+
+    s = val.to_s.strip
+    return 0.0 if s.empty?
+
+    # If already numeric-ish (e.g. "24.7"), keep it
+    return s.to_f if s.match?(/\A\d+(\.\d+)?\z/)
+
+    # Handle "MM:SS"
+    if s.include?(":")
+      parts = s.split(":").map(&:to_i)
+      m = parts[0] || 0
+      sec = parts[1] || 0
+      return (m * 60 + sec) / 60.0
+    end
+
+    s.to_f
+  end
+
   def build_metrics_for_games(games, minutes_threshold: 0, missing_minutes_cutoff: 10)
-    game_ids = games.map(&:id)
+    game_ids   = games.map(&:id)
     date_range = games.map(&:date).min..games.map(&:date).max
 
     # Need game loaded so we can look up bs.game.date
@@ -298,23 +317,22 @@ class ProjectionsController < ApplicationController
     boxes = build_metric_boxes_by_date(box_scores, proj_by_date_player, minutes_threshold: minutes_threshold)
 
     missing = box_scores.count do |bs|
-      bs.minutes_played.to_f >= missing_minutes_cutoff &&
+      minutes_to_float(bs.minutes_played) >= missing_minutes_cutoff.to_f &&
         proj_by_date_player[[bs.game.date, bs.player_id]].nil?
     end
 
     [boxes, missing]
   end
 
-  def build_metric_boxes_by_date(box_scores, proj_by_date_player, minutes_threshold: 0)
+  def build_metric_boxes(box_scores, proj_by_player_id, minutes_threshold: 0)
     stat_defs = {
-      min:  { label: "MIN",  actual: ->(bs) { bs.minutes_played.to_f },    proj: ->(p) { p.expected_minutes } },
-      pts:  { label: "PTS",  actual: ->(bs) { bs.points.to_f },            proj: ->(p) { p.proj_points } },
-      reb:  { label: "REB",  actual: ->(bs) { bs.total_rebounds.to_f },    proj: ->(p) { p.proj_rebounds } },
-      ast:  { label: "AST",  actual: ->(bs) { bs.assists.to_f },           proj: ->(p) { p.proj_assists } },
-      threes: { label: "3PM", actual: ->(bs) { bs.three_point_field_goals.to_f }, proj: ->(p) { p.proj_threes } },
-      usg:  { label: "USG%", actual: ->(bs) { bs.usage_pct },              proj: ->(p) { p.usage_pct } },
-      rebp: { label: "REB%", actual: ->(bs) { bs.total_rebound_pct },      proj: ->(p) { p.rebound_pct } },
-      astp: { label: "AST%", actual: ->(bs) { bs.assist_pct },             proj: ->(p) { p.assist_pct } }
+      min:  { label: "MIN",  actual: ->(bs) { minutes_to_float(bs.minutes_played) }, proj: ->(p) { p.expected_minutes } },
+      pts:  { label: "PTS",  actual: ->(bs) { bs.points.to_f },                      proj: ->(p) { p.proj_points } },
+      reb:  { label: "REB",  actual: ->(bs) { bs.total_rebounds.to_f },              proj: ->(p) { p.proj_rebounds } },
+      ast:  { label: "AST",  actual: ->(bs) { bs.assists.to_f },                     proj: ->(p) { p.proj_assists } },
+      usg:  { label: "USG%", actual: ->(bs) { bs.usage_pct },                        proj: ->(p) { p.usage_pct } },
+      rebp: { label: "REB%", actual: ->(bs) { bs.total_rebound_pct },                proj: ->(p) { p.rebound_pct } },
+      astp: { label: "AST%", actual: ->(bs) { bs.assist_pct },                       proj: ->(p) { p.assist_pct } }
     }
 
     boxes = {}
@@ -324,9 +342,10 @@ class ProjectionsController < ApplicationController
       abs_errors = []
 
       box_scores.each do |bs|
-        next if bs.minutes_played.to_f < minutes_threshold
+        # Threshold uses correctly-parsed minutes
+        next if minutes_to_float(bs.minutes_played) < minutes_threshold.to_f
 
-        proj = proj_by_date_player[[bs.game.date, bs.player_id]]
+        proj = proj_by_player_id[bs.player_id]
         next if proj.nil?
 
         a = defn[:actual].call(bs)
@@ -334,56 +353,6 @@ class ProjectionsController < ApplicationController
         next if p.nil?
 
         err = a.to_f - p.to_f
-        errors << err
-        abs_errors << err.abs
-      end
-
-      n = errors.size
-
-      boxes[key] = {
-        label: defn[:label],
-        n: n,
-        mae:  (n > 0 ? (abs_errors.sum / n.to_f) : nil),
-        bias: (n > 0 ? (errors.sum / n.to_f)     : nil)
-      }
-    end
-
-    boxes
-  end
-
-
-  def build_metric_boxes(box_scores, proj_by_player_id, minutes_threshold: 0)
-    stat_defs = {
-      min:  { label: "MIN",  actual: ->(bs) { bs.minutes_played.to_f },    proj: ->(p) { p.expected_minutes } },
-      pts:  { label: "PTS",  actual: ->(bs) { bs.points.to_f },            proj: ->(p) { p.proj_points } },
-      reb:  { label: "REB",  actual: ->(bs) { bs.total_rebounds.to_f },    proj: ->(p) { p.proj_rebounds } },
-      ast:  { label: "AST",  actual: ->(bs) { bs.assists.to_f },           proj: ->(p) { p.proj_assists } },
-      usg:  { label: "USG%", actual: ->(bs) { bs.usage_pct },              proj: ->(p) { p.usage_pct } },
-      rebp: { label: "REB%", actual: ->(bs) { bs.total_rebound_pct },      proj: ->(p) { p.rebound_pct } },
-      astp: { label: "AST%", actual: ->(bs) { bs.assist_pct },             proj: ->(p) { p.assist_pct } }
-    }
-
-    boxes = {}
-
-    stat_defs.each do |key, defn|
-      errors = []
-      abs_errors = []
-
-      box_scores.each do |bs|
-        next if bs.minutes_played.to_f < minutes_threshold
-
-        proj = proj_by_player_id[bs.player_id]
-        next if proj.nil?
-
-        a = defn[:actual].call(bs)
-        p = defn[:proj].call(proj)
-
-        next if p.nil?
-
-        a = a.to_f
-        p = p.to_f
-
-        err = a - p
         errors << err
         abs_errors << err.abs
       end
@@ -433,7 +402,52 @@ class ProjectionsController < ApplicationController
       baseline_debug: debug
     }
   end
-  
+
+  def build_metric_boxes_by_date(box_scores, proj_by_date_player, minutes_threshold: 0)
+    stat_defs = {
+      min:  { label: "MIN",  actual: ->(bs) { minutes_to_float(bs.minutes_played) }, proj: ->(p) { p.expected_minutes } },
+      pts:  { label: "PTS",  actual: ->(bs) { bs.points.to_f },                      proj: ->(p) { p.proj_points } },
+      reb:  { label: "REB",  actual: ->(bs) { bs.total_rebounds.to_f },              proj: ->(p) { p.proj_rebounds } },
+      ast:  { label: "AST",  actual: ->(bs) { bs.assists.to_f },                     proj: ->(p) { p.proj_assists } },
+      threes: { label: "3PM", actual: ->(bs) { bs.three_point_field_goals.to_f },    proj: ->(p) { p.proj_threes } },
+      usg:  { label: "USG%", actual: ->(bs) { bs.usage_pct },                        proj: ->(p) { p.usage_pct } },
+      rebp: { label: "REB%", actual: ->(bs) { bs.total_rebound_pct },                proj: ->(p) { p.rebound_pct } },
+      astp: { label: "AST%", actual: ->(bs) { bs.assist_pct },                       proj: ->(p) { p.assist_pct } }
+    }
+
+    boxes = {}
+
+    stat_defs.each do |key, defn|
+      errors = []
+      abs_errors = []
+
+      box_scores.each do |bs|
+        next if minutes_to_float(bs.minutes_played) < minutes_threshold.to_f
+
+        proj = proj_by_date_player[[bs.game.date, bs.player_id]]
+        next if proj.nil?
+
+        a = defn[:actual].call(bs)
+        p = defn[:proj].call(proj)
+        next if p.nil?
+
+        err = a.to_f - p.to_f
+        errors << err
+        abs_errors << err.abs
+      end
+
+      n = errors.size
+
+      boxes[key] = {
+        label: defn[:label],
+        n: n,
+        mae:  (n > 0 ? (abs_errors.sum / n.to_f) : nil),
+        bias: (n > 0 ? (errors.sum / n.to_f)     : nil)
+      }
+    end
+
+    boxes
+  end
 
   def show
     @date = params[:date].present? ? Date.parse(params[:date]) : Date.today
