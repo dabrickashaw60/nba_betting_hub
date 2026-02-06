@@ -6,6 +6,7 @@ module Scrapers
     INJURIES_URL = 'https://www.espn.com/nba/injuries'
 
     STATUS_KEYWORDS = ['Out', 'Day-To-Day', 'Out For Season', 'Healthy'].freeze
+    FORCE_OUT_NAMES = ['Paul George', 'Jimmy Butler'].freeze
 
     def self.scrape_and_update_injuries
       doc = Nokogiri::HTML(URI.open(INJURIES_URL))
@@ -16,9 +17,9 @@ module Scrapers
       injury_rows.each do |row|
         # Extract player name
         player_name = row.at_css('.col-name a')&.text&.strip
-        next unless player_name # Skip rows without a valid player name
+        next unless player_name
 
-        # Normalize player name to remove special characters
+        # Normalize player name
         normalized_name = normalize_name(player_name)
 
         # Extract description
@@ -31,11 +32,10 @@ module Scrapers
         update_date = row.at_css('.col-date')&.text&.strip
         parsed_date = update_date ? Date.parse(update_date) : Date.today
 
-        # Match player by name or normalized name
+        # Match player
         player = Player.find_by('name = ? OR name = ?', player_name, normalized_name)
 
         if player
-          # Update or create the player's health record
           health = player.health || player.build_health
           health.update(
             status: STATUS_KEYWORDS.include?(status) ? status : 'Unknown',
@@ -48,9 +48,29 @@ module Scrapers
         end
       end
 
+      # FORCE OVERRIDES — ALWAYS OUT
+      FORCE_OUT_NAMES.each do |forced_name|
+        forced_player = Player.find_by(name: forced_name)
+        next unless forced_player
+
+        health = forced_player.health || forced_player.build_health
+        health.update(
+          status: 'Out',
+          description: 'Manually set to Out (override)',
+          last_update: Date.today
+        )
+        puts "Forced #{forced_name} to Out (manual override)"
+      end
+
+      # Collect scraped names
+      existing_player_names = injury_rows.map do |row|
+        normalize_name(row.at_css('.col-name a')&.text&.strip)
+      end.compact
+
       # Mark players not in the scraped list as Healthy
-      existing_player_names = injury_rows.map { |row| normalize_name(row.at_css('.col-name a')&.text&.strip) }
       Player.find_each do |player|
+        # Never auto-reset forced-out players
+        next if FORCE_OUT_NAMES.include?(player.name)
         next if existing_player_names.include?(normalize_name(player.name))
 
         health = player.health || player.build_health
@@ -69,7 +89,8 @@ module Scrapers
 
     # Normalize name by removing special characters
     def self.normalize_name(name)
-      name.unicode_normalize(:nfkd).chars.select { |char| char.ascii_only? }.join
+      return '' unless name
+      name.unicode_normalize(:nfkd).chars.select(&:ascii_only?).join
     end
   end
 end

@@ -335,6 +335,13 @@ table.dataTable tbody th, table.dataTable tbody td{
   padding-bottom: 4px !important;
 } 
 
+#away-box-score-table th,
+#away-box-score-table td,
+#home-box-score-table th,
+#home-box-score-table td {
+  white-space: nowrap;
+}
+
 @media (max-width: 625px) {
     body{
         font-size: 12px !important;
@@ -417,5 +424,10 @@ table.dataTable tbody th, table.dataTable tbody td{
     width: 100%;
     max-width: 100%;
   }
+  #away-box-score-table,
+  #home-box-score-table {
+    font-size: 12px;
+  }
+
 
 }

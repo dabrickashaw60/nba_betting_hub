@@ -58,31 +58,48 @@ class ProjectionsController < ApplicationController
     @date   = params[:date].present? ? Date.parse(params[:date]) : Date.today
     @season = Season.find_by(current: true)
 
+    # -------------------------
     # Safe defaults
+    # -------------------------
     @games             = []
     @selected_game     = nil
+
     @box_scores        = []
     @proj_by_player_id = {}
 
-    @day_missing_projection_count = 0
-    @day_missing_projection_players = []  # optional for display
-    @game_missing_projection_count = 0
-    @game_missing_projection_players = [] # optional for display
-
-    # Metrics:
-    # - @day_metric_boxes = full-day across all games on @date
-    # - @metric_boxes     = selected game only
     @day_metric_boxes  = {}
     @metric_boxes      = {}
 
-    if @season
-      @games = Game.where(date: @date, season_id: @season.id)
-                  .includes(:home_team, :visitor_team)
-                  .order(:time)
-                  .to_a
-    else
-      Rails.logger.warn "[PROJECTIONS RESULTS] No current season set."
-    end
+    @day_missing_projection_count = 0
+    @day_missing_projection_players = []
+
+    @guide_scope = params[:scope].presence || "day"
+    @guide_metric_boxes = {}
+    @guide_missing_projection_count = 0
+
+    @selected_team_id = params[:team_id].presence
+
+    # Team-split defaults (view expects these)
+    @away_box_scores = []
+    @home_box_scores = []
+    @away_proj_by_player_id = {}
+    @home_proj_by_player_id = {}
+    @away_metric_boxes = {}
+    @home_metric_boxes = {}
+    @away_missing_projection_count = 0
+    @home_missing_projection_count = 0
+    @away_display_rows = []
+    @home_display_rows = []
+
+    return unless @season
+
+    # -------------------------
+    # Games for the date
+    # -------------------------
+    @games = Game.where(date: @date, season_id: @season.id)
+                 .includes(:home_team, :visitor_team)
+                 .order(:time)
+                 .to_a
 
     Rails.logger.info "[PROJECTIONS RESULTS] date param=#{params[:date].inspect}"
     Rails.logger.info "[PROJECTIONS RESULTS] parsed date=#{@date.inspect}"
@@ -97,8 +114,8 @@ class ProjectionsController < ApplicationController
       day_team_ids = @games.flat_map { |g| [g.home_team_id, g.visitor_team_id] }.compact.uniq
 
       day_box_scores = BoxScore.where(game_id: day_game_ids)
-                              .includes(:player, :team)
-                              .to_a
+                               .includes(:player, :team)
+                               .to_a
 
       day_projections = Projection.where(date: @date)
                                   .where(team_id: day_team_ids)
@@ -108,7 +125,6 @@ class ProjectionsController < ApplicationController
       day_proj_by_player_id = day_projections.index_by(&:player_id)
 
       minutes_cutoff = 10
-
       day_missing = day_box_scores.select do |bs|
         bs.minutes_played.to_f >= minutes_cutoff && day_proj_by_player_id[bs.player_id].nil?
       end
@@ -128,83 +144,126 @@ class ProjectionsController < ApplicationController
     # ------------------------------------------------------------
     # QUICK GUIDE SCOPE (dropdown-driven)
     # ------------------------------------------------------------
-    @guide_scope = params[:scope].presence || "day"
-
     today = Date.today
     range =
       case @guide_scope
       when "overall"
-        # current season to today (safe default)
-        Game.where(season_id: @season.id).minimum(:date)..today
+        (Game.where(season_id: @season.id).minimum(:date) || today)..today
       when "last3"
         (today - 2)..today
       when "last7"
         (today - 6)..today
       else
-        # "day"
         @date..@date
       end
 
-    guide_games = if @season
-      Game.where(season_id: @season.id, date: range)
-          .includes(:home_team, :visitor_team)
-          .to_a
-    else
-      []
-    end
-
-    @guide_metric_boxes = {}
-    @guide_missing_projection_count = 0
+    guide_games = Game.where(season_id: @season.id, date: range)
+                      .includes(:home_team, :visitor_team)
+                      .to_a
 
     if guide_games.any?
       @guide_metric_boxes, @guide_missing_projection_count =
         build_metrics_for_games(guide_games, minutes_threshold: 0, missing_minutes_cutoff: 10)
     end
 
-    # Keep your existing day metrics if you still want them separately:
-    # @day_metric_boxes is no longer needed for the top guide if you swap the view to @guide_metric_boxes
-
-
     # ------------------------------------------------------------
-    # SELECTED GAME (table + per-game metrics)
+    # SELECTED GAME (team-separated + include proj-only rows in table)
     # ------------------------------------------------------------
-    if params[:game_id].present? && @games.any?
-      @selected_game = @games.find { |g| g.id == params[:game_id].to_i }
+    return unless params[:game_id].present? && @games.any?
 
-      if @selected_game
-        @box_scores = BoxScore.where(game_id: @selected_game.id)
-                              .includes(:player, :team)
-                              .to_a
+    @selected_game = @games.find { |g| g.id == params[:game_id].to_i }
+    return unless @selected_game
 
-        team_ids = [@selected_game.home_team_id, @selected_game.visitor_team_id].compact
+    home_id  = @selected_game.home_team_id
+    away_id  = @selected_game.visitor_team_id
+    team_ids = [home_id, away_id].compact
 
-        projections = Projection.where(date: @date)
-                                .where(team_id: team_ids)
-                                .where(opponent_team_id: team_ids)
-                                .to_a
+    # All box scores for game
+    all_box_scores = BoxScore.where(game_id: @selected_game.id)
+                             .includes(:player, :team)
+                             .to_a
 
-        @proj_by_player_id = projections.index_by(&:player_id)
+    @away_box_scores = all_box_scores.select { |bs| bs.team_id == away_id }
+                                     .sort_by { |bs| -bs.minutes_played.to_f }
 
-        minutes_cutoff = 10
+    @home_box_scores = all_box_scores.select { |bs| bs.team_id == home_id }
+                                     .sort_by { |bs| -bs.minutes_played.to_f }
 
-        game_missing = @box_scores.select do |bs|
-          bs.minutes_played.to_f >= minutes_cutoff && @proj_by_player_id[bs.player_id].nil?
-        end
+    # Projections for both teams
+    projections = Projection.where(date: @date)
+                            .where(team_id: team_ids)
+                            .where(opponent_team_id: team_ids)
+                            .includes(:player, :team)
+                            .to_a
 
-        @game_missing_projection_count = game_missing.size
-        @game_missing_projection_players = game_missing.map do |bs|
-          {
-            player_name: bs.player&.name,
-            team: bs.team&.abbreviation,
-            minutes: bs.minutes_played.to_f
-          }
-        end
+    all_proj_by_player_id = projections.index_by(&:player_id)
 
-        # This is the metric set you already placed in the current game section
-        @metric_boxes = build_metric_boxes(@box_scores, @proj_by_player_id, minutes_threshold: 0)
-      end
+    @away_proj_by_player_id = projections.select { |p| p.team_id == away_id }.index_by(&:player_id)
+    @home_proj_by_player_id = projections.select { |p| p.team_id == home_id }.index_by(&:player_id)
+
+    # -------------------------
+    # Proj-only rows (no box score row)
+    # -------------------------
+    away_box_player_ids = @away_box_scores.map(&:player_id).compact.to_set
+    home_box_player_ids = @home_box_scores.map(&:player_id).compact.to_set
+
+    away_proj_no_box = projections.select do |p|
+      p.team_id == away_id && !away_box_player_ids.include?(p.player_id)
     end
+
+    home_proj_no_box = projections.select do |p|
+      p.team_id == home_id && !home_box_player_ids.include?(p.player_id)
+    end
+
+    # -------------------------
+    # Build display rows (box rows + proj-only rows)
+    # Each element: { type:, bs:, proj: }
+    # -------------------------
+    @away_display_rows =
+      (@away_box_scores.map { |bs| { type: :box, bs: bs, proj: @away_proj_by_player_id[bs.player_id] } } +
+       away_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
+        .sort_by do |r|
+          r[:bs] ? -r[:bs].minutes_played.to_f : -r[:proj].expected_minutes.to_f
+        end
+
+    @home_display_rows =
+      (@home_box_scores.map { |bs| { type: :box, bs: bs, proj: @home_proj_by_player_id[bs.player_id] } } +
+       home_proj_no_box.map { |p|  { type: :proj_only, bs: nil, proj: p } })
+        .sort_by do |r|
+          r[:bs] ? -r[:bs].minutes_played.to_f : -r[:proj].expected_minutes.to_f
+        end
+
+    # -------------------------
+    # Missing projections (box score exists, projection missing)
+    # -------------------------
+    minutes_cutoff = 10
+
+    away_missing = @away_box_scores.select do |bs|
+      bs.minutes_played.to_f >= minutes_cutoff && @away_proj_by_player_id[bs.player_id].nil?
+    end
+
+    home_missing = @home_box_scores.select do |bs|
+      bs.minutes_played.to_f >= minutes_cutoff && @home_proj_by_player_id[bs.player_id].nil?
+    end
+
+    @away_missing_projection_count = away_missing.size
+    @home_missing_projection_count = home_missing.size
+
+    # -------------------------
+    # Metric cards (per team)
+    # NOTE: build_metric_boxes only uses rows where a projection exists,
+    # so proj-only rows don't belong here (no actuals).
+    # -------------------------
+    @away_metric_boxes = build_metric_boxes(@away_box_scores, @away_proj_by_player_id, minutes_threshold: 0)
+    @home_metric_boxes = build_metric_boxes(@home_box_scores, @home_proj_by_player_id, minutes_threshold: 0)
+
+    # -------------------------
+    # Backward compat (if anything still references these)
+    # -------------------------
+    @box_scores        = all_box_scores
+    @proj_by_player_id = all_proj_by_player_id
   end
+
 
   def generate
     date = params[:date].present? ? Date.parse(params[:date]) : Date.today

@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="mb-0">Projection Results</h3>
+    <h3 class="mb-0">Projection Results & Metrics</h3>
 
     <%= form_with url: results_projections_path, method: :get, local: true, class: "d-flex gap-2" do %>
       <%= date_field_tag :date, @date, class: "form-control" %>
@@ -43,19 +43,17 @@
         </div>
 
         <div class="card-body">
-          <div class="row g-2">
-            <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
+          <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
 
+          <div class="row g-2 d-lg-none">
             <% keys.each do |k| %>
               <% m = @guide_metric_boxes[k] || {} %>
 
-              <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+              <div class="col-6 col-md-3">
                 <div class="border rounded p-2 bg-white h-100">
                   <div class="d-flex justify-content-between align-items-center">
                     <strong><%= m[:label] || k.to_s.upcase %></strong>
-                    <span class="text-muted" style="font-size: 11px;">
-                      n=<%= m[:n].to_i %>
-                    </span>
+                    <span class="text-muted" style="font-size: 11px;">n=<%= m[:n].to_i %></span>
                   </div>
 
                   <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
@@ -77,7 +75,7 @@
               </div>
             <% end %>
 
-            <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="col-6 col-md-3">
               <div class="border rounded p-2 bg-white h-100">
                 <div class="d-flex justify-content-between align-items-center">
                   <strong>NO PROJ</strong>
@@ -86,7 +84,6 @@
 
                 <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
                   <%= @guide_missing_projection_count %>
-
                 </div>
 
                 <div class="text-muted" style="font-size: 12px;">
@@ -94,80 +91,18 @@
                 </div>
               </div>
             </div>
-
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="row">
-
-    <!-- LEFT: Games list -->
-    <div class="col-md-3">
-      <div class="card the-shadow">
-        <div class="card-header">
-          Games (<%= @games.size %>)
-        </div>
-        <div class="list-group list-group-flush">
-          <% @games.each do |g| %>
-            <% active = (@selected_game && @selected_game.id == g.id) %>
-            <%= link_to results_projections_path(date: @date, game_id: g.id),
-                        class: "list-group-item list-group-item-action #{'active' if active}" do %>
-              <div class="d-flex justify-content-between">
-                <div>
-                  <strong><%= g.visitor_team&.abbreviation %></strong> @
-                  <strong><%= g.home_team&.abbreviation %></strong>
-                </div>
-                <div class="text-muted" style="font-size: 12px;">
-                  <%= g.time.present? ? g.time.strftime("%-I:%M %p") : "" %>
-                </div>
-              </div>
-              <% if g.home_points.present? && g.visitor_points.present? %>
-                <div style="font-size: 12px; opacity: 0.9;">
-                  Final: <%= g.visitor_points %>-<%= g.home_points %>
-                </div>
-              <% end %>
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT: Selected game -->
-    <div class="col-md-9">
-      <% if @selected_game.nil? %>
-        <div class="card the-shadow">
-          <div class="card-body">
-            Select a game to view projections vs actuals.
-          </div>
-        </div>
-      <% else %>
-        <div class="card the-shadow mb-3">
-          <div class="card-body">
-            <h5 class="mb-1">
-              <%= @selected_game.visitor_team&.name %> @ <%= @selected_game.home_team&.name %>
-            </h5>
-            <div class="text-muted">
-              <%= @date.strftime("%B %-d, %Y") %>
-              <% if @selected_game.home_points.present? && @selected_game.visitor_points.present? %>
-                • Final: <%= @selected_game.visitor_points %>-<%= @selected_game.home_points %>
-              <% end %>
-            </div>
-
-          <div class="row g-2">
-            <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
-
+          <!-- Desktop / large screens: single row that fills width -->
+          <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
             <% keys.each do |k| %>
-              <% m = @metric_boxes[k] || {} %>
+              <% m = @guide_metric_boxes[k] || {} %>
 
-              <div class="col-6 col-md-4 col-lg-2 col-xl-2">
+              <div style="flex: 1 1 0; min-width: 0;">
                 <div class="border rounded p-2 bg-white h-100">
                   <div class="d-flex justify-content-between align-items-center">
                     <strong><%= m[:label] || k.to_s.upcase %></strong>
-                    <span class="text-muted" style="font-size: 11px;">
-                      n=<%= m[:n].to_i %>
-                    </span>
+                    <span class="text-muted" style="font-size: 11px;">n=<%= m[:n].to_i %></span>
                   </div>
 
                   <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
@@ -189,140 +124,636 @@
               </div>
             <% end %>
 
-          <div class="col-6 col-md-4 col-lg-3 col-xl-2">
-            <div class="border rounded p-2 bg-white h-100">
-              <div class="d-flex justify-content-between align-items-center">
-                <strong>NO PROJ</strong>
-                <span class="text-muted" style="font-size: 11px;">10+ min</span>
-              </div>
+            <div style="flex: 1 1 0; min-width: 0;">
+              <div class="border rounded p-2 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>NO PROJ</strong>
+                  <span class="text-muted" style="font-size: 11px;">10+ min</span>
+                </div>
 
-              <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
-                <%= @game_missing_projection_count %>
-              </div>
+                <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                  <%= @guide_missing_projection_count %>
+                </div>
 
-              <div class="text-muted" style="font-size: 12px;">
-                players missing
+                <div class="text-muted" style="font-size: 12px;">
+                  players missing
+                </div>
               </div>
             </div>
-          </div>
-
-          </div>
-
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- GAMES BAR -->
+  <div class="row mb-3">
+    <div class="col-12">
+
+      <div class="card the-shadow mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>Games (<%= @games.size %>)</div>
+          <div class="text-muted" style="font-size: 12px;">Scroll to see more</div>
+        </div>
+
+        <div class="card-body p-2">
+          <div class="d-flex flex-nowrap gap-2" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <% @games.each do |g| %>
+              <% active = (@selected_game && @selected_game.id == g.id) %>
+
+              <%= link_to results_projections_path(date: @date, game_id: g.id),
+                          class: "text-decoration-none flex-shrink-0",
+                          style: "min-width: 125px;" do %>
+
+                <div
+                  class="border rounded p-2
+                        d-flex flex-column align-items-center justify-content-center
+                        <%= active ? 'border-danger border-2' : 'border-secondary' %>">
+
+                  <!-- TEAM LOGOS -->
+                  <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                    <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= g.visitor_team&.abbreviation %>-2026.png"
+                      alt="<%= g.visitor_team&.name %>"
+                      style="height: 22px;"
+                    >
+                    <span class="mx-1">@</span>
+                    <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= g.home_team&.abbreviation %>-2026.png"
+                      alt="<%= g.home_team&.name %>"
+                      style="height: 22px;"
+                    >
+                  </div>
+
+                  <!-- FINAL SCORE -->
+                  <% if g.home_points.present? && g.visitor_points.present? %>
+                    <div
+                      class="text-center"
+                      style="font-size: 12px;"
+                    >
+                      Final: <%= g.visitor_points %>-<%= g.home_points %>
+                    </div>
+                  <% end %>
+
+                </div>
+
+              <% end %>
+
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- SELECTED GAME CONTENT -->
+      <% if @selected_game.nil? %>
         <div class="card the-shadow">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <strong>Box Score vs Projections</strong>
-
-              <i
-                class="bi bi-info-circle ms-2 text-muted"
-                data-bs-toggle="tooltip"
-                data-bs-placement="right"
-                title="Stats are shown as: Actual stat (projected stat)"
-                style="cursor: pointer;"
-              ></i>
-            </div>
-
-            <span class="text-muted" style="font-size: 12px;">
-              Projections pulled from projections.date = <%= @date %>
-            </span>
+          <div class="card-body">
+            Select a game to view projections vs actuals.
           </div>
+        </div>
+      <% else %>
 
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Player</th>
-                    <th>Team</th>
+        <!-- IMPORTANT: both sides MUST be inside the SAME .row for Bootstrap to place them side-by-side -->
+        <div class="row g-3 align-items-start">
+          <!-- AWAY COLUMN -->
+          <div class="col-12 col-lg-6">
+            <div class="card the-shadow mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                    <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
 
-                    <th class="text-end">MIN</th>
-                    <th class="text-end">PTS</th>
-                    <th class="text-end">REB</th>
-                    <th class="text-end">AST</th>
-                    <th class="text-end">USG</th>
-                    <th class="text-end">REB%</th>
-                    <th class="text-end">AST%</th>
-                  </tr>
-                </thead>
+                      alt="<%= @selected_game.visitor_team&.name %>"
+                      style="height: 22px;"
+                    >                
+                <strong>Metrics</strong>
+                <span class="text-muted" style="font-size: 12px;">Projections date = <%= @date %></span>
+              </div>
 
-                <tbody>
-                  <% sorted = @box_scores.sort_by { |bs| -bs.points.to_i } %>
-                  <% sorted.each do |bs| %>
-                    <% proj = @proj_by_player_id[bs.player_id] %>
+              <div class="card-body">
+                <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
 
-                    <tr>
-                      <td><%= bs.player&.name %></td>
-                      <td><%= bs.team&.abbreviation %></td>
+                <!-- Mobile/tablet grid -->
+                <div class="row g-2 d-lg-none">
+                  <% keys.each do |k| %>
+                    <% m = (@away_metric_boxes || {})[k] || {} %>
 
-                      <td class="text-end">
-                        <%= bs.minutes_played.to_s %>
-                        <% if proj&.expected_minutes.present? %>
-                          (<%= proj.expected_minutes.round(1) %>)
-                        <% end %>
-                      </td>
+                    <div class="col-6 col-md-3">
+                      <div class="border rounded p-2 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <strong><%= m[:label] || k.to_s.upcase %></strong>
+                        </div>
 
-                      <td class="text-end">
-                        <%= bs.points.to_i %>
-                        <% if proj&.proj_points.present? %>
-                          (<%= proj.proj_points.round(2) %>)
-                        <% end %>
-                      </td>
+                        <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                          <% if m[:mae].present? %>
+                            MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            <span class="text-muted">MAE —</span>
+                          <% end %>
+                        </div>
 
-                      <td class="text-end">
-                        <%= bs.total_rebounds.to_i %>
-                        <% if proj&.proj_rebounds.present? %>
-                          (<%= proj.proj_rebounds.round(2) %>)
-                        <% end %>
-                      </td>
-
-                      <td class="text-end">
-                        <%= bs.assists.to_i %>
-                        <% if proj&.proj_assists.present? %>
-                          (<%= proj.proj_assists.round(2) %>)
-                        <% end %>
-                      </td>
-
-                      <td class="text-end">
-                        <%= bs.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
-                        <% if proj&.usage_pct.present? %>
-                          (<%= proj.usage_pct.round(1) %>)
-                        <% end %>
-                      </td>
-
-                      <td class="text-end">
-                        <%= bs.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
-                        <% if proj&.rebound_pct.present? %>
-                          (<%= proj.rebound_pct.round(1) %>)
-                        <% end %>
-                      </td>
-
-                      <td class="text-end">
-                        <%= bs.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
-                        <% if proj&.assist_pct.present? %>
-                          (<%= proj.assist_pct.round(1) %>)
-                        <% end %>
-                      </td>
-                    </tr>
+                        <div class="text-muted" style="font-size: 12px;">
+                          <% if m[:bias].present? %>
+                            Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            Bias —
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
                   <% end %>
 
-                  <% if @box_scores.blank? %>
-                    <tr>
-                      <td colspan="9" class="text-center p-4">
-                        No box score rows found for this game yet.
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>NO PROJ</strong>
+                      </div>
 
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @away_missing_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        players missing
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Desktop: single row fill -->
+                <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
+                  <% keys.each do |k| %>
+                    <% m = (@away_metric_boxes || {})[k] || {} %>
+
+                    <div style="flex: 1 1 0; min-width: 0;">
+                      <div class="border rounded p-2 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <strong><%= m[:label] || k.to_s.upcase %></strong>
+                        </div>
+
+                        <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                          <% if m[:mae].present? %>
+                            MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            <span class="text-muted">MAE —</span>
+                          <% end %>
+                        </div>
+
+                        <div class="text-muted" style="font-size: 12px;">
+                          <% if m[:bias].present? %>
+                            Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            Bias —
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>NO PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @away_missing_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        players missing
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- AWAY BOX SCORE -->
+            <div class="card the-shadow">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                      alt="<%= @selected_game.visitor_team&.name %>"
+                      style="height: 22px;"
+                    >                  
+                  <strong class="ms-2">Box Score vs Projections</strong>
+                  <i
+                    class="bi bi-info-circle ms-2 text-muted"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="Stats are shown as: Actual stat (projected stat)"
+                    style="cursor: pointer;"
+                  ></i>
+                </div>
+              </div>
+
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table id="away-box-score-table" class="table table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="sticky-col">Player</th>
+                        <th class="text-end">MIN</th>
+                        <th class="text-end">PTS</th>
+                        <th class="text-end">REB</th>
+                        <th class="text-end">AST</th>
+                        <th class="text-end">USG</th>
+                        <th class="text-end">REB%</th>
+                        <th class="text-end">AST%</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      <% @away_display_rows.each do |row| %>
+                        <% bs = row[:bs] %>
+                        <% proj = row[:proj] %>
+
+                        <tr class="<%= row[:type] == :proj_only ? 'table-warning' : '' %>">
+                          <td class="sticky-col">
+                            <% player = bs&.player || proj&.player %>
+                            <% if player.present? %>
+                              <%= link_to team_player_path(player.team, player),
+                                          data: { turbo: false, bs_toggle: "tooltip", bs_placement: "right", bs_title: "View player profile" },
+                                          class: "d-flex align-items-center gap-1 text-decoration-none" do %>
+                                <img src="<%= player.profile_picture_url %>" width="15" height="auto" class="rounded-circle">
+                                <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}" %>
+                              <% end %>
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.minutes_played.to_s : "" %>
+                            <% if proj&.expected_minutes.present? %>
+                              (<%= proj.expected_minutes.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.points.to_i : "" %>
+                            <% if proj&.proj_points.present? %>
+                              (<%= proj.proj_points.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.total_rebounds.to_i : "" %>
+                            <% if proj&.proj_rebounds.present? %>
+                              (<%= proj.proj_rebounds.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.assists.to_i : "" %>
+                            <% if proj&.proj_assists.present? %>
+                              (<%= proj.proj_assists.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
+                            <% if proj&.usage_pct.present? %>
+                              (<%= proj.usage_pct.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
+                            <% if proj&.rebound_pct.present? %>
+                              (<%= proj.rebound_pct.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
+                            <% if proj&.assist_pct.present? %>
+                              (<%= proj.assist_pct.round(1) %>)
+                            <% end %>
+                          </td>
+                        </tr>
+                      <% end %>
+
+                      <% if @away_display_rows.blank? %>
+                        <tr>
+                          <td colspan="8" class="text-center p-4">
+                            No rows found for the away team yet.
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- HOME COLUMN -->
+          <div class="col-12 col-lg-6">
+            <div class="card the-shadow mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                      <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                      alt="<%= @selected_game.home_team&.name %>"
+                      style="height: 22px;"
+                    >              
+                <strong>Metrics</strong>
+                <span class="text-muted" style="font-size: 12px;">Projections date = <%= @date %></span>
+              </div>
+
+              <div class="card-body">
+                <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
+
+                <!-- Mobile/tablet grid -->
+                <div class="row g-2 d-lg-none">
+                  <% keys.each do |k| %>
+                    <% m = (@home_metric_boxes || {})[k] || {} %>
+
+                    <div class="col-6 col-md-3">
+                      <div class="border rounded p-2 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <strong><%= m[:label] || k.to_s.upcase %></strong>
+                        </div>
+
+                        <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                          <% if m[:mae].present? %>
+                            MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            <span class="text-muted">MAE —</span>
+                          <% end %>
+                        </div>
+
+                        <div class="text-muted" style="font-size: 12px;">
+                          <% if m[:bias].present? %>
+                            Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            Bias —
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>NO PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @home_missing_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        players missing
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Desktop: single row fill -->
+                <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
+                  <% keys.each do |k| %>
+                    <% m = (@home_metric_boxes || {})[k] || {} %>
+
+                    <div style="flex: 1 1 0; min-width: 0;">
+                      <div class="border rounded p-2 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <strong><%= m[:label] || k.to_s.upcase %></strong>
+                        </div>
+
+                        <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                          <% if m[:mae].present? %>
+                            MAE <%= number_with_precision(m[:mae], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            <span class="text-muted">MAE —</span>
+                          <% end %>
+                        </div>
+
+                        <div class="text-muted" style="font-size: 12px;">
+                          <% if m[:bias].present? %>
+                            Bias <%= m[:bias].to_f >= 0 ? "+" : "" %><%= number_with_precision(m[:bias], precision: ([:usg, :rebp, :astp].include?(k) ? 1 : 2)) %>
+                          <% else %>
+                            Bias —
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>NO PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @home_missing_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        players missing
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- HOME BOX SCORE -->
+            <div class="card the-shadow">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img
+                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                      alt="<%= @selected_game.home_team&.name %>"
+                      style="height: 22px;"
+                    >                  
+                  <strong class="ms-2">Box Score vs Projections</strong>
+                  <i
+                    class="bi bi-info-circle ms-2 text-muted"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="Stats are shown as: Actual stat (projected stat)"
+                    style="cursor: pointer;"
+                  ></i>
+                </div>
+              </div>
+
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table id="home-box-score-table" class="table table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="sticky-col">Player</th>
+                        <th class="text-end">MIN</th>
+                        <th class="text-end">PTS</th>
+                        <th class="text-end">REB</th>
+                        <th class="text-end">AST</th>
+                        <th class="text-end">USG</th>
+                        <th class="text-end">REB%</th>
+                        <th class="text-end">AST%</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      <% @home_display_rows.each do |row| %>
+                        <% bs = row[:bs] %>
+                        <% proj = row[:proj] %>
+
+                        <tr class="<%= row[:type] == :proj_only ? 'table-warning' : '' %>">
+                          <td class="sticky-col">
+                            <% player = bs&.player || proj&.player %>
+                            <% if player.present? %>
+                              <%= link_to team_player_path(player.team, player),
+                                          data: { turbo: false, bs_toggle: "tooltip", bs_placement: "right", bs_title: "View player profile" },
+                                          class: "d-flex align-items-center gap-1 text-decoration-none" do %>
+                                <img src="<%= player.profile_picture_url %>" width="15" height="auto" class="rounded-circle">
+                                <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}" %>
+                              <% end %>
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.minutes_played.to_s : "" %>
+                            <% if proj&.expected_minutes.present? %>
+                              (<%= proj.expected_minutes.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.points.to_i : "" %>
+                            <% if proj&.proj_points.present? %>
+                              (<%= proj.proj_points.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.total_rebounds.to_i : "" %>
+                            <% if proj&.proj_rebounds.present? %>
+                              (<%= proj.proj_rebounds.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs ? bs.assists.to_i : "" %>
+                            <% if proj&.proj_assists.present? %>
+                              (<%= proj.proj_assists.round(2) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
+                            <% if proj&.usage_pct.present? %>
+                              (<%= proj.usage_pct.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
+                            <% if proj&.rebound_pct.present? %>
+                              (<%= proj.rebound_pct.round(1) %>)
+                            <% end %>
+                          </td>
+
+                          <td class="text-end">
+                            <%= bs&.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
+                            <% if proj&.assist_pct.present? %>
+                              (<%= proj.assist_pct.round(1) %>)
+                            <% end %>
+                          </td>
+                        </tr>
+                      <% end %>
+
+                      <% if @home_display_rows.blank? %>
+                        <tr>
+                          <td colspan="8" class="text-center p-4">
+                            No rows found for the away team yet.
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       <% end %>
+
     </div>
   </div>
 </div>
+
+<script>
+  // ----------------------------
+  // Tooltips (auto-hide after 5s)
+  // ----------------------------
+  function initTooltips() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      if (bootstrap.Tooltip.getInstance(el)) return;
+
+      const tip = new bootstrap.Tooltip(el);
+
+      // auto-hide after 5s (prevents mobile lingering)
+      el.addEventListener("shown.bs.tooltip", function () {
+        const inst = bootstrap.Tooltip.getInstance(el);
+        if (!inst) return;
+
+        if (el._tooltipTimeout) clearTimeout(el._tooltipTimeout);
+        el._tooltipTimeout = setTimeout(function () {
+          inst.hide();
+        }, 5000);
+      });
+    });
+  }
+
+  // ----------------------------
+  // Sticky first column
+  // ----------------------------
+  function applyStickyColumn(tableSelector, backgroundColor) {
+    const $table = $(tableSelector);
+    if ($table.length === 0) return;
+
+    $table.find("thead .sticky-col").css({
+      position: "sticky",
+      left: "0",
+      backgroundColor: backgroundColor,
+      zIndex: 3,
+      borderRight: "1px solid #ddd"
+    });
+
+    $table.find("tbody .sticky-col").css({
+      position: "sticky",
+      left: "0",
+      backgroundColor: backgroundColor,
+      zIndex: 2,
+      borderRight: "1px solid #ddd"
+    });
+  }
+
+  // ----------------------------
+  // Init on load (Turbo-safe)
+  // ----------------------------
+  document.addEventListener("turbo:load", function () {
+    applyStickyColumn("#away-box-score-table", "white");
+    applyStickyColumn("#home-box-score-table", "white");
+    initTooltips();
+  });
+
+  // ----------------------------
+  // Turbo cache cleanup (prevents duplicates)
+  // ----------------------------
+  document.addEventListener("turbo:before-cache", function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      const tip = bootstrap.Tooltip.getInstance(el);
+      if (tip) tip.dispose();
+      if (el._tooltipTimeout) clearTimeout(el._tooltipTimeout);
+      el._tooltipTimeout = null;
+    });
+  });
+</script>

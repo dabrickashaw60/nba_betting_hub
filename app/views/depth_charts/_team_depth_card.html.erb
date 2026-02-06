@@ -22,7 +22,6 @@
       <div class="fw-bold"><%= team.name %></div>
     </div>
 
-    <%= link_to "View", depth_chart_path(team.id), class: "btn btn-sm btn-outline-secondary" %>
   </div>
 
   <div class="card-body">
@@ -59,7 +58,29 @@
             <td>
               <% if player %>
                 <div class="d-flex align-items-center justify-content-between">
-                  <span><%= player.name %></span>
+                  <%= link_to team_player_path(player.team, player),
+                              data: (
+                                player.health&.description.present? ?
+                                {
+                                  turbo: false,
+                                  bs_toggle: "tooltip",
+                                  bs_placement: "right",
+                                  bs_title: player.health.description
+                                } :
+                                { turbo: false }
+                              ),
+                              class: "d-inline-flex align-items-center text-decoration-none" do %>
+
+                    <img src="<%= player.profile_picture_url %>"
+                        width="20"
+                        height="auto"
+                        class="me-2 rounded-circle">
+
+                    <span>
+                      <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}" %>
+                    </span>
+
+                  <% end %>
 
                   <% if p_status.present? && p_status != "Healthy" %>
                     <span class="badge bg-warning text-dark ms-2"><%= p_status %></span>
