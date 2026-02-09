@@ -1,151 +1,146 @@
-<!-- app/views/players/show.html.erb -->
-
-<h1 class="text-center mb-4">
-  <%= @player.name %>
-  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2026.png"
-       alt="<%= @team.name %> logo" width="50" height="auto" class="me-2">
-</h1>
-
-<!-- 🔽 Season Selector -->
-<div class="text-center mb-3">
-  <%= form_with url: team_player_path(@team, @player), method: :get, local: true, class: "d-inline-block" do %>
-    <div class="d-flex justify-content-center align-items-center">
-      <label for="season_id" class="me-2 fw-bold">Season:</label>
-      <%= select_tag :season_id,
-            options_from_collection_for_select(@seasons, :id, :name, @selected_season.id),
-            onchange: "this.form.submit()",
-            class: "form-select w-auto" %>
-    </div>
-  <% end %>
-</div>
 
 
 <div class="container">
   <div class="row">
     <!-- Player Picture and Information -->
       <div class="col-md-4">
+        <!-- app/views/players/show.html.erb -->
         <!-- Player Information Card with Picture -->
-<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
-  <div class="card-body">
-    <!-- Top Section: Player Info -->
-    <div class="row">
-      <!-- Player Picture -->
-      <div class="col-4 d-flex align-items-start">
-        <img src="<%= @player.profile_picture_url %>" 
-             alt="<%= @player.name %> Profile Picture" 
-             class="img-fluid rounded" 
-             style="max-width: 100px;">
-      </div>
+        <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+          <div class="card-body">
+            <h3 class="text-center mb-4">
+              <%= @player.name %>
+              <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2026.png"
+                  alt="<%= @team.name %> logo" width="50" height="auto" class="me-2">
+            </h3>
+            <!-- Top Section: Player Info -->
+            <div class="row">
+              <!-- Player Picture -->
+              <div class="col-4 d-flex align-items-start">
+                <img src="<%= @player.profile_picture_url %>" 
+                    alt="<%= @player.name %> Profile Picture" 
+                    class="img-fluid rounded" 
+                    style="max-width: 100px;">
+              </div>
 
-      <!-- Player Information -->
-      <div class="col-8">
-        <p class="mb-0"><strong>Position:</strong> <%= @player.position %></p>
-        <p class="mb-0"><strong>Height:</strong> <%= @player.height %></p>
-        <p class="mb-0"><strong>Weight:</strong> <%= @player.weight %> lbs</p>
-        <% if @player.birth_date %>
-          <% age = ((Date.today - @player.birth_date).to_i / 365.25).floor %>
-          <p class="mb-0"><strong>Age:</strong> <%= age %></p>
-        <% end %>
-        <% if @player.health.present? %>
-          <p class="mb-0"><strong>Status:</strong> <%= @player.health.status %></p>
-          <p class="mb-0"><strong>Description:</strong> <%= @player.health.description %></p>
-                  <% if @player.health.status == "Healthy" %>
-          <p class="mb-0"><strong>Last Injury:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
-                  <% else %>
-          <p class="mb-0"><strong>Est. Return:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
-                  <% end %>                  
-        <% else %>
-          <p class="mb-0">No health information available.</p>
-        <% end %>
-        <p class="mb-0">
-          <a class="twitter-timeline" href="https://twitter.com/search?q=<%= CGI.escape(@player.name) %>&src=typed_query&f=live" target="_blank" >Latest on X for <%= @player.name %></a>
-          <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>          
-        </p>
-      </div>
-    </div>
-
-    <hr>
-
-    <!-- Bottom Section: Game Info and Opponent Defense -->
-    <div class="row">
-      <!-- Next Game Info -->
-      <div class="col-6">
-        <h6>Next Game</h6>
-        <h5>
-          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2026.png" 
-              alt="<%= @team.name %> logo" 
-              width="50" 
-              height="auto" 
-              class="me-2">vs. 
-        <% if @opponent_team.present? %>
-          <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @opponent_team.abbreviation %>-2026.png" 
-              alt="<%= @opponent_team.name %> logo" 
-              width="50" height="auto" class="me-2">
-        <% else %>
-          <!-- Optional fallback image or blank -->
-          <span class="text-muted">No upcoming opponent</span>
-        <% end %>
-
-                </h5>
-        <% if @opponent_team.present? %>        
-                <p class="mb-0"><strong>Date:</strong> <%= @next_game.date.strftime("%m/%d/%y") %></p>
-                <p class="mb-0"><strong>Location:</strong> <%= @next_game.location %></p>
-        <% else %>
-        <%end%>        
-      </div>
-
-      <% if @opponent_team && @defense_vs_position.present? %>
-        <!-- Opponent Defense -->
-        <div class="col-6">
-          <h6><%= @opponent_team.name.split(' ').last %> DvP</h6>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Pos</th>
-                <th>P</th>
-                <th>R</th>
-                <th>A</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% relevant_positions = case @player.position %>
-                <% when "PG" then ["PG", "G"] %>
-                <% when "SG" then ["SG", "G"] %>
-                <% when "SF" then ["SF", "F"] %>
-                <% when "PF" then ["PF", "F"] %>
-                <% when "C" then ["C"] %>
-                <% else [] %>
-              <% end %>
-
-              <% if @defense_vs_position.is_a?(Hash) %>
-                <% @defense_vs_position.each do |position, stats| %>
-                  <% if relevant_positions.include?(position) %>
-                    <tr>
-                      <td><%= position %></td>
-                      <td style="<%= rank_color_class(stats['points_rank']) %>"><%= stats["points_rank"] || "N/A" %></td>
-                      <td style="<%= rank_color_class(stats['rebounds_rank']) %>"><%= stats["rebounds_rank"] || "N/A" %></td>
-                      <td style="<%= rank_color_class(stats['assists_rank']) %>"><%= stats["assists_rank"] || "N/A" %></td>
-                    </tr>
-                  <% end %>
+              <!-- Player Information -->
+              <div class="col-8">
+                <p class="mb-0"><strong>Position:</strong> <%= @player.position %></p>
+                <p class="mb-0"><strong>Height:</strong> <%= @player.height %></p>
+                <p class="mb-0"><strong>Weight:</strong> <%= @player.weight %> lbs</p>
+                <% if @player.birth_date %>
+                  <% age = ((Date.today - @player.birth_date).to_i / 365.25).floor %>
+                  <p class="mb-0"><strong>Age:</strong> <%= age %></p>
                 <% end %>
-              <% else %>
-                <tr>
-                  <td colspan="4">No data available for opponent defense.</td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% else %>
-        <div class="col-6">
-          <h6>Opponent DvP</h6>
-          <p class="text-muted">No opponent or DvP data available.</p>
-        </div>
-      <% end %>
+                <% if @player.health.present? %>
+                  <p class="mb-0"><strong>Status:</strong> <%= @player.health.status %></p>
+                  <p class="mb-0"><strong>Description:</strong> <%= @player.health.description %></p>
+                          <% if @player.health.status == "Healthy" %>
+                  <p class="mb-0"><strong>Last Injury:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                          <% else %>
+                  <p class="mb-0"><strong>Est. Return:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                          <% end %>                  
+                <% else %>
+                  <p class="mb-0">No health information available.</p>
+                <% end %>
+                <p class="mb-0">
+                  <a class="twitter-timeline" href="https://twitter.com/search?q=<%= CGI.escape(@player.name) %>&src=typed_query&f=live" target="_blank" >Latest on X for <%= @player.name %></a>
+                  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>          
+                </p>
+              </div>
+            </div>
 
-    </div>
-  </div>
-</div>
+            <hr>
+
+            <!-- Bottom Section: Game Info and Opponent Defense -->
+            <div class="row">
+                <%= form_with url: team_player_path(@team, @player), method: :get, local: true, class: "d-inline-block" do %>
+                  <div class="d-flex justify-content-center align-items-center mb-3">
+                    <label for="season_id" class="me-2 fw-bold">Season:</label>
+                    <%= select_tag :season_id,
+                          options_from_collection_for_select(@seasons, :id, :name, @selected_season.id),
+                          onchange: "this.form.submit()",
+                          class: "form-select w-auto" %>
+                  </div>
+                <% end %>
+              <!-- Next Game Info -->
+              <div class="col-6">
+                <h6>Next Game</h6>
+                <h5>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @team.abbreviation %>-2026.png" 
+                      alt="<%= @team.name %> logo" 
+                      width="50" 
+                      height="auto" 
+                      class="me-2">vs. 
+                <% if @opponent_team.present? %>
+                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @opponent_team.abbreviation %>-2026.png" 
+                      alt="<%= @opponent_team.name %> logo" 
+                      width="50" height="auto" class="me-2">
+                <% else %>
+                  <!-- Optional fallback image or blank -->
+                  <span class="text-muted">No upcoming opponent</span>
+                <% end %>
+
+                        </h5>
+                <% if @opponent_team.present? %>        
+                        <p class="mb-0"><strong>Date:</strong> <%= @next_game.date.strftime("%m/%d/%y") %></p>
+                        <p class="mb-0"><strong>Location:</strong> <%= @next_game.location %></p>
+                <% else %>
+                <%end%>        
+              </div>
+
+              <% if @opponent_team && @defense_vs_position.present? %>
+                <!-- Opponent Defense -->
+                <div class="col-6">
+                  <h6><%= @opponent_team.name.split(' ').last %> DvP</h6>
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>P</th>
+                        <th>R</th>
+                        <th>A</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% relevant_positions = case @player.position %>
+                        <% when "PG" then ["PG", "G"] %>
+                        <% when "SG" then ["SG", "G"] %>
+                        <% when "SF" then ["SF", "F"] %>
+                        <% when "PF" then ["PF", "F"] %>
+                        <% when "C" then ["C"] %>
+                        <% else [] %>
+                      <% end %>
+
+                      <% if @defense_vs_position.is_a?(Hash) %>
+                        <% @defense_vs_position.each do |position, stats| %>
+                          <% if relevant_positions.include?(position) %>
+                            <tr>
+                              <td><%= position %></td>
+                              <td style="<%= rank_color_class(stats['points_rank']) %>"><%= stats["points_rank"] || "N/A" %></td>
+                              <td style="<%= rank_color_class(stats['rebounds_rank']) %>"><%= stats["rebounds_rank"] || "N/A" %></td>
+                              <td style="<%= rank_color_class(stats['assists_rank']) %>"><%= stats["assists_rank"] || "N/A" %></td>
+                            </tr>
+                          <% end %>
+                        <% end %>
+                      <% else %>
+                        <tr>
+                          <td colspan="4">No data available for opponent defense.</td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              <% else %>
+                <div class="col-6">
+                  <h6>Opponent DvP</h6>
+                  <p class="text-muted">No opponent or DvP data available.</p>
+                </div>
+              <% end %>
+
+            </div>
+          </div>
+        </div>
 
       </div>
 
@@ -296,75 +291,75 @@
 <div class="row">
   <!-- Hit Rates Card -->
   <div class="col-md-4">
-<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
-      <div class="card-header">Last 5 Hit Rates</div>
-      <div class="card-body">
-        <table class="table table-hover" id="player-hit-rate">
-          <thead>
-            <tr>
-              <th>Ps</th>
-              <th>As</th>
-              <th>Rs</th>
-              <th>3s</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
-              <tr>
-                <td><%= "#{point_threshold}+  (#{((@betting_info[:points][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{assist_threshold}+  (#{((@betting_info[:assists][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{rebound_threshold}+  (#{((@betting_info[:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{three_threshold}+  (#{((@betting_info[:threes][i] / 5.0) * 100).to_i}%)" %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+          <div class="card-header">Last 5 Hit Rates</div>
+          <div class="card-body">
+            <table class="table table-hover" id="player-hit-rate">
+              <thead>
+                <tr>
+                  <th>Ps</th>
+                  <th>As</th>
+                  <th>Rs</th>
+                  <th>3s</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(point_threshold, assist_threshold, rebound_threshold, three_threshold), i| %>
+                  <tr>
+                    <td><%= "#{point_threshold}+  (#{((@betting_info[:points][i] / 5.0) * 100).to_i}%)" %></td>
+                    <td><%= "#{assist_threshold}+  (#{((@betting_info[:assists][i] / 5.0) * 100).to_i}%)" %></td>
+                    <td><%= "#{rebound_threshold}+  (#{((@betting_info[:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
+                    <td><%= "#{three_threshold}+  (#{((@betting_info[:threes][i] / 5.0) * 100).to_i}%)" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
   <!-- Line Graph Card -->
   <div class="col-md-8">
-<div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
-      <div class="card-header d-flex justify-content-between align-items-center">
-          
-          <div class="d-flex align-items-center mb-0">
-            <select id="game-range-dropdown" class="form-select mb-0">
-              <option value="last5">Last 5 Games</option>
-              <option value="last10">Last 10 Games</option>
-              <option value="all">All Games</option>
-            </select>
+    <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">
+          <div class="card-header d-flex justify-content-between align-items-center">
+              
+              <div class="d-flex align-items-center mb-0">
+                <select id="game-range-dropdown" class="form-select mb-0">
+                  <option value="last5">Last 5 Games</option>
+                  <option value="last10">Last 10 Games</option>
+                  <option value="all">All Games</option>
+                </select>
 
-            <!-- Stat Dropdown -->
-            <select id="stat-dropdown" class="form-select me-2" style="width: auto;">
-              <option value="points">P</option>
-              <option value="rebounds">R</option>
-              <option value="assists">A</option>
-              <option value="threes">3s</option>
-              <option value="points_assists">P+A</option>
-              <option value="points_rebounds">P+R</option>
-              <option value="rebounds_assists">R+A</option>
-              <option value="points_rebounds_assists">P+R+A</option>
-            </select>
+                <!-- Stat Dropdown -->
+                <select id="stat-dropdown" class="form-select me-2" style="width: auto;">
+                  <option value="points">P</option>
+                  <option value="rebounds">R</option>
+                  <option value="assists">A</option>
+                  <option value="threes">3s</option>
+                  <option value="points_assists">P+A</option>
+                  <option value="points_rebounds">P+R</option>
+                  <option value="rebounds_assists">R+A</option>
+                  <option value="points_rebounds_assists">P+R+A</option>
+                </select>
 
-            <!-- Threshold Input -->
-            <input
-              type="number"
-              id="threshold-input"
-              class="form-control"
-              style="width: 50%;"
-              placeholder="Threshold"
-            >
+                <!-- Threshold Input -->
+                <input
+                  type="number"
+                  id="threshold-input"
+                  class="form-control"
+                  style="width: 50%;"
+                  placeholder="Threshold"
+                >
+              </div>
+
           </div>
-
-      </div>
-      <div class="card-body">
-        <canvas id="player-line-chart" style="height: 300px;"></canvas>
-        <p class="mt-2 text-center" id="hit-rate-summary"></p>
+          <div class="card-body">
+            <canvas id="player-line-chart" style="height: 300px;"></canvas>
+            <p class="mt-2 text-center" id="hit-rate-summary"></p>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
   <!-- Season Stats -->
   <div class="card mb-4" style="box-shadow: 0px 4px 8px #3a3a3a;">

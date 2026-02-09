@@ -385,6 +385,29 @@ table.dataTable tbody th, table.dataTable tbody td{
   opacity: 0.75;
 }
 
+.team-bg-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.team-bg-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--team-logo);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.08; /* adjust to taste */
+  z-index: 0;
+  transform: scale(1.2); /* zoom effect */
+}
+
+/* Ensure content stays above background */
+.team-bg-card > .card-body {
+  position: relative;
+  z-index: 1;
+}
 
 
 @media (max-width: 625px) {
