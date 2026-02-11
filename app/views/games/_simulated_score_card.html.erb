@@ -1,0 +1,282 @@
+<%# app/views/games/_simulated_score_card.html.erb %>
+
+<%# Inputs:
+    - @sim_single (hash payload from GameSimulator#fetch_or_simulate!)
+    - @sim_distribution (GameSimulation row from GameSimulator#fetch_or_simulate_distribution!)
+%>
+
+<% sim = @sim_single %>
+<% gs  = @sim_distribution %>
+
+<% return unless sim.present? || gs.present? %>
+
+<%# Prefer the single sim totals for the headline team stat lines (REB/AST/3PM/MIN).
+    Use distribution mean points + range data when available. %>
+
+<% home_abbr = @home_team.abbreviation %>
+<% away_abbr = @visitor_team.abbreviation %>
+
+<% if sim.present? %>
+  <% home = sim[:home_totals] %>
+  <% away = sim[:visitor_totals] %>
+<% else %>
+  <%# Fallback if only distribution exists %>
+  <% home = { points: gs&.home_points.to_f, rebounds: gs&.home_rebounds.to_f, assists: gs&.home_assists.to_f, threes: gs&.home_threes.to_f, minutes: nil } %>
+  <% away = { points: gs&.visitor_points.to_f, rebounds: gs&.visitor_rebounds.to_f, assists: gs&.visitor_assists.to_f, threes: gs&.visitor_threes.to_f, minutes: nil } %>
+<% end %>
+
+<% out = gs&.meta && gs.meta["outputs"] ? gs.meta["outputs"] : nil %>
+
+<%# Use mean points from MC if present, otherwise the single sim points %>
+<% home_pts = out.present? ? out["home_points_mean"].to_f : home[:points].to_f %>
+<% away_pts = out.present? ? out["visitor_points_mean"].to_f : away[:points].to_f %>
+
+<% total_pts = home_pts + away_pts %>
+<% spread_home = home_pts - away_pts %>
+
+<%# Market-style spread display %>
+<%# spread_home = home_pts - away_pts %>
+<% spread_home = (home_pts.to_f - away_pts.to_f) %>
+
+<% spread_market =
+     if spread_home < 0
+       "#{@visitor_team.abbreviation} -#{spread_home.abs.round(1)}"
+     elsif spread_home > 0
+       "#{@home_team.abbreviation} -#{spread_home.round(1)}"
+     else
+       "PK"
+     end %>
+
+<% p10 = out["spread_p10"].to_f %>
+<% p50 = out["spread_p50"].to_f %>
+<% p90 = out["spread_p90"].to_f %>
+
+<% spread_label = ->(home_margin) do
+     if home_margin < 0
+       "#{@visitor_team.abbreviation} -#{home_margin.abs.round(1)}"
+     elsif home_margin > 0
+       "#{@home_team.abbreviation} -#{home_margin.round(1)}"
+     else
+       "PK"
+     end
+   end %>
+
+
+<div class="card the-shadow mb-4">
+  <div class="card-header fw-bold text-center">
+    Game Simulation
+    <% if gs&.sims_count.to_i > 1 %>
+      <span class="text-muted fw-normal ms-2" style="font-size: 0.9rem;">
+        (Monte Carlo: <%= gs.sims_count %> sims)
+      </span>
+    <% end %>
+  </div>
+
+  <div class="card-body">
+
+    <!-- ======= SCORE STRIP ======= -->
+    <div class="d-flex align-items-center justify-content-between px-2 py-2 rounded" style="background: #f8f9fa;">
+      <div class="text-center" style="width: 40%;">
+        <div class="fw-bold"><%= away_abbr %></div>
+        <div class="display-6 fw-bold mb-0"><%= away_pts.round %></div>
+      </div>
+
+      <div class="text-center" style="width: 20%;">
+        <div class="text-muted small">TOTAL</div>
+        <div class="fs-4 fw-bold"><%= total_pts.round %></div>
+        <div class="fw-bold">SPREAD</div>
+        <div class="fs-5 fw-bold"><%= spread_market %></div>
+      </div>
+
+      <div class="text-center" style="width: 40%;">
+        <div class="fw-bold"><%= home_abbr %></div>
+        <div class="display-6 fw-bold mb-0"><%= home_pts.round %></div>
+      </div>
+    </div>
+
+    <!-- ======= TEAM STAT LINES ======= -->
+    <div class="row mt-3 g-2">
+      <div class="col-md-6">
+        <div class="border rounded p-2 h-100">
+          <div class="fw-bold text-center mb-1"><%= away_abbr %> Team Line</div>
+          <div class="text-muted small text-center">
+            REB: <%= away[:rebounds].to_f.round(1) %> |
+            AST: <%= away[:assists].to_f.round(1) %> |
+            3PM: <%= away[:threes].to_f.round(1) %>
+            <% if away[:minutes].present? %>
+              | MIN: <%= away[:minutes].to_f.round(1) %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="border rounded p-2 h-100">
+          <div class="fw-bold text-center mb-1"><%= home_abbr %> Team Line</div>
+          <div class="text-muted small text-center">
+            REB: <%= home[:rebounds].to_f.round(1) %> |
+            AST: <%= home[:assists].to_f.round(1) %> |
+            3PM: <%= home[:threes].to_f.round(1) %>
+            <% if home[:minutes].present? %>
+              | MIN: <%= home[:minutes].to_f.round(1) %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= DISTRIBUTION (if available) ======= -->
+    <%
+      # -------------------------
+      # 1) Normalize meta into a Hash
+      # -------------------------
+      sim_obj = gs
+
+      raw_meta =
+        if sim_obj.respond_to?(:meta)
+          sim_obj.meta
+        elsif sim_obj.is_a?(Hash)
+          sim_obj[:meta] || sim_obj["meta"]
+        end
+
+      meta_hash =
+        case raw_meta
+        when Hash
+          raw_meta
+        when String
+          begin
+            JSON.parse(raw_meta)
+          rescue
+            {}
+          end
+        else
+          {}
+        end
+
+      # -------------------------
+      # 2) Extract outputs + numeric fields
+      # -------------------------
+      out = meta_hash["outputs"] || {}
+
+      win_prob = out["win_prob_home"].to_f
+      win_pct  = (win_prob * 100.0)
+      win_pct  = [[win_pct, 0.0].max, 100.0].min
+
+      spread_mean = out["spread_mean"].to_f
+      spread_p10  = out["spread_p10"].to_f
+      spread_p50  = out["spread_p50"].to_f
+      spread_p90  = out["spread_p90"].to_f
+      spread_width = (spread_p90 - spread_p10).abs
+
+      total_mean = out["total_mean"].to_f
+      total_p10  = out["total_p10"].to_f
+      total_p50  = out["total_p50"].to_f
+      total_p90  = out["total_p90"].to_f
+      total_width = (total_p90 - total_p10).abs
+
+      # If outputs isn't present, bail
+      has_distribution =
+        out.present? && (
+          out.key?("win_prob_home") ||
+          out.key?("spread_mean") ||
+          out.key?("total_mean")
+        )
+
+      # -------------------------
+      # 3) Helpers for spread labeling
+      #   (Home - Away)
+      #   Negative => Home favored
+      # -------------------------
+      spread_label = lambda do |v|
+        v = v.to_f
+        if v > 0
+          "#{@home_team.abbreviation} -#{v.round(1)}"
+        elsif v < 0
+          "#{@visitor_team.abbreviation} -#{v.abs.round(1)}"
+        else
+          "PK"
+        end
+      end
+
+    %>
+
+    <% if has_distribution %>
+      <hr class="my-3">
+
+      <div class="row g-3">
+
+        <!-- HOME WIN % -->
+        <div class="col-md-4">
+          <div class="border rounded p-2 h-100 text-center">
+            <div class="text-muted small">HOME WIN %</div>
+            <div class="fs-3 fw-bold"><%= win_pct.round(1) %>%</div>
+
+            <div class="progress mt-2" style="height: 10px;">
+              <div class="progress-bar" role="progressbar" style="width: <%= win_pct %>%;"></div>
+            </div>
+
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
+              <span>Away</span><span>Home</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SPREAD -->
+        <div class="col-md-4">
+          <div class="border rounded p-2 h-100 text-center">
+            <div class="text-muted small">SPREAD (HOME - AWAY)</div>
+
+            <div class="fw-bold" style="font-size: 1.2rem;">
+              <%= spread_label.call(spread_mean) %> (mean)
+            </div>
+
+            <div class="mt-2 text-muted small">P10 / P50 / P90</div>
+            <div class="d-flex justify-content-center gap-2 mt-1 flex-wrap">
+              <span class="badge bg-light text-dark border"><%= spread_label.call(spread_p10) %></span>
+              <span class="badge bg-light text-dark border"><%= spread_label.call(spread_p50) %></span>
+              <span class="badge bg-light text-dark border"><%= spread_label.call(spread_p90) %></span>
+            </div>
+
+            <div class="mt-2 text-muted" style="font-size: 0.8rem;">
+              Range width: <%= spread_width.round(1) %>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOTAL -->
+        <div class="col-md-4">
+          <div class="border rounded p-2 h-100 text-center">
+            <div class="text-muted small">TOTAL</div>
+
+            <div class="fw-bold" style="font-size: 1.2rem;">
+              <%= total_mean.round(1) %> (mean)
+            </div>
+
+            <div class="mt-2 text-muted small">P10 / P50 / P90</div>
+            <div class="d-flex justify-content-center gap-2 mt-1 flex-wrap">
+              <span class="badge bg-light text-dark border"><%= total_p10.round(1) %></span>
+              <span class="badge bg-light text-dark border"><%= total_p50.round(1) %></span>
+              <span class="badge bg-light text-dark border"><%= total_p90.round(1) %></span>
+            </div>
+
+            <div class="mt-2 text-muted" style="font-size: 0.8rem;">
+              Range width: <%= total_width.round(1) %>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    <% end %>
+
+
+    <!-- ======= FOOTER NOTES ======= -->
+    <div class="text-muted small mt-3 text-center">
+      <% if out.present? %>
+        Score shown uses Monte Carlo mean points. Team stat lines (REB/AST/3PM) are currently from summed player projections.
+      <% else %>
+        Score shown uses a single deterministic sim from player projections + team environment.
+      <% end %>
+    </div>
+
+  </div>
+</div>

@@ -24,6 +24,38 @@
             if visitor_pace_rank.present? && home_pace_rank.present?
               ((visitor_pace_rank.to_f + home_pace_rank.to_f) / 2.0).round(1)
             end
+
+          gs = @sim_by_game_id && @sim_by_game_id[game.id]
+
+          sim_home_pts = nil
+          sim_away_pts = nil
+
+          if gs.present?
+            out = gs.meta && gs.meta["outputs"]
+
+            if out.present?
+              sim_home_pts = out["home_points_mean"].to_f
+              sim_away_pts = out["visitor_points_mean"].to_f
+            else
+              sim_home_pts = gs.home_points.to_f
+              sim_away_pts = gs.visitor_points.to_f
+            end
+          end
+
+          sim_total = (sim_home_pts && sim_away_pts) ? (sim_home_pts + sim_away_pts) : nil
+          spread_home = (sim_home_pts && sim_away_pts) ? (sim_home_pts - sim_away_pts) : nil
+
+          spread_market =
+            if spread_home.nil?
+              nil
+            elsif spread_home < 0
+              "#{game.visitor_team.abbreviation} -#{spread_home.abs.round(1)}"
+            elsif spread_home > 0
+              "#{game.home_team.abbreviation} -#{spread_home.round(1)}"
+            else
+              "PK"
+            end
+
         %>
 
         <div class="game-card-item">
@@ -82,6 +114,12 @@
                   <strong><%= game.time.strftime("%I:%M %p") if game.time.present? %></strong>
                 <% end %>
               </div>
+
+              <% if sim_total.present? && spread_market.present? && game.date >= Date.today %>
+                <div class="text-muted mb-1" style="font-size: 10px; line-height: 1.1;">
+                  <span class="me-2"><strong><%= spread_market %> / <%= sim_total.round(1) %></strong></span>
+                </div>
+              <% end %>
 
               <div class="d-flex align-items-center gap-2">
                 <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>

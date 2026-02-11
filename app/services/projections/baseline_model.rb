@@ -409,9 +409,6 @@ module ::Projections
       raise
     end
 
-
-
-
     def debug_player!(player_id)
       todays_games = Game.where(date: @date, season_id: @season.id).includes(:home_team, :visitor_team)
       player = Player.includes(:team).find(player_id)

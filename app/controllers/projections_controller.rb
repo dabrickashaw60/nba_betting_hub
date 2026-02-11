@@ -100,6 +100,23 @@ class ProjectionsController < ApplicationController
                 .includes(:home_team, :visitor_team)
                 .order(:time)
                 .to_a
+    # ------------------------------------------------------------
+    # DAY SIMS (so the game chips can show projected score/spread/total)
+    # ------------------------------------------------------------
+    @sim_by_game_id = {}
+
+    if @games.any?
+      day_game_ids = @games.map(&:id)
+
+      # Your distribution model_version is "#{MODEL_VERSION}_mc_v1"
+      sim_model_version = "#{Simulations::GameSimulator::MODEL_VERSION}_mc_v1"
+
+      sims = GameSimulation
+        .where(date: @date, game_id: day_game_ids, model_version: sim_model_version)
+        .to_a
+
+      @sim_by_game_id = sims.index_by(&:game_id)
+    end
 
     Rails.logger.info "[PROJECTIONS RESULTS] date param=#{params[:date].inspect}"
     Rails.logger.info "[PROJECTIONS RESULTS] parsed date=#{@date.inspect}"

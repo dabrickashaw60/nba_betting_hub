@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_05_182722) do
+ActiveRecord::Schema.define(version: 2026_02_09_000000) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -71,6 +71,40 @@ ActiveRecord::Schema.define(version: 2026_02_05_182722) do
     t.check_constraint "son_valid(`data`", name: "defense_vs_positions_chk_1"
   end
 
+  create_table "game_simulations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.date "date", null: false
+    t.bigint "game_id", null: false
+    t.bigint "season_id", null: false
+    t.bigint "home_team_id", null: false
+    t.bigint "visitor_team_id", null: false
+    t.string "model_version", null: false
+    t.integer "sims_count", default: 1, null: false
+    t.integer "home_points", default: 0, null: false
+    t.integer "visitor_points", default: 0, null: false
+    t.decimal "home_rebounds", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_rebounds", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_assists", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_assists", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_threes", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_threes", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_baseline_points", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_baseline_points", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_baseline_rebounds", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_baseline_rebounds", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_baseline_assists", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_baseline_assists", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_baseline_threes", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "visitor_baseline_threes", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "home_scale", precision: 8, scale: 4, default: "1.0", null: false
+    t.decimal "visitor_scale", precision: 8, scale: 4, default: "1.0", null: false
+    t.json "meta"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["date", "game_id", "model_version"], name: "index_game_simulations_on_date_and_game_id_and_model_version", unique: true
+    t.index ["date"], name: "index_game_simulations_on_date"
+    t.index ["game_id"], name: "index_game_simulations_on_game_id"
+  end
+
   create_table "games", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.date "date"
     t.time "time"
@@ -104,7 +138,7 @@ ActiveRecord::Schema.define(version: 2026_02_05_182722) do
     t.index ["player_id"], name: "index_healths_on_player_id"
   end
 
-  create_table "player_season_roles", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "player_season_roles", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "season_id", null: false
     t.bigint "player_id", null: false
     t.integer "team_id"

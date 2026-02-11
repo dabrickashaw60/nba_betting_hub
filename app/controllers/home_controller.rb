@@ -21,6 +21,18 @@ class HomeController < ApplicationController
       Game.where(date: @date, season_id: season_id)
           .includes(:visitor_team, :home_team)
 
+      sim_model = "sim_v1_from_projections_mc_v1"
+
+      sim_rows = GameSimulation
+        .where(date: @date, game_id: @todays_games.map(&:id), model_version: sim_model)
+
+      if sim_rows.blank?
+        sim_rows = GameSimulation
+          .where(date: @date, game_id: @todays_games.map(&:id), model_version: "sim_v1_from_projections")
+      end
+
+      @sim_by_game_id = sim_rows.index_by(&:game_id)
+
     team_ids = @todays_games.pluck(:visitor_team_id, :home_team_id).flatten.uniq
 
     if team_ids.blank?
@@ -209,20 +221,36 @@ class HomeController < ApplicationController
     # 1) Update injury statuses
     Scrapers::InjuryScraper.scrape_and_update_injuries
 
-    # 2) Re-run projections for that date
+    # 2) Re-run projections for that date (fresh)
     Projection.where(date: date).delete_all
     ProjectionRun.where(date: date, model_version: Projections::BaselineModel::MODEL_VERSION).delete_all
 
     run = Projections::BaselineModel.new(date: date).run!
 
+    # 3) Re-run simulations for that date (fresh)
+    sim_model_single = Simulations::GameSimulator::MODEL_VERSION
+    sim_model_mc     = "#{Simulations::GameSimulator::MODEL_VERSION}_mc_v1"
+
+    GameSimulation.where(date: date, model_version: [sim_model_single, sim_model_mc]).delete_all
+
+    sim = Simulations::GameSimulator.new(date: date)
+    sim_results = sim.simulate_date!(add_noise: false, persist: true)
+
+    mc_count = 0
+
+    Game.where(date: date).find_each do |game|
+      sim.simulate_game_distribution!(game_id: game.id, sims: Simulations::GameSimulator::DEFAULT_SIMS, persist: true)
+      mc_count += 1
+    end
+
     redirect_to root_path(date: date),
-                notice: "Player injuries updated and projections re-run (#{run.projections_count} players) for #{date.strftime("%m/%d/%Y")}."
+      notice: "Injuries updated. Projections rebuilt (#{run.projections_count} players). Simulated #{sim_results.size} games + Monte Carlo for #{mc_count} games."
+
   rescue => e
     Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}"
     redirect_to root_path(date: (params[:date] rescue nil)),
-                alert: "Injury update/projection run failed: #{e.message}"
+                alert: "Injury update/projection/sim failed: #{e.message}"
   end
-
 
   def scrape_previous_day_games
     require 'rake'
