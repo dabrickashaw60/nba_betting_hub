@@ -37,6 +37,12 @@ module Scrapers
 
         if player
           health = player.health || player.build_health
+
+          if health.manual_override_active?(Date.today)
+            puts "Skipped #{player_name} (manual override active today)"
+            next
+          end
+
           health.update(
             status: STATUS_KEYWORDS.include?(status) ? status : 'Unknown',
             description: description,
@@ -48,7 +54,7 @@ module Scrapers
         end
       end
 
-      # FORCE OVERRIDES — ALWAYS OUT
+      # FORCE OVERRIDES ï¿½ ALWAYS OUT
       FORCE_OUT_NAMES.each do |forced_name|
         forced_player = Player.find_by(name: forced_name)
         next unless forced_player
@@ -74,6 +80,13 @@ module Scrapers
         next if existing_player_names.include?(normalize_name(player.name))
 
         health = player.health || player.build_health
+
+        # skip auto-reset if overridden today
+        if health.manual_override_active?(Date.today)
+          puts "Skipped Healthy reset for #{player.name} (manual override active today)"
+          next
+        end
+
         health.update(
           status: 'Healthy',
           description: 'Player is healthy.',

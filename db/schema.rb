@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_13_183955) do
+ActiveRecord::Schema.define(version: 2026_02_19_123456) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -71,7 +71,7 @@ ActiveRecord::Schema.define(version: 2026_02_13_183955) do
     t.check_constraint "son_valid(`data`", name: "defense_vs_positions_chk_1"
   end
 
-  create_table "game_simulations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "game_simulations", charset: "latin1", force: :cascade do |t|
     t.date "date", null: false
     t.bigint "game_id", null: false
     t.bigint "season_id", null: false
@@ -97,12 +97,13 @@ ActiveRecord::Schema.define(version: 2026_02_13_183955) do
     t.decimal "visitor_baseline_threes", precision: 8, scale: 2, default: "0.0", null: false
     t.decimal "home_scale", precision: 8, scale: 4, default: "1.0", null: false
     t.decimal "visitor_scale", precision: 8, scale: 4, default: "1.0", null: false
-    t.json "meta"
+    t.text "meta", size: :long, collation: "utf8mb4_bin"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["date", "game_id", "model_version"], name: "index_game_simulations_on_date_and_game_id_and_model_version", unique: true
     t.index ["date"], name: "index_game_simulations_on_date"
     t.index ["game_id"], name: "index_game_simulations_on_game_id"
+    t.check_constraint "son_valid(`meta`", name: "game_simulations_chk_1"
   end
 
   create_table "games", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
@@ -135,6 +136,9 @@ ActiveRecord::Schema.define(version: 2026_02_13_183955) do
     t.date "last_update"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "manual_status"
+    t.string "manual_description"
+    t.date "manual_override_on"
     t.index ["player_id"], name: "index_healths_on_player_id"
   end
 

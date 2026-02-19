@@ -33,6 +33,7 @@ Rails.application.routes.draw do
 
   resources :players, only: [] do
     post 'update_stats', on: :member
+    patch :manual_health, on: :member
     collection do
       get 'live_search', to: 'players#live_search'
     end

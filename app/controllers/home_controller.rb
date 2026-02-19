@@ -69,9 +69,14 @@ class HomeController < ApplicationController
                 )
                 .index_by(&:player_id)
 
-    @pd_by_player_id =
+
+    @proj_dist_by_player_id =
       ProjectionDistribution
-        .where(date: @date, player_id: @proj_by_player_id.keys, model_version: "proj_mc_v1")
+        .where(
+          date: @date,
+          player_id: @proj_by_player_id.keys,
+          model_version: Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+        )
         .select(
           :player_id,
           :minutes_mean, :minutes_sd, :minutes_p10, :minutes_p50, :minutes_p90,
@@ -82,22 +87,6 @@ class HomeController < ApplicationController
         )
         .index_by(&:player_id)
 
-
-    @proj_dist_by_player_id =
-      ProjectionDistribution
-        .where(date: @date, team_id: team_ids, model_version: Projections::DistributionSimulator::MODEL_VERSION)
-        .select(
-          :player_id,
-          :minutes_mean,
-          :points_mean,
-          :rebounds_mean,
-          :assists_mean,
-          :threes_mean,
-          :points_sd,
-          :points_p10,
-          :points_p90
-        )
-        .index_by(&:player_id)
 
     # ------------------------------------------------------------
     # Projections (team totals) used to compute projected REB% / AST%
@@ -245,41 +234,74 @@ class HomeController < ApplicationController
   end
 
   def update_injuries
-    date = params[:date].present? ? Date.parse(params[:date]) : Date.today
+    date   = params[:date].present? ? Date.parse(params[:date]) : Date.today
+    season = Season.find_by(current: true)
+    raise "No current season" unless season
 
+    # -------------------------
     # 1) Update injury statuses
+    # -------------------------
     Scrapers::InjuryScraper.scrape_and_update_injuries
 
-    # 2) Re-run projections for that date (fresh)
+    # -------------------------
+    # 2) Baseline projections
+    # -------------------------
     Projection.where(date: date).delete_all
     ProjectionRun.where(date: date, model_version: Projections::BaselineModel::MODEL_VERSION).delete_all
 
-    run = Projections::BaselineModel.new(date: date).run!
+    run = Projections::BaselineModel.new(date: date).run!   # <-- IMPORTANT: no season: kwarg
 
-    # 3) Re-run simulations for that date (fresh)
+    Rails.logger.info "[update_injuries] baseline projections: #{Projection.where(date: date).count}"
+
+    # -------------------------
+    # 2b) Player MC distributions
+    # -------------------------
+    player_mc_model = "proj_mc_v1" # must match what the view queries
+
+    ProjectionDistribution.where(date: date, model_version: player_mc_model).delete_all
+
+    dist_count =
+      Projections::DistributionSimulator
+        .new(date: date, sims: 500, model_version: player_mc_model, force: true)
+        .run!
+
+    Rails.logger.info "[update_injuries] proj distributions (#{player_mc_model}): #{ProjectionDistribution.where(date: date, model_version: player_mc_model).count}"
+
+    # -------------------------
+    # 3) Game sims
+    # -------------------------
     sim_model_single = Simulations::GameSimulator::MODEL_VERSION
-    sim_model_mc     = "#{Simulations::GameSimulator::MODEL_VERSION}_mc_v1"
+    sim_model_mc     = "game_from_player_mc_means_v1"
 
     GameSimulation.where(date: date, model_version: [sim_model_single, sim_model_mc]).delete_all
 
-    sim = Simulations::GameSimulator.new(date: date)
+    sim = Simulations::GameSimulator.new(date: date, season: season)
+
     sim_results = sim.simulate_date!(add_noise: false, persist: true)
 
-    mc_count = 0
+    games = Game.where(date: date, season_id: season.id)
 
-    Game.where(date: date).find_each do |game|
-      sim.simulate_game_distribution!(game_id: game.id, sims: Simulations::GameSimulator::DEFAULT_SIMS, persist: true)
+    mc_count = 0
+    games.find_each do |game|
+      sim.fetch_or_simulate_distribution!(
+        game_id: game.id,
+        sims: Simulations::GameSimulator::DEFAULT_SIMS,
+        force: true
+      )
       mc_count += 1
     end
 
-    redirect_to root_path(date: date),
-      notice: "Injuries updated. Projections rebuilt (#{run.projections_count} players). Simulated #{sim_results.size} games + Monte Carlo for #{mc_count} games."
+    Rails.logger.info "[update_injuries] game_sims single=#{sim_results.size} mc=#{mc_count}"
 
+    redirect_to root_path(date: date),
+      notice: "Injuries updated. Projections=#{run.projections_count}. Player MC=#{dist_count}. Games=#{sim_results.size} + Game MC=#{mc_count}."
   rescue => e
-    Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}"
+    Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}\n#{e.backtrace.first(20).join("\n")}"
     redirect_to root_path(date: (params[:date] rescue nil)),
                 alert: "Injury update/projection/sim failed: #{e.message}"
   end
+
+
 
   def scrape_previous_day_games
     require 'rake'

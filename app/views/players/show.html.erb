@@ -33,16 +33,35 @@
                   <p class="mb-0"><strong>Age:</strong> <%= age %></p>
                 <% end %>
                 <% if @player.health.present? %>
-                  <p class="mb-0"><strong>Status:</strong> <%= @player.health.status %></p>
+                  <div class="d-flex align-items-center gap-2">
+                    <p class="mb-0"><strong>Status:</strong></p>
+
+                    <%= form_with url: manual_health_player_path(@player), method: :patch, scope: :health, local: true, class: "d-flex align-items-center gap-2" do |f| %>
+                      <%= f.select :manual_status,
+                          options_for_select(['Healthy','Day-To-Day','Out','Out For Season'], @player.health.status),
+                          {},
+                          class: "form-select form-select-sm",
+                          onchange: "this.form.submit();" %>
+
+                      <%= f.hidden_field :manual_description, value: @player.health.description %>
+                    <% end %>
+
+                    <% if @player.health.manual_override_on == Date.today %>
+                      <span class="badge bg-warning text-dark">Manual today</span>
+                    <% end %>
+                  </div>
+
                   <p class="mb-0"><strong>Description:</strong> <%= @player.health.description %></p>
-                          <% if @player.health.status == "Healthy" %>
-                  <p class="mb-0"><strong>Last Injury:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
-                          <% else %>
-                  <p class="mb-0"><strong>Est. Return:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
-                          <% end %>                  
+
+                  <% if @player.health.status == "Healthy" %>
+                    <p class="mb-0"><strong>Last Injury:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                  <% else %>
+                    <p class="mb-0"><strong>Est. Return:</strong> <%= @player.health.last_update.strftime("%m/%d/%y") %></p>
+                  <% end %>
                 <% else %>
                   <p class="mb-0">No health information available.</p>
                 <% end %>
+
                 <p class="mb-0">
                   <a class="twitter-timeline" href="https://twitter.com/search?q=<%= CGI.escape(@player.name) %>&src=typed_query&f=live" target="_blank" >Latest on X for <%= @player.name %></a>
                   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>          

@@ -137,6 +137,28 @@ end
     render json: @players.as_json(include: { team: { only: [:id, :name, :abbreviation] } })
   end
 
+  
+  def manual_health
+    @player = Player.find(params[:id])
+    health  = @player.health || @player.build_health
+
+    permitted = params.require(:health).permit(:manual_status, :manual_description)
+
+    manual_status = permitted[:manual_status].presence || health.status || "Unknown"
+    manual_description = permitted[:manual_description].presence || "Manually set for #{Date.today.strftime('%m/%d/%y')}"
+
+    health.update!(
+      status: manual_status,
+      description: manual_description,
+      last_update: Date.today,
+      manual_status: manual_status,
+      manual_description: manual_description,
+      manual_override_on: Date.today
+    )
+
+    redirect_back fallback_location: request.referer || "/", notice: "Manual status set for today."
+  end
+
   # ---------------------------------------------------------------------------
   # 🧮 PRIVATE HELPERS
   # ---------------------------------------------------------------------------

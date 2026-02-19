@@ -217,136 +217,114 @@
             <% qualifying_players = @players_over_15_minutes.map { |d| d[:player] } %>
 
             <% @players_over_15_minutes.each do |data| %>
-              <%
-                player = data[:player]
-                averages = data[:averages]
-                health_status = health_status(player.health&.status)
+            <%
+              player = data[:player]
+              averages = data[:averages]
+              health_status = health_status(player.health&.status)
 
-                proj = @proj_by_player_id[player.id]
+              qualifying_players = @players_over_15_minutes.map { |d| d[:player] }
 
-                next_game = player.team.games.where("date >= ?", Date.today)
-                                  .where(season_id: @current_season.id)
-                                  .order(:date).first
+              # --- upcoming opponent (for DVP ranks) ---
+              next_game = player.team.games.where("date >= ?", Date.today)
+                                .where(season_id: @current_season.id)
+                                .order(:date).first
 
-                opponent = if next_game&.home_team_id == player.team_id
-                            next_game.visitor_team
-                          elsif next_game&.visitor_team_id == player.team_id
-                            next_game.home_team
-                          end
-
-                opponent_stats = opponent&.defense_data_for(@current_season) || {}
-                relevant_positions = case player.position
-                                    when "PG" then ["PG", "G"]
-                                    when "SG" then ["SG", "G"]
-                                    when "SF" then ["SF", "F"]
-                                    when "PF" then ["PF", "F"]
-                                    when "C"  then ["C"]
-                                    else []
-                                    end
-
-                alert_positions =
-                  case player.position
-                  when "PG" then ["PG", "SG"]
-                  when "SG" then ["SG", "PG"]
-                  when "SF" then ["SF", "PF"]
-                  when "PF" then ["PF", "SF"]
-                  when "C"  then ["C", "PF"]
-                  else []
-                  end
-
-                filtered_stats = opponent_stats.slice(*relevant_positions)
-
-                pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
-                rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
-                ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
-
-                opp_adv  = opponent ? @team_adv_by_team_id[opponent.id] : nil
-                opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
-
-                out_teammates = player.team.players
-                                      .where.not(id: player.id)
-                                      .joins(:health)
-                                      .where(health: { status: "Out" })
-                                      .where(position: alert_positions)
-                                      .select { |tm| qualifying_players.include?(tm) }
-
-                teammates_out = out_teammates.any?
-                out_names = out_teammates.map(&:name).join(", ")
-                tooltip_text = "#{out_names} is Out. Usage may increase."
-
-                proj = @proj_by_player_id[player.id]
-                dist = @proj_dist_by_player_id && @proj_dist_by_player_id[player.id]
-
-                # Baseline (what you had before)
-                base_mp  = proj&.expected_minutes
-                base_pts = proj&.proj_points
-                base_reb = proj&.proj_rebounds
-                base_ast = proj&.proj_assists
-                base_3s  = proj&.proj_threes
-
-                # MC means (preferred for "true projection")
-                mc_mp  = dist&.minutes_mean
-                mc_pts = dist&.points_mean
-                mc_reb = dist&.rebounds_mean
-                mc_ast = dist&.assists_mean
-                mc_3s  = dist&.threes_mean
-
-                # Final values used by tooltips (MC mean if present, else baseline)
-                proj_mp      = mc_mp  || base_mp
-                proj_pts     = mc_pts || base_pts
-                proj_reb     = mc_reb || base_reb
-                proj_ast     = mc_ast || base_ast
-                proj_3s      = mc_3s  || base_3s
-
-                # Keep these from baseline (your MC doesn’t simulate these yet)
-                proj_usg     = proj&.usage_pct
-                proj_reb_pct = proj&.rebound_pct
-                proj_ast_pct = proj&.assist_pct
-
-
-                proj_pa  = (proj_pts.to_f + proj_ast.to_f) if proj_pts && proj_ast
-                proj_pr  = (proj_pts.to_f + proj_reb.to_f) if proj_pts && proj_reb
-                proj_ra  = (proj_reb.to_f + proj_ast.to_f) if proj_reb && proj_ast
-                proj_pra = (proj_pts.to_f + proj_reb.to_f + proj_ast.to_f) if proj_pts && proj_reb && proj_ast
-
-                pd = @pd_by_player_id && @pd_by_player_id[player.id]
-
-                def dist_tip(label, mean:, sd:, p10:, p50:, p90:, suffix: "")
-                  return "No projection" if mean.nil?
-                  m  = mean.to_f
-                  s  = sd.to_f
-                  a10 = p10.to_f
-                  a50 = p50.to_f
-                  a90 = p90.to_f
-                  "#{label}: #{m.round(1)}#{suffix} | SD #{s.round(1)} | P10 #{a10.round(1)} | P50 #{a50.round(1)} | P90 #{a90.round(1)}"
+              opponent =
+                if next_game&.home_team_id == player.team_id
+                  next_game.visitor_team
+                elsif next_game&.visitor_team_id == player.team_id
+                  next_game.home_team
                 end
 
-                # Minutes distribution (preferred)
-                d_min = if pd.present?
-                  { mean: pd.minutes_mean, sd: pd.minutes_sd, p10: pd.minutes_p10, p50: pd.minutes_p50, p90: pd.minutes_p90 }
-                else
-                  { mean: proj_mp, sd: nil, p10: nil, p50: nil, p90: nil }
+              opponent_stats = opponent&.defense_data_for(@current_season) || {}
+
+              relevant_positions =
+                case player.position
+                when "PG" then ["PG", "G"]
+                when "SG" then ["SG", "G"]
+                when "SF" then ["SF", "F"]
+                when "PF" then ["PF", "F"]
+                when "C"  then ["C"]
+                else []
                 end
 
-                # Points/Reb/Ast/3s distributions (preferred)
-                d_pts = pd.present? ? { mean: pd.points_mean,   sd: pd.points_sd,   p10: pd.points_p10,   p50: pd.points_p50,   p90: pd.points_p90 }   : { mean: proj_pts, sd: nil, p10: nil, p50: nil, p90: nil }
-                d_reb = pd.present? ? { mean: pd.rebounds_mean, sd: pd.rebounds_sd, p10: pd.rebounds_p10, p50: pd.rebounds_p50, p90: pd.rebounds_p90 } : { mean: proj_reb, sd: nil, p10: nil, p50: nil, p90: nil }
-                d_ast = pd.present? ? { mean: pd.assists_mean,  sd: pd.assists_sd,  p10: pd.assists_p10,  p50: pd.assists_p50,  p90: pd.assists_p90 }  : { mean: proj_ast, sd: nil, p10: nil, p50: nil, p90: nil }
-                d_3s  = pd.present? ? { mean: pd.threes_mean,   sd: pd.threes_sd,   p10: pd.threes_p10,   p50: pd.threes_p50,   p90: pd.threes_p90 }   : { mean: proj_3s,  sd: nil, p10: nil, p50: nil, p90: nil }
+              alert_positions =
+                case player.position
+                when "PG" then ["PG", "SG"]
+                when "SG" then ["SG", "PG"]
+                when "SF" then ["SF", "PF"]
+                when "PF" then ["PF", "SF"]
+                when "C"  then ["C", "PF"]
+                else []
+                end
 
-                # NOTE: we do NOT have combo (P+A, etc.) distributions yet.
-                # For now combos use mean-of-means.
-                proj_pts_mean = d_pts[:mean]
-                proj_reb_mean = d_reb[:mean]
-                proj_ast_mean = d_ast[:mean]
+              filtered_stats = opponent_stats.slice(*relevant_positions)
 
-                proj_pa  = (proj_pts_mean.to_f + proj_ast_mean.to_f) if proj_pts_mean.present? && proj_ast_mean.present?
-                proj_pr  = (proj_pts_mean.to_f + proj_reb_mean.to_f) if proj_pts_mean.present? && proj_reb_mean.present?
-                proj_ra  = (proj_reb_mean.to_f + proj_ast_mean.to_f) if proj_reb_mean.present? && proj_ast_mean.present?
-                proj_pra = (proj_pts_mean.to_f + proj_reb_mean.to_f + proj_ast_mean.to_f) if proj_pts_mean.present? && proj_reb_mean.present? && proj_ast_mean.present?
+              pts_rank = filtered_stats.values.sum { |stats| stats["points_rank"] } / filtered_stats.size rescue nil
+              rbs_rank = filtered_stats.values.sum { |stats| stats["rebounds_rank"] } / filtered_stats.size rescue nil
+              ast_rank = filtered_stats.values.sum { |stats| stats["assists_rank"] } / filtered_stats.size rescue nil
 
+              opp_adv = opponent ? @team_adv_by_team_id[opponent.id] : nil
+              opp_def_rtg_rank = opp_adv&.rankings&.[]("def_rtg_rank")
 
-              %>
+              out_teammates = player.team.players
+                                .where.not(id: player.id)
+                                .joins(:health)
+                                .where(health: { status: "Out" })
+                                .where(position: alert_positions)
+                                .select { |tm| qualifying_players.include?(tm) }
+
+              teammates_out = out_teammates.any?
+              out_names = out_teammates.map(&:name).join(", ")
+              tooltip_text = "#{out_names} is Out. Usage may increase."
+
+              # ------------------------------------------------------------
+              # Baseline projection + MC distribution
+              # ------------------------------------------------------------
+              proj = @proj_by_player_id[player.id]
+              dist = @proj_dist_by_player_id[player.id]   # ProjectionDistribution row (or nil)
+
+              # Baseline means (fallbacks)
+              base_mp  = proj&.expected_minutes
+              base_pts = proj&.proj_points
+              base_reb = proj&.proj_rebounds
+              base_ast = proj&.proj_assists
+              base_3s  = proj&.proj_threes
+
+              # Preferred means (MC if present, else baseline)
+              proj_mp  = dist&.minutes_mean  || base_mp
+              proj_pts = dist&.points_mean   || base_pts
+              proj_reb = dist&.rebounds_mean || base_reb
+              proj_ast = dist&.assists_mean  || base_ast
+              proj_3s  = dist&.threes_mean   || base_3s
+
+              # Keep these from baseline (MC doesn't simulate them yet)
+              proj_usg     = proj&.usage_pct
+              proj_reb_pct = proj&.rebound_pct
+              proj_ast_pct = proj&.assist_pct
+
+              # Distribution payloads (only valid if dist present)
+              def dist_tip(label, mean:, p10:, p90:, suffix: "")
+                return "No projection" if mean.nil?
+                m  = mean.to_f
+                f  = p10.to_f
+                c  = p90.to_f
+                "Proj: #{m.round(1)}#{suffix} | Floor: #{f.round(1)} | Ceiling: #{c.round(1)}"
+              end
+
+              d_min = dist ? { mean: dist.minutes_mean,  sd: dist.minutes_sd,  p10: dist.minutes_p10,  p50: dist.minutes_p50,  p90: dist.minutes_p90 } : nil
+              d_pts = dist ? { mean: dist.points_mean,   sd: dist.points_sd,   p10: dist.points_p10,   p50: dist.points_p50,   p90: dist.points_p90 } : nil
+              d_reb = dist ? { mean: dist.rebounds_mean, sd: dist.rebounds_sd, p10: dist.rebounds_p10, p50: dist.rebounds_p50, p90: dist.rebounds_p90 } : nil
+              d_ast = dist ? { mean: dist.assists_mean,  sd: dist.assists_sd,  p10: dist.assists_p10,  p50: dist.assists_p50,  p90: dist.assists_p90 } : nil
+              d_3s  = dist ? { mean: dist.threes_mean,   sd: dist.threes_sd,   p10: dist.threes_p10,   p50: dist.threes_p50,   p90: dist.threes_p90 } : nil
+
+              # Combo means (mean-of-means; no combo percentiles yet)
+              proj_pa  = (proj_pts.to_f + proj_ast.to_f) if proj_pts.present? && proj_ast.present?
+              proj_pr  = (proj_pts.to_f + proj_reb.to_f) if proj_pts.present? && proj_reb.present?
+              proj_ra  = (proj_reb.to_f + proj_ast.to_f) if proj_reb.present? && proj_ast.present?
+              proj_pra = (proj_pts.to_f + proj_reb.to_f + proj_ast.to_f) if proj_pts.present? && proj_reb.present? && proj_ast.present?
+            %>
+
 
               <tr data-team-id="<%= player.team_id %>">
                 <%
@@ -407,87 +385,86 @@
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= pd.present? ? dist_tip("MIN", **d_min) : (proj_mp ? "Proj MIN: #{proj_mp.round(1)}" : "No projection") %>">
+                    title="<%= d_min ? dist_tip('MIN', mean: d_min[:mean], p10: d_min[:p10], p90: d_min[:p90]) : (proj_mp ? "#{proj_mp.to_f.round(1)}" : 'No projection') %>">
                   <%= averages[:minutes_display] %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_usg ? "Proj USG: #{proj_usg.round(1)}%" : "No projection" %>">
+                    title="<%= proj_usg ? "#{proj_usg.to_f.round(1)}%" : 'No projection' %>">
                   <%= averages[:usage_pct]&.round(1) ? "#{averages[:usage_pct].round(1)}%" : "—" %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= pd.present? ? dist_tip("PTS", **d_pts) : (proj_pts ? "Proj PTS: #{proj_pts.round(1)}" : "No projection") %>">
+                    title="<%= d_pts ? dist_tip('PTS', mean: d_pts[:mean], p10: d_pts[:p10], p90: d_pts[:p90]) : (proj_pts ? "#{proj_pts.to_f.round(1)}" : 'No projection') %>">
                   <%= averages[:points].round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= pd.present? ? dist_tip("REB", **d_reb) : (proj_reb ? "Proj REB: #{proj_reb.round(1)}" : "No projection") %>">
+                    title="<%= d_reb ? dist_tip('REB', mean: d_reb[:mean], p10: d_reb[:p10], p90: d_reb[:p90]) : (proj_reb ? "#{proj_reb.to_f.round(1)}" : 'No projection') %>">
                   <%= averages[:rebounds].round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_reb_pct ? "Proj REB%: #{proj_reb_pct.round(1)}%" : "Proj REB%: —" %>">
+                    title="<%= proj_reb_pct ? "#{proj_reb_pct.to_f.round(1)}%" : '' %>">
                   <%= averages[:trb_pct]&.round(1) ? "#{averages[:trb_pct].round(1)}%" : "—" %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= pd.present? ? dist_tip("AST", **d_ast) : (proj_ast ? "Proj AST: #{proj_ast.round(1)}" : "No projection") %>">
+                    title="<%= d_ast ? dist_tip('AST', mean: d_ast[:mean], p10: d_ast[:p10], p90: d_ast[:p90]) : (proj_ast ? "#{proj_ast.to_f.round(1)}" : 'No projection') %>">
                   <%= averages[:assists].round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_ast_pct ? "Proj AST%: #{proj_ast_pct.round(1)}%" : "Proj AST%: —" %>">
+                    title="<%= proj_ast_pct ? "#{proj_ast_pct.to_f.round(1)}%" : '' %>">
                   <%= averages[:ast_pct]&.round(1) ? "#{averages[:ast_pct].round(1)}%" : "—" %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= pd.present? ? dist_tip("3PM", **d_3s) : (proj_3s ? "Proj 3PM: #{proj_3s.round(1)}" : "No projection") %>">
+                    title="<%= d_3s ? dist_tip('3PM', mean: d_3s[:mean], p10: d_3s[:p10], p90: d_3s[:p90]) : (proj_3s ? "#{proj_3s.to_f.round(1)}" : 'No projection') %>">
                   <%= averages[:three_point_field_goals].round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_pa ? "Proj P+A (mean): #{proj_pa.round(1)}" : "No projection" %>">
+                    title="<%= proj_pa ? "#{proj_pa.to_f.round(1)}" : 'No projection' %>">
                   <%= (averages[:points] + averages[:assists]).round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_pr ? "Proj P+R (mean): #{proj_pr.round(1)}" : "No projection" %>">
+                    title="<%= proj_pr ? "#{proj_pr.to_f.round(1)}" : 'No projection' %>">
                   <%= (averages[:points] + averages[:rebounds]).round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_ra ? "Proj R+A (mean): #{proj_ra.round(1)}" : "No projection" %>">
+                    title="<%= proj_ra ? "#{proj_ra.to_f.round(1)}" : 'No projection' %>">
                   <%= (averages[:rebounds] + averages[:assists]).round(1) %>
                 </td>
 
                 <td class="col-last5 text-center"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="<%= proj_pra ? "Proj P+R+A (mean): #{proj_pra.round(1)}" : "No projection" %>">
+                    title="<%= proj_pra ? "#{proj_pra.to_f.round(1)}" : 'No projection' %>">
                   <%= (averages[:points] + averages[:rebounds] + averages[:assists]).round(1) %>
                 </td>
-
 
               </tr>
             <% end %>
