@@ -22,7 +22,7 @@ module Simulations
     DEF_WEIGHT = 0.40
 
     # Monte Carlo defaults
-    DEFAULT_SIMS = 10000
+    DEFAULT_SIMS = 100
 
     # Randomness knobs (tune later)
     POSS_SD = 4.0        # possessions std dev
@@ -42,6 +42,31 @@ module Simulations
     # If you want pure deterministic output, keep noise off
     DEFAULT_POINTS_SD = 0.0
 
+    # Player-level simulation knobs
+    TEAM_MINUTES_TARGET = 240.0
+
+    MIN_SD_BASE      = 2.5
+    MIN_SD_PCT       = 0.12
+
+    TEAM_PERF_SD     = 0.10   # shared across team players per sim
+    PLAYER_PERF_SD   = 0.18   # per-player shared across stats per sim
+
+    USG_SD           = 2.0    # usage% sim SD
+    REB_PCT_SD       = 1.5
+    AST_PCT_SD       = 1.8
+
+    # How strongly pct swings affect stat means (small, to avoid chaos)
+    USG_POINTS_SENS  = 0.25
+    USG_3S_SENS      = 0.25
+    REB_SENS         = 0.25
+    AST_SENS         = 0.20
+
+    # Stat-specific noise scale (approx)
+    PTS_NOISE_K      = 0.90
+    REB_NOISE_K      = 0.70
+    AST_NOISE_K      = 0.70
+    THR_NOISE_K      = 0.60
+
     def initialize(date:, season: nil)
       @date = date
       @season = season || Season.find_by(current: true)
@@ -49,6 +74,8 @@ module Simulations
 
       # Computes league averages from TeamAdvancedStat for this season
       @league = Simulations::LeagueContext.new(season: @season)
+      @mc = Simulations::PlayerMcEngine.new(date: @date, model_version: MODEL_VERSION)
+
     end
 
     # ------------------------------------------------------------------
@@ -198,71 +225,121 @@ module Simulations
       home_base    = sum_team(home_rows)
       visitor_base = sum_team(visitor_rows)
 
-      poss_mean = expected_possessions(home_team, visitor_team)
-
-      home_ppp_mean    = expected_ppp(home_team, visitor_team) + HOME_PPP_BONUS
-      visitor_ppp_mean = expected_ppp(visitor_team, home_team)
-
       spreads = []
       totals  = []
       home_pts_arr = []
       vis_pts_arr  = []
       home_wins = 0
 
+      # --- Player aggregation (means) ---
+      # sums[player_id] = { minutes:, points:, rebounds:, assists:, threes: }
+      home_player_sums = Hash.new { |h, k| h[k] = { minutes: 0.0, points: 0.0, rebounds: 0.0, assists: 0.0, threes: 0.0 } }
+      vis_player_sums  = Hash.new { |h, k| h[k] = { minutes: 0.0, points: 0.0, rebounds: 0.0, assists: 0.0, threes: 0.0 } }
+
       sims_i = sims.to_i
       debug_rows = []
 
       sims_i.times do |i|
-        poss = poss_mean + normal_noise(sd: POSS_SD, seed: seed_for(game.id, 0, "poss-#{i}"))
-        poss = [[poss, POSS_MIN].max, POSS_MAX].min
+        # Simulate player lines for this iteration (team totals come from summing players)
+        home_players = @mc.simulate_team_players_once(
+          home_rows,
+          game_id: game.id,
+          team_id: home_team.id,
+          iter_tag: "i#{i}-home"
+        )
 
-        hppp = home_ppp_mean + normal_noise(sd: PPP_SD, seed: seed_for(game.id, home_team.id, "hppp-#{i}"))
-        vppp = visitor_ppp_mean + normal_noise(sd: PPP_SD, seed: seed_for(game.id, visitor_team.id, "vppp-#{i}"))
+        vis_players = @mc.simulate_team_players_once(
+          visitor_rows,
+          game_id: game.id,
+          team_id: visitor_team.id,
+          iter_tag: "i#{i}-vis"
+        )
 
-        hppp = [[hppp, PPP_MIN].max, PPP_MAX].min
-        vppp = [[vppp, PPP_MIN].max, PPP_MAX].min
 
-        # Environment points for this sim
-        home_env = poss * hppp
-        vis_env  = poss * vppp
+        hpts = home_players.sum { |r| r[:points].to_f }
+        vpts = vis_players.sum  { |r| r[:points].to_f }
 
-        # Anchor to player sums
-        hpts = blended_points(player_points: home_base[:points], env_points: home_env)
-        vpts = blended_points(player_points: visitor_base[:points], env_points: vis_env)
+        hreb = home_players.sum { |r| r[:rebounds].to_f }
+        vreb = vis_players.sum  { |r| r[:rebounds].to_f }
 
-        if MC_POINTS_SD.to_f > 0.0
-          hpts += normal_noise(sd: MC_POINTS_SD, seed: seed_for(game.id, home_team.id, "mc-hpts-#{i}"))
-          vpts += normal_noise(sd: MC_POINTS_SD, seed: seed_for(game.id, visitor_team.id, "mc-vpts-#{i}"))
-        end
+        hast = home_players.sum { |r| r[:assists].to_f }
+        vast = vis_players.sum  { |r| r[:assists].to_f }
 
-        if debug && debug_rows.size < debug_samples
-          debug_rows << {
-            i: i + 1,
-            poss: poss,
-            hppp: hppp,
-            vppp: vppp,
-            home_env: home_env,
-            vis_env: vis_env,
-            home_points: hpts,
-            visitor_points: vpts,
-            spread: (hpts - vpts),
-            total: (hpts + vpts)
-          }
-        end
+        h3   = home_players.sum { |r| r[:threes].to_f }
+        v3   = vis_players.sum  { |r| r[:threes].to_f }
 
         home_wins += 1 if hpts > vpts
 
         home_pts_arr << hpts
         vis_pts_arr  << vpts
-        spreads << (hpts - vpts)   # home - visitor
+        spreads << (hpts - vpts) # home - visitor
         totals  << (hpts + vpts)
+
+        # accumulate player means
+        home_players.each do |r|
+          pid = r[:player_id]
+          s = home_player_sums[pid]
+          s[:minutes]  += r[:minutes].to_f
+          s[:points]   += r[:points].to_f
+          s[:rebounds] += r[:rebounds].to_f
+          s[:assists]  += r[:assists].to_f
+          s[:threes]   += r[:threes].to_f
+        end
+
+        vis_players.each do |r|
+          pid = r[:player_id]
+          s = vis_player_sums[pid]
+          s[:minutes]  += r[:minutes].to_f
+          s[:points]   += r[:points].to_f
+          s[:rebounds] += r[:rebounds].to_f
+          s[:assists]  += r[:assists].to_f
+          s[:threes]   += r[:threes].to_f
+        end
+
+        if debug && debug_rows.size < debug_samples
+          debug_rows << {
+            i: i + 1,
+            home_points: hpts,
+            visitor_points: vpts,
+            home_rebounds: hreb,
+            visitor_rebounds: vreb,
+            home_assists: hast,
+            visitor_assists: vast,
+            home_threes: h3,
+            visitor_threes: v3,
+            spread: (hpts - vpts),
+            total: (hpts + vpts)
+          }
+        end
       end
 
-      home_points_sd   = stddev(home_pts_arr)
+      home_points_sd    = stddev(home_pts_arr)
       visitor_points_sd = stddev(vis_pts_arr)
-      spread_sd        = stddev(spreads)
-      total_sd         = stddev(totals)
+      spread_sd         = stddev(spreads)
+      total_sd          = stddev(totals)
 
+      # Convert accumulated player sums to per-player means
+      home_player_means = {}
+      home_player_sums.each do |pid, s|
+        home_player_means[pid] = {
+          minutes:  (s[:minutes]  / sims_i.to_f),
+          points:   (s[:points]   / sims_i.to_f),
+          rebounds: (s[:rebounds] / sims_i.to_f),
+          assists:  (s[:assists]  / sims_i.to_f),
+          threes:   (s[:threes]   / sims_i.to_f)
+        }
+      end
+
+      visitor_player_means = {}
+      vis_player_sums.each do |pid, s|
+        visitor_player_means[pid] = {
+          minutes:  (s[:minutes]  / sims_i.to_f),
+          points:   (s[:points]   / sims_i.to_f),
+          rebounds: (s[:rebounds] / sims_i.to_f),
+          assists:  (s[:assists]  / sims_i.to_f),
+          threes:   (s[:threes]   / sims_i.to_f)
+        }
+      end
 
       out = {
         home_points_mean: mean(home_pts_arr),
@@ -286,7 +363,6 @@ module Simulations
         total_p90: percentile(totals, 0.90)
       }
 
-
       payload = {
         date: @date,
         season_id: @season.id,
@@ -298,17 +374,11 @@ module Simulations
         visitor_team_id: visitor_team.id,
 
         league: league_payload,
+
+        # env is no longer driving points; keep a minimal block so old consumers don't break
         env: {
-          possessions_mean: poss_mean,
-          possessions_sd: POSS_SD,
-          home_ppp_mean: home_ppp_mean,
-          visitor_ppp_mean: visitor_ppp_mean,
-          ppp_sd: PPP_SD,
-          mc_points_sd: MC_POINTS_SD,
-          blend: {
-            player_weight: PLAYER_POINTS_WEIGHT,
-            env_weight: ENV_POINTS_WEIGHT
-          }
+          mode: "player_mc",
+          note: "Team totals are the sum of simulated player lines each iteration."
         },
 
         home_baseline: home_base,
@@ -316,14 +386,18 @@ module Simulations
 
         outputs: out,
 
+        # player-level means from the Monte Carlo loop
+        home_player_means: home_player_means,
+        visitor_player_means: visitor_player_means,
+
         debug: debug,
         debug_samples: (debug ? debug_rows : nil)
-
       }
 
       save_distribution!(payload) if persist
       payload
     end
+
 
     private
 
@@ -587,7 +661,6 @@ module Simulations
       }
     end
 
-
     # -------------------------
     # Math helpers
     # -------------------------
@@ -608,19 +681,6 @@ module Simulations
       m = mean(arr)
       var = arr.sum { |x| (x.to_f - m) ** 2 } / (arr.size - 1).to_f
       Math.sqrt(var)
-    end
-
-    # Deterministic normal noise using Box-Muller
-    def normal_noise(sd:, seed:)
-      rng = Random.new(seed)
-      u1 = [rng.rand, 1e-12].max
-      u2 = rng.rand
-      z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math::PI * u2)
-      z0 * sd.to_f
-    end
-
-    def seed_for(game_id, team_id, tag)
-      Zlib.crc32("#{@date}-#{MODEL_VERSION}-#{game_id}-#{team_id}-#{tag}")
     end
 
     def symbolize_keys_deep(obj)

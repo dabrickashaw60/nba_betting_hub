@@ -19,12 +19,6 @@ module ::Projections
     MIN_GAMES = 5
     MIN_AVG_MINUTES = 12.0
 
-    # Deterministic micro-variance (small)
-    VAR_POINTS   = 0.03
-    VAR_REBOUNDS = 0.04
-    VAR_ASSISTS  = 0.04
-    VAR_THREES   = 0.05
-
     # Minutes tuning
     MINUTES_CLAMP_BAND = 2.0
     MINUTES_MAX = 38.0
@@ -1496,22 +1490,22 @@ module ::Projections
         }
       )
 
-      rng = seeded_rng(inputs[:player].id)
-      pts_rand = 1.0 + rng.rand(-VAR_POINTS..VAR_POINTS)
-      reb_rand = 1.0 + rng.rand(-VAR_REBOUNDS..VAR_REBOUNDS)
-      ast_rand = 1.0 + rng.rand(-VAR_ASSISTS..VAR_ASSISTS)
-      th3_rand = 1.0 + rng.rand(-VAR_THREES..VAR_THREES)
+      pts_rand = 1.0
+      reb_rand = 1.0
+      ast_rand = 1.0
+      th3_rand = 1.0
 
       explainer&.add(
         step: "Micro Variance",
-        detail: "Deterministic small RNG variance",
+        detail: "Disabled (Monte Carlo handles variance)",
         data: {
-          pts_rand: pts_rand.round(4),
-          reb_rand: reb_rand.round(4),
-          ast_rand: ast_rand.round(4),
-          th3_rand: th3_rand.round(4)
+          pts_rand: pts_rand,
+          reb_rand: reb_rand,
+          ast_rand: ast_rand,
+          th3_rand: th3_rand
         }
       )
+
 
       points   = (rates[:points_per_min]   * minutes * pts_mult     * usg_mult * pts_rand).round(2)
       rebounds = (rates[:rebounds_per_min] * minutes * reb_mult     * trb_mult * reb_rand).round(2)
@@ -1555,11 +1549,6 @@ module ::Projections
 
       t = (r - 1.0) / 29.0
       (DVP_MIN_MULT + (DVP_MAX_MULT - DVP_MIN_MULT) * t).round(4)
-    end
-
-    def seeded_rng(player_id)
-      seed = Zlib.crc32("#{@date.iso8601}-#{MODEL_VERSION}-#{player_id}")
-      Random.new(seed)
     end
 
     def avg_of(arr)

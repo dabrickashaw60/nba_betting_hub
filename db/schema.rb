@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_09_000000) do
+ActiveRecord::Schema.define(version: 2026_02_13_183955) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -217,6 +217,48 @@ ActiveRecord::Schema.define(version: 2026_02_09_000000) do
     t.index ["team_id"], name: "index_players_on_team_id"
   end
 
+  create_table "projection_distributions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.date "date"
+    t.bigint "season_id", null: false
+    t.bigint "player_id", null: false
+    t.bigint "team_id", null: false
+    t.bigint "opponent_team_id", null: false
+    t.string "model_version"
+    t.integer "sims_count"
+    t.float "minutes_mean"
+    t.float "minutes_sd"
+    t.float "minutes_p10"
+    t.float "minutes_p50"
+    t.float "minutes_p90"
+    t.float "points_mean"
+    t.float "points_sd"
+    t.float "points_p10"
+    t.float "points_p50"
+    t.float "points_p90"
+    t.float "rebounds_mean"
+    t.float "rebounds_sd"
+    t.float "rebounds_p10"
+    t.float "rebounds_p50"
+    t.float "rebounds_p90"
+    t.float "assists_mean"
+    t.float "assists_sd"
+    t.float "assists_p10"
+    t.float "assists_p50"
+    t.float "assists_p90"
+    t.float "threes_mean"
+    t.float "threes_sd"
+    t.float "threes_p10"
+    t.float "threes_p50"
+    t.float "threes_p90"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["date", "player_id", "model_version"], name: "idx_proj_dist_unique", unique: true
+    t.index ["opponent_team_id"], name: "index_projection_distributions_on_opponent_team_id"
+    t.index ["player_id"], name: "index_projection_distributions_on_player_id"
+    t.index ["season_id"], name: "index_projection_distributions_on_season_id"
+    t.index ["team_id"], name: "index_projection_distributions_on_team_id"
+  end
+
   create_table "projection_runs", charset: "latin1", force: :cascade do |t|
     t.date "date", null: false
     t.string "model_version", default: "baseline_v1", null: false
@@ -341,6 +383,10 @@ ActiveRecord::Schema.define(version: 2026_02_09_000000) do
   add_foreign_key "player_season_roles", "seasons"
   add_foreign_key "player_stats", "players"
   add_foreign_key "players", "teams"
+  add_foreign_key "projection_distributions", "players"
+  add_foreign_key "projection_distributions", "seasons"
+  add_foreign_key "projection_distributions", "teams"
+  add_foreign_key "projection_distributions", "teams", column: "opponent_team_id"
   add_foreign_key "projections", "players"
   add_foreign_key "projections", "projection_runs"
   add_foreign_key "projections", "teams"

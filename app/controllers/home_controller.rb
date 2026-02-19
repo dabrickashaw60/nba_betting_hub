@@ -69,6 +69,35 @@ class HomeController < ApplicationController
                 )
                 .index_by(&:player_id)
 
+    @pd_by_player_id =
+      ProjectionDistribution
+        .where(date: @date, player_id: @proj_by_player_id.keys, model_version: "proj_mc_v1")
+        .select(
+          :player_id,
+          :minutes_mean, :minutes_sd, :minutes_p10, :minutes_p50, :minutes_p90,
+          :points_mean, :points_sd, :points_p10, :points_p50, :points_p90,
+          :rebounds_mean, :rebounds_sd, :rebounds_p10, :rebounds_p50, :rebounds_p90,
+          :assists_mean, :assists_sd, :assists_p10, :assists_p50, :assists_p90,
+          :threes_mean, :threes_sd, :threes_p10, :threes_p50, :threes_p90
+        )
+        .index_by(&:player_id)
+
+
+    @proj_dist_by_player_id =
+      ProjectionDistribution
+        .where(date: @date, team_id: team_ids, model_version: Projections::DistributionSimulator::MODEL_VERSION)
+        .select(
+          :player_id,
+          :minutes_mean,
+          :points_mean,
+          :rebounds_mean,
+          :assists_mean,
+          :threes_mean,
+          :points_sd,
+          :points_p10,
+          :points_p90
+        )
+        .index_by(&:player_id)
 
     # ------------------------------------------------------------
     # Projections (team totals) used to compute projected REB% / AST%
