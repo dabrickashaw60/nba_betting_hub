@@ -268,33 +268,30 @@ class HomeController < ApplicationController
     Rails.logger.info "[update_injuries] proj distributions (#{player_mc_model}): #{ProjectionDistribution.where(date: date, model_version: player_mc_model).count}"
 
     # -------------------------
-    # 3) Game sims
+    # 3) Game lines from PLAYER MC MEANS (no game Monte Carlo)
     # -------------------------
-    sim_model_single = Simulations::GameSimulator::MODEL_VERSION
-    sim_model_mc     = "game_from_player_mc_means_v1"
+    sim_model_means = Simulations::GameFromPlayerMeans::MODEL_VERSION # "game_from_player_mc_means_v1"
 
-    GameSimulation.where(date: date, model_version: [sim_model_single, sim_model_mc]).delete_all
+    # wipe only the mean-based rows we are about to rebuild
+    GameSimulation.where(date: date, model_version: sim_model_means).delete_all
 
-    sim = Simulations::GameSimulator.new(date: date, season: season)
-
-    sim_results = sim.simulate_date!(add_noise: false, persist: true)
+    builder = Simulations::GameFromPlayerMeans.new(
+      date: date,
+      season: season,
+      player_model_version: Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+    )
 
     games = Game.where(date: date, season_id: season.id)
 
-    mc_count = 0
     games.find_each do |game|
-      sim.fetch_or_simulate_distribution!(
-        game_id: game.id,
-        sims: Simulations::GameSimulator::DEFAULT_SIMS,
-        force: true
-      )
-      mc_count += 1
+      builder.build!(game_id: game.id, persist: true)
     end
 
-    Rails.logger.info "[update_injuries] game_sims single=#{sim_results.size} mc=#{mc_count}"
+    games_count = games.count
 
     redirect_to root_path(date: date),
-      notice: "Injuries updated. Projections=#{run.projections_count}. Player MC=#{dist_count}. Games=#{sim_results.size} + Game MC=#{mc_count}."
+      notice: "Injuries updated. Projections rebuilt (#{run.projections_count} players). Player MC dists: #{dist_count}. Game lines built for #{games_count} games."
+
   rescue => e
     Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}\n#{e.backtrace.first(20).join("\n")}"
     redirect_to root_path(date: (params[:date] rescue nil)),

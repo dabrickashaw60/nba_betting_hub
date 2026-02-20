@@ -83,13 +83,16 @@ class GamesController < ApplicationController
     return if @game.date < Date.current
 
     begin
-      sim = Simulations::GameSimulator.new(date: @game.date, season: @current_season)
+      builder = Simulations::GameFromPlayerMeans.new(date: @game.date, season: @current_season)
+      @sim_distribution = GameSimulation.find_by(date: @game.date, game_id: @game.id, model_version: Simulations::GameFromPlayerMeans::MODEL_VERSION)
 
-      # Cached DB row (GameSimulation) containing mean score + percentiles in meta
-      @sim_distribution = sim.fetch_or_simulate_distribution!(game_id: @game.id, sims: 3000)
+      unless @sim_distribution
+        builder.build!(game_id: @game.id, persist: true)
+        @sim_distribution = GameSimulation.find_by(date: @game.date, game_id: @game.id, model_version: Simulations::GameFromPlayerMeans::MODEL_VERSION)
+      end
 
-      # Optional: also keep the single deterministic “reconciled to players” sim for the player-level totals card
-      @sim_single = sim.fetch_or_simulate!(game_id: @game.id, add_noise: false)
+      @sim_single = nil
+
     rescue => e
       Rails.logger.warn("[SIM] Game #{@game.id} on #{@game.date} could not be simulated: #{e.message}")
       @sim_distribution = nil
