@@ -19,8 +19,45 @@
 
   <tbody>
     <% players.each do |data| %>
-      <% p = data[:player] %>
-      <% a = data[:averages] %>
+      <% p    = data[:player] %>
+      <% proj = data[:projection] %>
+      <% dist = data[:distribution] %>
+
+      <% mp =
+           if dist&.minutes_mean.present?
+             dist.minutes_mean.to_f
+           else
+             proj&.expected_minutes.to_f
+           end
+      %>
+
+      <% usg =
+           proj&.usage_pct
+      %>
+
+      <% rebp =
+           proj&.rebound_pct
+      %>
+
+      <% astp =
+           proj&.assist_pct
+      %>
+
+      <% pts =
+           dist&.points_mean.present? ? dist.points_mean.to_f : proj&.proj_points.to_f
+      %>
+
+      <% reb =
+           dist&.rebounds_mean.present? ? dist.rebounds_mean.to_f : proj&.proj_rebounds.to_f
+      %>
+
+      <% ast =
+           dist&.assists_mean.present? ? dist.assists_mean.to_f : proj&.proj_assists.to_f
+      %>
+
+      <% thr =
+           dist&.threes_mean.present? ? dist.threes_mean.to_f : proj&.proj_threes.to_f
+      %>
 
       <tr>
         <td class="sticky-col">
@@ -30,24 +67,26 @@
           <% end %>
         </td>
 
-        <td><%= a[:minutes_display] %></td>
-        <td><%= a[:usage_pct]&.round(1) ? "#{a[:usage_pct].round(1)}%" : "—" %></td>
+        <td><%= mp.to_f.round(1) %></td>
 
-        <td><%= a[:points].round(1) %></td>
-        <td><%= a[:rebounds].round(1) %></td>
-        <td><%= a[:trb_pct]&.round(1) ? "#{a[:trb_pct].round(1)}%" : "—" %></td>
+        <td>
+          <%= usg.present? ? "#{usg.to_f.round(1)}%" : "—" %>
+        </td>
 
-        <td><%= a[:assists].round(1) %></td>
-        <td><%= a[:ast_pct]&.round(1) ? "#{a[:ast_pct].round(1)}%" : "—" %></td>
+        <td><%= pts.to_f.round(1) %></td>
+        <td><%= reb.to_f.round(1) %></td>
+        <td><%= rebp.present? ? "#{rebp.to_f.round(1)}%" : "—" %></td>
 
-        <td><%= a[:three_point_field_goals].round(1) %></td>
+        <td><%= ast.to_f.round(1) %></td>
+        <td><%= astp.present? ? "#{astp.to_f.round(1)}%" : "—" %></td>
 
-        <td><%= (a[:points] + a[:assists]).round(1) %></td>
-        <td><%= (a[:points] + a[:rebounds]).round(1) %></td>
-        <td><%= (a[:rebounds] + a[:assists]).round(1) %></td>
-        <td><%= (a[:points] + a[:rebounds] + a[:assists]).round(1) %></td>
+        <td><%= thr.to_f.round(1) %></td>
+
+        <td><%= (pts.to_f + ast.to_f).round(1) %></td>
+        <td><%= (pts.to_f + reb.to_f).round(1) %></td>
+        <td><%= (reb.to_f + ast.to_f).round(1) %></td>
+        <td><%= (pts.to_f + reb.to_f + ast.to_f).round(1) %></td>
       </tr>
-
     <% end %>
   </tbody>
 </table>

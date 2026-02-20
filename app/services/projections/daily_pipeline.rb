@@ -12,22 +12,31 @@ module Projections
     def run!
       puts "[PIPELINE] date=#{@date} season_id=#{@season.id} sims=#{@sims} force=#{@force}"
 
-      # 1) Deterministic baseline projections
+      # 1) Baseline projections (deterministic)
       puts "[PIPELINE] 1) BaselineModel..."
       Projections::BaselineModel.new(date: @date).run!
 
-      # 2) Player MC distributions persisted
+      # 2) Player MC distributions persisted (ProjectionDistribution, model_version: proj_mc_v1)
       puts "[PIPELINE] 2) DistributionSimulator..."
-      Projections::DistributionSimulator.new(date: @date, season: @season, sims: @sims, force: @force).run!
+      Projections::DistributionSimulator.new(
+        date: @date,
+        season: @season,
+        sims: @sims,
+        force: @force
+      ).run!
 
-      # 3) Game distributions from saved player MC
-      puts "[PIPELINE] 3) GameFromPlayerDistributions..."
+      # 3) Game lines from PLAYER MC MEANS (NO game Monte Carlo)
+      puts "[PIPELINE] 3) GameFromPlayerMeans..."
       game_ids = Game.where(date: @date, season_id: @season.id).pluck(:id)
 
-      svc = Simulations::GameFromPlayerDistributions.new(date: @date, season: @season)
+      builder = Simulations::GameFromPlayerMeans.new(
+        date: @date,
+        season: @season,
+        player_model_version: Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+      )
 
       game_ids.each do |gid|
-        svc.build!(game_id: gid, sims: @sims, persist: true)
+        builder.build!(game_id: gid, persist: true)
       rescue => e
         Rails.logger.warn "[PIPELINE] game_id=#{gid} failed: #{e.message}"
       end

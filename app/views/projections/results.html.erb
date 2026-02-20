@@ -196,28 +196,56 @@
                     </div>
                   <% end %>
 
-                  <% sim = @sim_by_game_id[g.id] %>
+              <% sim = @sim_by_game_id[g.id] %>
 
-                  <!-- PROJECTED SCORE + MARKET-STYLE NUMBERS -->
-                  <% if sim.present? %>
-                    <% sim_away = sim.visitor_points.to_f %>
-                    <% sim_home = sim.home_points.to_f %>
-                    <% sim_total = sim_away + sim_home %>
-                    <% sim_spread_home = (sim_home - sim_away) %>
+              <!-- PROJECTED SCORE + MARKET-STYLE NUMBERS -->
+              <% if sim.present? %>
+                <%
+                  raw_meta = sim.meta
+                  meta_hash =
+                    case raw_meta
+                    when Hash
+                      raw_meta
+                    when String
+                      begin
+                        JSON.parse(raw_meta)
+                      rescue
+                        {}
+                      end
+                    else
+                      {}
+                    end
 
-                    <div class="text-center mt-1" style="font-size: 12px;">
-                      Proj: <%= sim_away.round %>-<%= sim_home.round %>
-                    </div>
+                  out = meta_hash["outputs"] || {}
 
-                    <div class="text-center text-muted" style="font-size: 11px; line-height: 1.1;">
-                      <%= g.home_team.abbreviation %> <%= (sim_spread_home <= 0 ? "+" : "-") %><%= sim_spread_home.abs.round(1) %>
-                      / <%= sim_total.round(1) %>
-                    </div>
-                  <% else %>
-                    <div class="text-center text-muted mt-1" style="font-size: 11px;">
-                      Proj: —
-                    </div>
-                  <% end %>
+                  sim_home_mean = (out["home_points_mean"].presence || sim.home_baseline_points).to_f
+                  sim_away_mean = (out["visitor_points_mean"].presence || sim.visitor_baseline_points).to_f
+
+                  sim_total = (out["total_mean"].presence || (sim_home_mean + sim_away_mean)).to_f
+                  sim_spread_home = (out["spread_mean"].presence || (sim_home_mean - sim_away_mean)).to_f
+
+                  spread_market =
+                    if sim_spread_home < 0
+                      "#{g.visitor_team.abbreviation} -#{sim_spread_home.abs.round(1)}"
+                    elsif sim_spread_home > 0
+                      "#{g.home_team.abbreviation} -#{sim_spread_home.round(1)}"
+                    else
+                      "PK"
+                    end
+                %>
+
+                <div class="text-center mt-1" style="font-size: 12px;">
+                  Proj: <%= sim_away_mean.round %>-<%= sim_home_mean.round %>
+                </div>
+
+                <div class="text-center text-muted" style="font-size: 11px; line-height: 1.1;">
+                  <%= spread_market %> / <%= sim_total.round(1) %>
+                </div>
+              <% else %>
+                <div class="text-center text-muted mt-1" style="font-size: 11px;">
+                  Proj: —
+                </div>
+              <% end %>
 
 
                 </div>

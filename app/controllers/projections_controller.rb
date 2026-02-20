@@ -101,15 +101,15 @@ class ProjectionsController < ApplicationController
                 .order(:time)
                 .to_a
     # ------------------------------------------------------------
-    # DAY SIMS (so the game chips can show projected score/spread/total)
+    # DAY GAME LINES (deterministic from player MC means)
     # ------------------------------------------------------------
     @sim_by_game_id = {}
 
     if @games.any?
       day_game_ids = @games.map(&:id)
 
-      # Your distribution model_version is "#{MODEL_VERSION}_mc_v1"
-      sim_model_version = "#{Simulations::GameSimulator::MODEL_VERSION}_mc_v1"
+      sim_model_version = Simulations::GameFromPlayerMeans::MODEL_VERSION
+      # => "game_from_player_mc_means_v1"
 
       sims = GameSimulation
         .where(date: @date, game_id: day_game_ids, model_version: sim_model_version)

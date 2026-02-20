@@ -16,7 +16,7 @@ module Projections
 
       # IMPORTANT:
       # Your player Monte Carlo now lives in Simulations::PlayerMcEngine
-      @mc = Simulations::PlayerMcEngine.new(date: @date, model_version: Simulations::GameSimulator::MODEL_VERSION)
+      @mc = Simulations::PlayerMcEngine.new(date: @date, model_version: @model_version)
     end
 
     def run!

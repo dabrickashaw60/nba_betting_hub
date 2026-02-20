@@ -9,8 +9,8 @@ module ::Projections
     TEAM_TOTAL_MINUTES = 240.0
 
     # DVP impact: rank 1..30 -> multiplier
-    DVP_MIN_MULT = 0.8
-    DVP_MAX_MULT = 1.2
+    DVP_MIN_MULT = 0.7
+    DVP_MAX_MULT = 1.3
 
     # Recent window
     WINDOW_GAMES = 8

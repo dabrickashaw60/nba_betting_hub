@@ -157,44 +157,46 @@
   <%= yield %>
 
 <script>
-  document.addEventListener("turbo:load", function() {
+  document.addEventListener("turbo:load", function () {
 
+    // ------------------------------------------------------------
+    // AUTO DISMISS ALERTS
+    // ------------------------------------------------------------
     const alerts = document.querySelectorAll(".auto-dismiss");
-
-    alerts.forEach(alert => {
+    alerts.forEach((alert) => {
       setTimeout(() => {
         alert.classList.add("fade");
         alert.classList.remove("show");
 
         setTimeout(() => {
           alert.remove();
-        }, 300); // allow fade animation
+        }, 300);
       }, 3000);
     });
 
+    // ------------------------------------------------------------
+    // DROPDOWN HOVER SUPPORT
+    // ------------------------------------------------------------
     const dropdownToggle = document.getElementById("teamsDropdown");
     const dropdownMenu = dropdownToggle?.nextElementSibling;
 
-    // Show the dropdown when hovering over the toggle or menu
     function showDropdown() {
       if (!dropdownToggle) return;
-      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-      bootstrapDropdown.show();
+      const dd = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      dd.show();
     }
 
-    // Hide the dropdown when not hovering over the toggle or menu
     function hideDropdown() {
       if (!dropdownToggle) return;
-      const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-      bootstrapDropdown.hide();
+      const dd = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+      dd.hide();
     }
 
-    // Add event listeners for hover functionality
     if (dropdownToggle && dropdownMenu) {
       dropdownToggle.addEventListener("mouseenter", showDropdown);
       dropdownMenu.addEventListener("mouseenter", showDropdown);
 
-      dropdownToggle.addEventListener("mouseleave", function() {
+      dropdownToggle.addEventListener("mouseleave", function () {
         setTimeout(() => {
           if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
             hideDropdown();
@@ -202,7 +204,7 @@
         }, 100);
       });
 
-      dropdownMenu.addEventListener("mouseleave", function() {
+      dropdownMenu.addEventListener("mouseleave", function () {
         setTimeout(() => {
           if (!dropdownMenu.matches(":hover") && !dropdownToggle.matches(":hover")) {
             hideDropdown();
@@ -210,16 +212,16 @@
         }, 100);
       });
 
-      // Support for toggle on click (for touch devices or click-based access)
-      dropdownToggle.addEventListener("click", function(event) {
-        event.preventDefault(); // Prevent default navigation
-        const bootstrapDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-        bootstrapDropdown.toggle();
+      dropdownToggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        const dd = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+        dd.toggle();
       });
     }
 
     // ------------------------------------------------------------
-    // GLOBAL LOADING OVERLAY (shows on marked form submits)
+    // GLOBAL LOADING OVERLAY (Turbo-safe)
+    // Shows only when Turbo actually submits (Cancel will NOT show it)
     // ------------------------------------------------------------
     const overlay = document.getElementById("global-loading-overlay");
 
@@ -233,62 +235,68 @@
       overlay.style.display = "none";
     }
 
-    if (overlay) {
-      // Show overlay for any form you mark with: data-loading-overlay="true"
-      document.querySelectorAll('form[data-loading-overlay="true"]').forEach((form) => {
-        form.addEventListener("submit", () => {
+    // prevent duplicate bindings across turbo navigations
+    if (!document.documentElement.dataset.overlayTurboBound) {
+      document.documentElement.dataset.overlayTurboBound = "true";
+
+      // Only fires when Turbo is actually submitting a request
+      document.addEventListener("turbo:submit-start", function (event) {
+        const form = event.target;
+        if (form && form.matches('form[data-loading-overlay="true"]')) {
           showOverlay();
-        });
+        }
+      });
+
+      // Fires when the Turbo request completes (success or error)
+      document.addEventListener("turbo:submit-end", function (event) {
+        const form = event.target;
+        if (form && form.matches('form[data-loading-overlay="true"]')) {
+          hideOverlay();
+        }
+      });
+
+      // Safety: hide overlay before Turbo caches page
+      document.addEventListener("turbo:before-cache", function () {
+        hideOverlay();
       });
     }
 
-    // Hide overlay before Turbo caches the page (safety)
-    document.addEventListener("turbo:before-cache", function () {
-      hideOverlay();
-    });
-
     // ------------------------------------------------------------
     // DATATABLES INIT / DESTROY
-    // NOTE: removed nested turbo:load listener (it was duplicating handlers)
     // ------------------------------------------------------------
     console.log("Turbo:load triggered - Forcing DataTables reload...");
 
     function initializeDataTable(tableId, options = {}) {
       const tableElement = document.querySelector(tableId);
-      if (tableElement) {
-        if ($.fn.DataTable.isDataTable(tableElement)) {
-          console.log(`Destroying existing DataTable for ${tableId}...`);
-          $(tableElement).DataTable().destroy();
-        }
+      if (!tableElement) return;
 
-        console.log(`Initializing DataTable for ${tableId}...`);
-
-        const defaultOptions = {
-          order: [[1, "desc"]],
-          pageLength: -1,
-          lengthChange: false,
-          searching: false,
-          paging: false,
-        };
-
-        const finalOptions = Object.assign({}, defaultOptions, options);
-        $(tableElement).DataTable(finalOptions);
-
-        console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
-      } else {
-        // keep this quiet if you visit pages without those tables
-        // console.warn(`Table with ID ${tableId} not found on the page.`);
+      if ($.fn.DataTable.isDataTable(tableElement)) {
+        console.log(`Destroying existing DataTable for ${tableId}...`);
+        $(tableElement).DataTable().destroy();
       }
+
+      console.log(`Initializing DataTable for ${tableId}...`);
+
+      const defaultOptions = {
+        order: [[1, "desc"]],
+        pageLength: -1,
+        lengthChange: false,
+        searching: false,
+        paging: false,
+      };
+
+      const finalOptions = Object.assign({}, defaultOptions, options);
+      $(tableElement).DataTable(finalOptions);
+
+      console.log(`DataTable for ${tableId} initialized with options:`, finalOptions);
     }
 
-    initializeDataTable('#visitor-last5-table');
-    initializeDataTable('#home-last5-table');
-    initializeDataTable('#player-stats-table', {
-      order: [[2, "desc"]],
-    });
+    initializeDataTable("#visitor-last5-table");
+    initializeDataTable("#home-last5-table");
+    initializeDataTable("#player-stats-table", { order: [[2, "desc"]] });
 
     console.log("Active DataTables on the page:");
-    $('table.dataTable').each(function () {
+    $("table.dataTable").each(function () {
       if ($.fn.DataTable.isDataTable(this)) {
         console.log(`DataTable found for table ID: ${this.id}`);
       } else {
@@ -298,7 +306,7 @@
 
     document.addEventListener("turbo:before-cache", function () {
       console.log("Turbo:before-cache - Destroying all DataTables...");
-      $('table.dataTable').each(function () {
+      $("table.dataTable").each(function () {
         if ($.fn.DataTable.isDataTable(this)) {
           console.log(`Destroying DataTable for table ID: ${this.id}`);
           $(this).DataTable().destroy();

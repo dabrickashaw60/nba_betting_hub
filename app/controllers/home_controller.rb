@@ -21,23 +21,26 @@ class HomeController < ApplicationController
       Game.where(date: @date, season_id: season_id)
           .includes(:visitor_team, :home_team)
 
-      sim_model = "sim_v1_from_projections_mc_v1"
+    # ------------------------------------------------------------
+    # Game Lines (DETERMINISTIC from player distribution means)
+    # ------------------------------------------------------------
+    sim_model = Simulations::GameFromPlayerMeans::MODEL_VERSION
 
-      sim_rows = GameSimulation
-        .where(date: @date, game_id: @todays_games.map(&:id), model_version: sim_model)
+    sim_rows =
+      GameSimulation.where(
+        date: @date,
+        game_id: @todays_games.map(&:id),
+        model_version: sim_model
+      )
 
-      if sim_rows.blank?
-        sim_rows = GameSimulation
-          .where(date: @date, game_id: @todays_games.map(&:id), model_version: "sim_v1_from_projections")
-      end
-
-      @sim_by_game_id = sim_rows.index_by(&:game_id)
+    @sim_by_game_id = sim_rows.index_by(&:game_id)
 
     team_ids = @todays_games.pluck(:visitor_team_id, :home_team_id).flatten.uniq
 
     if team_ids.blank?
       @players_over_15_minutes = []
       @proj_by_player_id = {}
+      @proj_dist_by_player_id = {}
       @proj_team_totals = {}
       @top_hit_rates = {}
       @standings = Standing.none
@@ -69,13 +72,15 @@ class HomeController < ApplicationController
                 )
                 .index_by(&:player_id)
 
-
+    # ------------------------------------------------------------
+    # Player MC distributions (already computed at player layer)
+    # ------------------------------------------------------------
     @proj_dist_by_player_id =
       ProjectionDistribution
         .where(
           date: @date,
           player_id: @proj_by_player_id.keys,
-          model_version: Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+          model_version: Projections::DistributionSimulator::MODEL_VERSION
         )
         .select(
           :player_id,
@@ -86,7 +91,6 @@ class HomeController < ApplicationController
           :threes_mean, :threes_sd, :threes_p10, :threes_p50, :threes_p90
         )
         .index_by(&:player_id)
-
 
     # ------------------------------------------------------------
     # Projections (team totals) used to compute projected REB% / AST%
@@ -239,25 +243,23 @@ class HomeController < ApplicationController
     raise "No current season" unless season
 
     # -------------------------
-    # 1) Update injury statuses
+    # 1) Update injury statuses (FIRST)
     # -------------------------
     Scrapers::InjuryScraper.scrape_and_update_injuries
+    Rails.logger.info "[update_injuries] injuries scraped/updated"
 
     # -------------------------
-    # 2) Baseline projections
+    # 2) Players (baseline + player MC distributions)
     # -------------------------
+    # wipe baseline for the day
     Projection.where(date: date).delete_all
     ProjectionRun.where(date: date, model_version: Projections::BaselineModel::MODEL_VERSION).delete_all
 
-    run = Projections::BaselineModel.new(date: date).run!   # <-- IMPORTANT: no season: kwarg
-
+    run = Projections::BaselineModel.new(date: date).run!
     Rails.logger.info "[update_injuries] baseline projections: #{Projection.where(date: date).count}"
 
-    # -------------------------
-    # 2b) Player MC distributions
-    # -------------------------
-    player_mc_model = "proj_mc_v1" # must match what the view queries
-
+    # player MC distributions (must match what views/services query)
+    player_mc_model = Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
     ProjectionDistribution.where(date: date, model_version: player_mc_model).delete_all
 
     dist_count =
@@ -268,21 +270,19 @@ class HomeController < ApplicationController
     Rails.logger.info "[update_injuries] proj distributions (#{player_mc_model}): #{ProjectionDistribution.where(date: date, model_version: player_mc_model).count}"
 
     # -------------------------
-    # 3) Game lines from PLAYER MC MEANS (no game Monte Carlo)
+    # 3) Games (deterministic from player MC MEANS)
     # -------------------------
     sim_model_means = Simulations::GameFromPlayerMeans::MODEL_VERSION # "game_from_player_mc_means_v1"
 
-    # wipe only the mean-based rows we are about to rebuild
     GameSimulation.where(date: date, model_version: sim_model_means).delete_all
 
     builder = Simulations::GameFromPlayerMeans.new(
       date: date,
       season: season,
-      player_model_version: Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+      player_model_version: player_mc_model
     )
 
     games = Game.where(date: date, season_id: season.id)
-
     games.find_each do |game|
       builder.build!(game_id: game.id, persist: true)
     end
@@ -291,7 +291,6 @@ class HomeController < ApplicationController
 
     redirect_to root_path(date: date),
       notice: "Injuries updated. Projections rebuilt (#{run.projections_count} players). Player MC dists: #{dist_count}. Game lines built for #{games_count} games."
-
   rescue => e
     Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}\n#{e.backtrace.first(20).join("\n")}"
     redirect_to root_path(date: (params[:date] rescue nil)),

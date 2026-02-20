@@ -4,7 +4,6 @@ class GamesController < ApplicationController
   before_action :set_current_season
   before_action :set_game, only: [:show, :scrape_box_score]
 
-  # app/controllers/games_controller.rb
   def show
     @visitor_team = @game.visitor_team
     @home_team    = @game.home_team
@@ -23,35 +22,66 @@ class GamesController < ApplicationController
     season_id = @current_season.id
 
     # -------------------------
-    # Preview tables: last 5 / last 10
+    # Preview tables: ALL PLAYERS WITH PROJECTIONS for this game
+    # (no minutes cutoff)
     # -------------------------
-    players = Player.where(team_id: [@visitor_team.id, @home_team.id]).includes(:team)
+    player_mc_model = Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
 
-    recent_box_scores = BoxScore.joins(:game)
-                                .where(games: { season_id: season_id })
-                                .where(player_id: players.ids)
-                                .where.not(minutes_played: nil)
-                                .order("games.date DESC")
+    team_ids = [@visitor_team.id, @home_team.id]
 
-    grouped_by_player = recent_box_scores.group_by(&:player_id)
+    # Baseline projections for this specific matchup (this defines "has projections")
+    proj_rows = Projection
+      .where(date: @game.date, team_id: team_ids)
+      .where(opponent_team_id: team_ids)
 
-    all_player_data = players.map do |player|
-      box_scores = grouped_by_player[player.id] || []
-      last_five  = box_scores.first(5)
-      last_ten   = box_scores.first(10)
+    proj_by_player_id = proj_rows.index_by(&:player_id)
 
-      next if last_five.empty?
+    # Only include players that actually have a projection row
+    projected_player_ids = proj_rows.map(&:player_id).compact.uniq
 
-      avg5  = compute_bulk_averages(last_five)
-      avg10 = compute_bulk_averages(last_ten)
+    players = Player.where(id: projected_player_ids).includes(:team)
 
-      if avg5[:minutes_played].to_f > 15
-        { player: player, averages: avg5, last_ten_averages: avg10 }
+    # MC distribution means for the same matchup (optional per player)
+    dist_rows = ProjectionDistribution
+      .where(
+        date: @game.date,
+        team_id: team_ids,
+        opponent_team_id: team_ids,
+        model_version: player_mc_model,
+        player_id: projected_player_ids
+      )
+
+    dist_by_player_id = dist_rows.index_by(&:player_id)
+
+    all_proj_preview =
+      players.map do |p|
+        proj = proj_by_player_id[p.id]
+        next if proj.nil? # safety
+
+        dist = dist_by_player_id[p.id]
+
+        exp_min =
+          if dist&.minutes_mean.present?
+            dist.minutes_mean.to_f
+          else
+            proj.expected_minutes.to_f
+          end
+
+        {
+          player: p,
+          projection: proj,
+          distribution: dist,
+          minutes: exp_min
+        }
       end
-    end.compact
 
-    @away_preview_players = all_player_data.select { |x| x[:player].team_id == @visitor_team.id }
-    @home_preview_players = all_player_data.select { |x| x[:player].team_id == @home_team.id }
+    @away_preview_players = all_proj_preview
+      .select { |x| x[:player].team_id == @visitor_team.id }
+      .sort_by { |x| -x[:minutes].to_f }
+
+    @home_preview_players = all_proj_preview
+      .select { |x| x[:player].team_id == @home_team.id }
+      .sort_by { |x| -x[:minutes].to_f }
 
     # -------------------------
     # Previous meetings
@@ -73,9 +103,9 @@ class GamesController < ApplicationController
     @positions = ["PG", "SG", "SF", "PF", "C"]
 
     # -------------------------
-    # Game Simulation
-    # - Distribution (Monte Carlo) for upcoming games
-    # - Single deterministic sim fallback if distribution fails
+    # Game Lines (DETERMINISTIC)
+    # Built from ProjectionDistribution.points_mean sums.
+    # No game Monte Carlo here.
     # -------------------------
     @sim_distribution = nil
     @sim_single = nil
@@ -83,24 +113,39 @@ class GamesController < ApplicationController
     return if @game.date < Date.current
 
     begin
-      builder = Simulations::GameFromPlayerMeans.new(date: @game.date, season: @current_season)
-      @sim_distribution = GameSimulation.find_by(date: @game.date, game_id: @game.id, model_version: Simulations::GameFromPlayerMeans::MODEL_VERSION)
+      model_version = Simulations::GameFromPlayerMeans::MODEL_VERSION
+
+      @sim_distribution =
+        GameSimulation.find_by(
+          date: @game.date,
+          game_id: @game.id,
+          model_version: model_version
+        )
 
       unless @sim_distribution
+        builder = Simulations::GameFromPlayerMeans.new(
+          date: @game.date,
+          season: @current_season,
+          player_model_version: player_mc_model
+        )
+
         builder.build!(game_id: @game.id, persist: true)
-        @sim_distribution = GameSimulation.find_by(date: @game.date, game_id: @game.id, model_version: Simulations::GameFromPlayerMeans::MODEL_VERSION)
+
+        @sim_distribution =
+          GameSimulation.find_by(
+            date: @game.date,
+            game_id: @game.id,
+            model_version: model_version
+          )
       end
 
       @sim_single = nil
-
     rescue => e
-      Rails.logger.warn("[SIM] Game #{@game.id} on #{@game.date} could not be simulated: #{e.message}")
+      Rails.logger.warn("[SIM] Game #{@game.id} on #{@game.date} could not be built from player means: #{e.message}")
       @sim_distribution = nil
       @sim_single = nil
     end
   end
-
-
 
   private
 
