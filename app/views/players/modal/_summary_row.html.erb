@@ -1,0 +1,100 @@
+<%# app/views/players/modal/_summary_row.html.erb %>
+
+<div class="card mb-0">
+  <div class="card-body">
+
+    <div class="row g-3 align-items-stretch">
+      <!-- LEFT: NEXT GAME -->
+      <div class="col-lg-7">
+        <div class="fw-bold mb-2">Next Game</div>
+
+        <% if next_game && opponent_team.present? %>
+          <div class="d-flex align-items-center gap-2">
+            <img
+              src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2026.png"
+              width="34" height="auto"
+            >
+            <div class="fw-bold">vs</div>
+            <img
+              src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent_team.abbreviation %>-2026.png"
+              width="34" height="auto"
+            >
+
+            <div class="ms-2">
+              <div class="fw-bold"><%= opponent_team.name %></div>
+              <div class="text-muted small">
+                <%= next_game.date.strftime("%m/%d/%y") %>
+                <% if next_game.location.present? %>
+                  <span class="mx-1">|</span><%= next_game.location %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <% if next_game_projection.present? %>
+            <div class="mt-2 text-muted small">
+              Projection:
+              <span class="fw-bold text-dark"><%= number_with_precision(next_game_projection.proj_points, precision: 1) %> P</span>,
+              <span class="fw-bold text-dark"><%= number_with_precision(next_game_projection.proj_rebounds, precision: 1) %> R</span>,
+              <span class="fw-bold text-dark"><%= number_with_precision(next_game_projection.proj_assists, precision: 1) %> A</span>,
+              <span class="fw-bold text-dark"><%= number_with_precision(next_game_projection.expected_minutes, precision: 0) %> MIN</span>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-muted">No upcoming game found.</div>
+        <% end %>
+      </div>
+
+      <!-- RIGHT: DVP -->
+      <div class="col-lg-5">
+        <div class="d-flex h-100 flex-column">
+          <div class="fw-bold mb-2">Opponent DvP</div>
+
+          <% if opponent_team.present? && defense_vs_position.present? %>
+            <div class="flex-grow-1">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>P</th>
+                    <th>R</th>
+                    <th>A</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% relevant_positions =
+                      case player.position
+                      when "PG" then ["PG", "G"]
+                      when "SG" then ["SG", "G"]
+                      when "SF" then ["SF", "F"]
+                      when "PF" then ["PF", "F"]
+                      when "C"  then ["C"]
+                      else []
+                      end
+                  %>
+
+                  <% if defense_vs_position.is_a?(Hash) %>
+                    <% defense_vs_position.each do |position, stats| %>
+                      <% next unless relevant_positions.include?(position) %>
+                      <tr>
+                        <td><%= position %></td>
+                        <td style="<%= rank_color_class(stats["points_rank"]) %>"><%= stats["points_rank"] || "N/A" %></td>
+                        <td style="<%= rank_color_class(stats["rebounds_rank"]) %>"><%= stats["rebounds_rank"] || "N/A" %></td>
+                        <td style="<%= rank_color_class(stats["assists_rank"]) %>"><%= stats["assists_rank"] || "N/A" %></td>
+                      </tr>
+                    <% end %>
+                  <% else %>
+                    <tr><td colspan="4" class="text-muted">No DvP data.</td></tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <div class="text-muted">No opponent or DvP data available.</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

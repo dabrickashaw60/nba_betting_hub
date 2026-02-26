@@ -1,0 +1,29 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  game: one
+  provider: MyString
+  start_time_utc: 2026-02-25 12:40:14
+  pulled_at: 2026-02-25 12:40:14
+  home_spread: 
+  home_spread: 
+  away_spread: 
+  away_spread: 
+  total: 
+  total: 
+  home_ml: 1
+  away_ml: 1
+
+two:
+  game: two
+  provider: MyString
+  start_time_utc: 2026-02-25 12:40:14
+  pulled_at: 2026-02-25 12:40:14
+  home_spread: 
+  home_spread: 
+  away_spread: 
+  away_spread: 
+  total: 
+  total: 
+  home_ml: 1
+  away_ml: 1

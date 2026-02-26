@@ -6,81 +6,99 @@ class PlayersController < ApplicationController
   # 🧍 SHOW: Player profile, averages, next game, defense matchup
   # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-def show
-  @team = Team.find(params[:team_id])
-  @player = @team.players.find(params[:id])
+  def show
+    Rails.logger.info "PLAYERS#SHOW turbo_frame_request?=#{turbo_frame_request?} turbo_frame_id=#{request.headers['Turbo-Frame']}"
+response.headers["X-Player-Modal-Debug"] = "hit-show"
+    @team = Team.find(params[:team_id])
+    @player = @team.players.find(params[:id])
 
-  # --- Determine Selected Season ---
-  @seasons = Season.order(start_date: :desc)
-  @selected_season =
-    if params[:season_id].present?
-      Season.find_by(id: params[:season_id])
-    else
-      Season.find_by(current: true)
+    # --- Determine Selected Season ---
+    @seasons = Season.order(start_date: :desc)
+
+    @selected_season =
+      if params[:season_id].present?
+        Season.find_by(id: params[:season_id])
+      else
+        Season.find_by(current: true)
+      end
+
+    unless @selected_season
+      flash[:alert] = "No active season found."
+      redirect_to team_path(@team) and return
     end
 
-  # Safety fallback if no season found
-  unless @selected_season
-    flash[:alert] = "No active season found."
-    redirect_to team_path(@team) and return
-  end
+    season_id = @selected_season.id
 
-  season_id = @selected_season.id
+    # --- Player Stats (selected season) ---
+    @player_stats =
+      @player.player_stats
+            .where(season_id: season_id)
+            .order(created_at: :desc)
 
-  # --- Player Stats (this season only) ---
-  @player_stats = @player.player_stats.where(season_id: season_id)
-                                      .order(created_at: :desc)
-
-  # --- Game Logs (this season only) ---
-  @game_logs = @player.box_scores
-                      .joins(:game)
-                      .where(games: { season_id: season_id })
-                      .where.not(minutes_played: nil)
-                      .order('games.date DESC')
-
-  @all_game_logs = @player.box_scores
+    # --- Game Logs (selected season) ---
+    @game_logs = @player.box_scores
                         .joins(:game)
+                        .where(games: { season_id: season_id })
                         .where.not(minutes_played: nil)
-                        .includes(:game)
-                        .order('games.date DESC')                    
+                        .includes(game: [:home_team, :visitor_team])
+                        .order('games.date DESC')
 
-  # --- Last 5 and 10 Games ---
-  @last_five_games = @game_logs.limit(5)
-  @last_ten_games  = @game_logs.limit(10)
+    # --- All Game Logs (all seasons) ---
+    @all_game_logs =
+      @player.box_scores
+            .joins(:game)
+            .where.not(minutes_played: nil)
+            .includes(:game)
+            .order("games.date DESC")
 
-  # --- Build Averages ---
-  @last_five_averages = build_averages(@last_five_games)
-  @last_ten_averages  = build_averages(@last_ten_games)
+    # --- Last 5 and 10 Games (from selected season logs) ---
+    @last_five_games = @game_logs.limit(5)
+    @last_ten_games  = @game_logs.limit(10)
 
-  # --- Betting Info (Last 5 Games) ---
-  @betting_info = {
-    points:   count_thresholds(@last_five_games, :points, [10, 15, 20, 25, 30]),
-    threes:   count_thresholds(@last_five_games, :three_point_field_goals, [1, 2, 3, 4, 5]),
-    rebounds: count_thresholds(@last_five_games, :total_rebounds, [2, 4, 6, 8, 10]),
-    assists:  count_thresholds(@last_five_games, :assists, [2, 4, 6, 8, 10])
-  }
+    # --- Build Averages ---
+    @last_five_averages = build_averages(@last_five_games)
+    @last_ten_averages  = build_averages(@last_ten_games)
 
-  # --- Next Upcoming Game (same season) ---
-  @next_game = Game.where(season_id: season_id)
-                   .where("date >= ?", Date.today)
-                   .where("visitor_team_id = ? OR home_team_id = ?", @team.id, @team.id)
-                   .order(:date)
-                   .first
+    # --- Betting Info (Last 5 Games) ---
+    @betting_info = {
+      points:   count_thresholds(@last_five_games, :points, [10, 15, 20, 25, 30]),
+      threes:   count_thresholds(@last_five_games, :three_point_field_goals, [1, 2, 3, 4, 5]),
+      rebounds: count_thresholds(@last_five_games, :total_rebounds, [2, 4, 6, 8, 10]),
+      assists:  count_thresholds(@last_five_games, :assists, [2, 4, 6, 8, 10])
+    }
 
-  if @next_game
-    opponent_team_id =
-      @next_game.visitor_team_id == @team.id ? @next_game.home_team_id : @next_game.visitor_team_id
-    @opponent_team = Team.find(opponent_team_id)
-    @defense_vs_position = @opponent_team.defense_data_for(@selected_season)
+    # --- Next Upcoming Game (same season) ---
+    @next_game =
+      Game.where(season_id: season_id)
+          .where("date >= ?", Date.today)
+          .where("visitor_team_id = ? OR home_team_id = ?", @team.id, @team.id)
+          .order(:date)
+          .first
+
+    if @next_game
+      opponent_team_id =
+        @next_game.visitor_team_id == @team.id ? @next_game.home_team_id : @next_game.visitor_team_id
+
+      @opponent_team = Team.find(opponent_team_id)
+      @defense_vs_position = @opponent_team.defense_data_for(@selected_season)
+    end
+
+    # --- Next Game Projection ---
+    @next_game_projection =
+      Projection.where(player_id: @player.id)
+                .where("date >= ?", Date.today)
+                .order(:date)
+                .first
+
+    if turbo_frame_request?
+      expires_now
+      response.headers["Cache-Control"] = "no-store"
+      render partial: "players/player_modal_body"
+      return
+    end
+
+    render :show
   end
-  @next_game_projection = Projection
-  .where(player_id: @player.id)
-  .where("date >= ?", Date.today)
-  .order(:date)
-  .first
-
-
-end
 
 
   # ---------------------------------------------------------------------------

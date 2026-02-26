@@ -56,88 +56,208 @@
               "PK"
             end
 
+          dk = game.game_odds.find { |o| o.provider == "Draft Kings" }
+          market_total = dk&.total&.to_f
+          home_spread  = dk&.home_spread&.to_f
+          away_spread  = dk&.away_spread&.to_f
+          home_ml      = dk&.home_ml
+          away_ml      = dk&.away_ml
+
+          market_spread_text =
+            if dk.nil? || home_spread.nil?
+              nil
+            elsif home_spread == 0
+              "PK"
+            elsif home_spread < 0
+              "#{game.home_team.abbreviation} #{home_spread.round(1)}"
+            else
+              "#{game.home_team.abbreviation} +#{home_spread.round(1)}"
+            end
+
+          market_total_text = market_total.present? ? market_total.round(1) : nil
+
+          visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id }
+          home_standing    = @standings.find { |s| s.team_id == game.home_team_id }
+
+          visitor_record =
+            if game.visitor_points.to_i > 0
+              game.visitor_points
+            else
+              "(#{visitor_standing&.wins || "-"}-#{visitor_standing&.losses || "-"})"
+            end
+
+          home_record =
+            if game.home_points.to_i > 0
+              game.home_points
+            else
+              "(#{home_standing&.wins || "-"}-#{home_standing&.losses || "-"})"
+            end
+
+          is_past = game.date < Date.today
         %>
 
-        <div class="game-card-item">
-          <div class="card p-2">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="d-flex flex-column align-items-center">
-                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
-                     class="team-logo mb-1">
-                <% visitor_standing = @standings.find { |s| s.team_id == game.visitor_team_id } %>
-                <small style="font-size: 9px;">
-                  <% if game.visitor_points.to_i > 0 %>
-                    <%= game.visitor_points %>
-                  <% else %>
-                    (<%= visitor_standing&.wins || "-" %>-<%= visitor_standing&.losses || "-" %>)
-                  <% end %>
-                </small>
+        <div class="game-card-item" style="width: 250px;">
+          <div class="card p-2 the-shadow">
+            <!-- Teams + Center Meta (time/pace under @) -->
+            <div class="matchup-row">
+              <!-- AWAY -->
+              <div class="team-side">
+                <img
+                  src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
+                  class="team-logo"
+                  style="width: 28px; height: 28px;"
+                >
+                <div class="team-text">
+                  <div class="team-abbr"><%= game.visitor_team.abbreviation %></div>
+                  <div class="team-sub text-muted"><%= visitor_record %></div>
+                </div>
               </div>
 
-              <div class="d-flex flex-column align-items-center mx-2">
-                <strong style="font-size: 12px;">@</strong>
+              <!-- CENTER -->
+              <div class="center-meta">
+                <div class="at">@</div>
 
-                <% if game_pace_rank.present? %>
-                  <small
-                    class="mt-1 px-1 py-1 rounded"
-                    style="<%= reverse_rank_color_class(game_pace_rank.round) %>; font-size: 9px; text-align: center;"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="Average pace rank of both teams (lower = faster paced game)">
-                    PACE <%= game_pace_rank %>
-                  </small>
-                <% end %>
+                <div class="center-sub">
+                  <div class="center-time">
+                    <% if is_past %>
+                      <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
+                      <a href="<%= box_score_url %>" target="_blank" class="text-decoration-none">
+                        Box Score
+                      </a>
+                    <% else %>
+                      <span class="fw-semibold"><%= game.time.strftime("%I:%M %p") if game.time.present? %></span>
+                    <% end %>
+                  </div>
+
+                  <div class="center-pace">
+                    <% if game_pace_rank.present? %>
+                      <span
+                        class="pace-pill"
+                        style="<%= reverse_rank_color_class(game_pace_rank.round) %>"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Average pace rank of both teams (lower = faster paced game)">
+                        PACE <%= game_pace_rank %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
               </div>
 
-              <div class="d-flex flex-column align-items-center">
-                <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
-                     class="team-logo mb-1">
-                <% home_standing = @standings.find { |s| s.team_id == game.home_team_id } %>
-                <small style="font-size: 9px;">
-                  <% if game.home_points.to_i > 0 %>
-                    <%= game.home_points %>
-                  <% else %>
-                    (<%= home_standing&.wins || "-" %>-<%= home_standing&.losses || "-" %>)
-                  <% end %>
-                </small>
+              <!-- HOME -->
+              <div class="team-side team-side-right">
+                <div class="team-text text-end">
+                  <div class="team-abbr"><%= game.home_team.abbreviation %></div>
+                  <div class="team-sub text-muted"><%= home_record %></div>
+                </div>
+                <img
+                  src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
+                  class="team-logo"
+                  style="width: 28px; height: 28px;"
+                >
               </div>
             </div>
 
-            <div class="d-flex flex-column align-items-center text-center">
-              <div class="mb-1" style="font-size: 11px;">
-                <% if game.date < Date.today %>
-                  <% box_score_url = "https://www.basketball-reference.com/boxscores/#{game.date.strftime("%Y%m%d")}0#{game.home_team.abbreviation}.html" %>
-                  <a href="<%= box_score_url %>" target="_blank" class="text-decoration-none">
-                    Basketball Reference
-                  </a>
-                <% else %>
-                  <strong><%= game.time.strftime("%I:%M %p") if game.time.present? %></strong>
-                <% end %>
+            <!-- Odds -->
+            <% if game.date >= Date.today %>
+              <div class="odds-wrap mt-2">
+
+                <%# --- DK display values per team --- %>
+                <% away_spread_text =
+                    if dk.nil? || away_spread.nil?
+                      "—"
+                    elsif away_spread == 0
+                      "PK"
+                    elsif away_spread < 0
+                      away_spread.round(1).to_s
+                    else
+                      "+#{away_spread.round(1)}"
+                    end
+                %>
+
+                <% home_spread_text =
+                    if dk.nil? || home_spread.nil?
+                      "—"
+                    elsif home_spread == 0
+                      "PK"
+                    elsif home_spread < 0
+                      home_spread.round(1).to_s
+                    else
+                      "+#{home_spread.round(1)}"
+                    end
+                %>
+
+                <% away_ml_text = (dk.present? && away_ml.present?) ? away_ml.to_s : "—" %>
+                <% home_ml_text = (dk.present? && home_ml.present?) ? home_ml.to_s : "—" %>
+                <% total_text   = market_total_text.present? ? market_total_text.to_s : "—" %>
+
+                <div class="odds-table mb-2">
+                  <div class="odds-head">
+                    <div class="c-team"></div>
+                    <div class="c-spread">SPREAD</div>
+                    <div class="c-ml">ML</div>
+                    <div class="c-total">TOTAL</div>
+                  </div>
+
+                  <!-- DK rows -->
+                  <div class="odds-row">
+                    <div class="c-team">
+                      <img
+                        class="odds-team-logo"
+                        src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.visitor_team.abbreviation %>-2026.png"
+                        alt="<%= game.visitor_team.abbreviation %>">
+                    </div>
+                    <div class="c-spread"><%= away_spread_text %></div>
+                    <div class="c-ml"><%= away_ml_text %></div>
+                    <div class="c-total"><%= total_text %></div>
+                  </div>
+
+                  <div class="odds-row">
+                    <div class="c-team">
+                      <img
+                        class="odds-team-logo"
+                        src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= game.home_team.abbreviation %>-2026.png"
+                        alt="<%= game.home_team.abbreviation %>">
+                    </div>
+                    <div class="c-spread"><%= home_spread_text %></div>
+                    <div class="c-ml"><%= home_ml_text %></div>
+                    <div class="c-total"><%= total_text %></div>
+                  </div>
+
+                  <!-- SIM row (same grid) -->
+                  <% if sim_total.present? && spread_market.present? %>
+                    <%
+                      sim_total_text  = sim_total.round(1)
+                      sim_spread_text = spread_market
+                    %>
+                    <div class="odds-row odds-row-sim">
+                      <div class="c-team">SIM</div>
+                      <div class="c-spread"><%= sim_spread_text %></div>
+                      <div class="c-ml">—</div>
+                      <div class="c-total"><%= sim_total_text %></div>
+                    </div>
+                  <% end %>
+                </div>
+
               </div>
+            <% end %>
 
-              <% if sim_total.present? && spread_market.present? && game.date >= Date.today %>
-                <div class="text-muted mb-1" style="font-size: 10px; line-height: 1.1;">
-                  <span class="me-2"><strong><%= spread_market %> / <%= sim_total.round(1) %></strong></span>
-                </div>
-              <% end %>
+            <!-- Actions -->
+            <div class="d-flex align-items-center justify-content-between">
+              <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
 
-              <div class="d-flex align-items-center gap-2">
-                <%= link_to "Info", game_path(game), class: "btn btn-sm btn-outline-primary" %>
+              <div class="form-check m-0 d-flex align-items-center gap-1">
+                <input
+                  class="form-check-input game-card-checkbox m-0"
+                  type="checkbox"
+                  value="1"
+                  id="game-filter-<%= game.id %>"
+                  data-visitor-team-id="<%= game.visitor_team_id %>"
+                  data-home-team-id="<%= game.home_team_id %>">
 
-                <div class="form-check m-0">
-                  <input
-                    class="form-check-input game-card-checkbox"
-                    type="checkbox"
-                    value="1"
-                    id="game-filter-<%= game.id %>"
-                    data-visitor-team-id="<%= game.visitor_team_id %>"
-                    data-home-team-id="<%= game.home_team_id %>">
-
-                  <label class="form-check-label small" for="game-filter-<%= game.id %>">
-                    Filter
-                  </label>
-                </div>
-
+                <label class="form-check-label small m-0" for="game-filter-<%= game.id %>">
+                  Filter
+                </label>
               </div>
             </div>
 
@@ -332,27 +452,35 @@
                 %>
 
                 <td class="sticky-col">
-                  <%= link_to team_player_path(player.team, player),
-                              data: (
-                                show_health_tooltip ?
-                                {
-                                  turbo: false,
-                                  bs_toggle: "tooltip",
-                                  bs_placement: "right",
-                                  bs_title: player.health&.description
-                                } :
-                                { turbo: false }
-                              ) do %>
+                  <% status_suffix = health_status(player.health&.status) %>
+
+                  <%= link_to "#",
+                    class: "text-decoration-none player-modal-link",
+                    data: {
+                      bs_toggle: "modal",
+                      bs_target: "#playerModal",
+                      player_url: team_player_path(player.team, player)
+                    } do %>
 
                     <img src="<%= player.profile_picture_url %>" width="20" height="auto" class="me-2 rounded-circle">
-                    <%= "#{player.name.split.first[0]}. #{player.name.split.drop(1).join(' ')}#{health_status}" %>
+
+                    <span>
+                      <%= player.name %><%= status_suffix %>
+                    </span>
+                  <% end %>
+
+                  <% if show_health_tooltip %>
+                    <i class="bi bi-info-circle ms-1 text-muted"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
+                      title="<%= player.health&.description %>"></i>
                   <% end %>
 
                   <% if teammates_out %>
                     <i class="bi bi-arrow-up-right-square-fill ms-1"
-                       data-bs-toggle="tooltip"
-                       data-bs-placement="right"
-                       title="<%= tooltip_text %>"></i>
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
+                      title="<%= tooltip_text %>"></i>
                   <% end %>
                 </td>
 

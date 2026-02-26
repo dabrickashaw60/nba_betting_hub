@@ -1,0 +1,99 @@
+<%# app/views/players/modal/_header.html.erb %>
+
+<% age = player.birth_date ? ((Date.today - player.birth_date).to_i / 365.25).floor : nil %>
+<% status_suffix = health_status(player.health&.status) %>
+
+<div class="card border-0 the-shadow mb-0">
+  <div class="card-body py-3">
+
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+
+      <!-- LEFT SIDE -->
+      <div class="d-flex align-items-center gap-3">
+
+        <img
+          src="<%= player.profile_picture_url %>"
+          alt="<%= player.name %>"
+          width="60"
+          height="60"
+          class="rounded-circle"
+          style="object-fit: cover; border: 2px solid #e5e5e5;"
+        >
+
+        <div>
+          <div class="fw-bold" style="font-size: 20px; line-height: 1.1;">
+            <%= player.name %>
+            <span class="<%= status_suffix.include?('(O)') ? 'text-danger' : status_suffix.include?('(DTD)') ? 'text-warning' : '' %>">
+              <%= status_suffix %>
+            </span>
+          </div>
+
+          <div class="text-muted small">
+            <%= team.name %>
+
+            <% if player.position.present? %>
+              <span class="mx-1">|</span><%= player.position %>
+            <% end %>
+
+            <% if player.respond_to?(:jersey_number) && player.jersey_number.present? %>
+              <span class="mx-1">|</span>#<%= player.jersey_number %>
+            <% end %>
+          </div>
+
+          <!-- INLINE QUICK INFO -->
+          <div class="small text-muted mt-1 d-flex flex-wrap gap-3">
+
+            <% if player.height.present? %>
+              <div><strong>H:</strong> <%= player.height %></div>
+            <% end %>
+
+            <% if player.weight.present? %>
+              <div><strong>W:</strong> <%= player.weight %> lbs</div>
+            <% end %>
+
+            <% if age.present? %>
+              <div><strong>Age:</strong> <%= age %></div>
+            <% end %>
+
+            <% if player.health.present? %>
+              <div>
+                <strong>Status:</strong>
+                <span class="<%= player.health.status == 'Out' ? 'text-danger' : player.health.status == 'Day-To-Day' ? 'text-warning' : 'text-success' %>">
+                  <%= player.health.status %>
+                </span>
+
+                <% if player.health.description.present? %>
+                  <i class="bi bi-info-circle text-muted ms-1"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="right"
+                     title="<%= player.health.description %>"></i>
+                <% end %>
+              </div>
+            <% end %>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE: SEASON FILTER + TEAM LOGO -->
+      <div class="d-flex align-items-center gap-3">
+        <%= form_with url: team_player_path(team, player), method: :get, local: true, class: "d-flex align-items-center gap-2" do %>
+          <label class="small text-muted mb-0">Season:</label>
+          <%= select_tag :season_id,
+                options_from_collection_for_select(seasons, :id, :name, selected_season.id),
+                onchange: "this.form.requestSubmit()",
+                class: "form-select form-select-sm w-auto" %>
+        <% end %>
+
+        <img
+          src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2026.png"
+          alt="<%= team.name %> logo"
+          width="50"
+          height="auto"
+        >
+      </div>
+
+    </div>
+
+  </div>
+</div>

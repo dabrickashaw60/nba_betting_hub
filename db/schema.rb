@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_19_123456) do
+ActiveRecord::Schema.define(version: 2026_02_25_174014) do
 
   create_table "box_scores", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "game_id", null: false
@@ -69,6 +69,22 @@ ActiveRecord::Schema.define(version: 2026_02_19_123456) do
     t.index ["season_id"], name: "index_defense_vs_positions_on_season_id"
     t.index ["team_id"], name: "index_defense_vs_positions_on_team_id"
     t.check_constraint "son_valid(`data`", name: "defense_vs_positions_chk_1"
+  end
+
+  create_table "game_odds", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "game_id", null: false
+    t.string "provider"
+    t.datetime "start_time_utc"
+    t.datetime "pulled_at"
+    t.decimal "home_spread", precision: 6, scale: 2
+    t.decimal "away_spread", precision: 6, scale: 2
+    t.decimal "total", precision: 6, scale: 2
+    t.integer "home_ml"
+    t.integer "away_ml"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["game_id", "provider"], name: "index_game_odds_on_game_id_and_provider", unique: true
+    t.index ["game_id"], name: "index_game_odds_on_game_id"
   end
 
   create_table "game_simulations", charset: "latin1", force: :cascade do |t|
@@ -221,7 +237,7 @@ ActiveRecord::Schema.define(version: 2026_02_19_123456) do
     t.index ["team_id"], name: "index_players_on_team_id"
   end
 
-  create_table "projection_distributions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "projection_distributions", charset: "latin1", force: :cascade do |t|
     t.date "date"
     t.bigint "season_id", null: false
     t.bigint "player_id", null: false
@@ -381,6 +397,7 @@ ActiveRecord::Schema.define(version: 2026_02_19_123456) do
   add_foreign_key "box_scores", "teams"
   add_foreign_key "defense_vs_positions", "seasons"
   add_foreign_key "defense_vs_positions", "teams"
+  add_foreign_key "game_odds", "games"
   add_foreign_key "games", "teams", column: "home_team_id"
   add_foreign_key "healths", "players"
   add_foreign_key "player_season_roles", "players"

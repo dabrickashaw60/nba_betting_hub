@@ -5,6 +5,7 @@ class Game < ApplicationRecord
   belongs_to :season, optional: true
 
   has_many :box_scores
+  has_many :game_odds, dependent: :destroy
 
   # Validations
   validates :visitor_team, presence: true

@@ -1,0 +1,71 @@
+<turbo-frame id="player_modal_frame">
+  <div
+    data-player-modal-root
+    data-player-modal-name="<%= @player.name %>"
+    data-player-modal-player-id="<%= @player.id %>"
+    data-player-modal-team-id="<%= @team.id %>"
+  >
+    <div class="p-0 border-bottom" style="background: none;">
+        <%= render "players/modal/header",
+          player: @player,
+          team: @team,
+          seasons: @seasons,
+          selected_season: @selected_season
+        %>
+    </div>
+
+    <div class="p-0">
+      <%= render "players/modal/summary_row",
+            player: @player,
+            team: @team,
+            next_game: @next_game,
+            opponent_team: @opponent_team,
+            defense_vs_position: @defense_vs_position,
+            selected_season: @selected_season,
+            seasons: @seasons,
+            next_game_projection: @next_game_projection %>
+    </div>
+
+    <div class="px-3 pb-2">
+      <%= render "players/modal/tabs" %>
+    </div>
+
+    <div class="tab-content px-3 pb-3">
+      <%# OVERVIEW %>
+      <div class="tab-pane fade show active" id="player-pane-overview" role="tabpanel">
+        <%= render "players/modal/panes/overview",
+              player: @player,
+              team: @team,
+              last_five_games: @last_five_games,
+              last_five_averages: @last_five_averages,
+              current_season: @selected_season,
+              player_stats: @player_stats,
+              next_game_projection: @next_game_projection,
+              betting_info: @betting_info %>
+      </div>
+
+      <%# GAME LOGS (full season) %>
+      <div class="tab-pane fade" id="player-pane-gamelog" role="tabpanel">
+        <%= render "players/modal/panes/game_logs",
+              player: @player,
+              team: @team,
+              game_logs: @game_logs %>
+      </div>
+
+      <%# CHARTS %>
+      <div class="tab-pane fade" id="player-pane-charts" role="tabpanel">
+        <%= render "players/modal/panes/charts",
+              player: @player,
+              team: @team,
+              last_five_games: @last_five_games,
+              last_ten_games: @last_ten_games,
+              all_games: @game_logs %>
+      </div>
+
+      <%# NEWS (optional; placeholder for later) %>
+      <div class="tab-pane fade" id="player-pane-news" role="tabpanel">
+        <%= render "players/modal/panes/news", player: @player %>
+      </div>
+    </div>
+  </div>
+</turbo-frame>

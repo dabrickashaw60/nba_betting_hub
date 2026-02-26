@@ -42,6 +42,11 @@
   max-width: 420px;
 }
 
+#player_modal_frame {
+  button.active {
+    color: red !important;
+  }
+}
 
 #game-card {
 
@@ -95,6 +100,181 @@
       font-size: 10px;
     }
   }
+
+  .odds-wrap {
+    margin-top: 6px;
+  }
+
+  .odds-table {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .odds-head,
+  .odds-row {
+    display: grid;
+    grid-template-columns: 42px 1fr 1fr 1fr;
+    align-items: center;
+    column-gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .odds-head {
+    background: rgba(0,0,0,0.04);
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: rgba(0,0,0,0.55);
+  }
+
+  .odds-row {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .odds-row + .odds-row {
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .odds-row .c-team {
+    font-weight: 800;
+    color: rgba(0,0,0,0.8);
+  }
+
+  .c-spread,
+  .c-ml,
+  .c-total {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .odds-sim {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 10px;
+    color: rgba(0,0,0,0.55);
+    font-weight: 600;
+  }
+
+  .odds-sim .tag {
+    font-weight: 800;
+    color: rgba(0,0,0,0.55);
+  }
+
+  .odds-sim .val {
+    color: rgba(0,0,0,0.75);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .odds-sim .sep {
+    opacity: 0.6;
+  }
+  .odds-row-sim {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .odds-row-sim .c-team {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: rgba(0,0,0,0.6);
+  }
+
+  .matchup-row {
+    display: grid;
+    grid-template-columns: 1fr 72px 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .team-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .team-side-right {
+    justify-content: flex-end;
+  }
+
+  .team-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .team-abbr {
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .team-sub {
+    font-size: 10px;
+  }
+
+  .center-meta {
+    text-align: center;
+  }
+
+  .center-meta .at {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(0,0,0,0.55);
+    line-height: 1.1;
+  }
+
+  .center-sub {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .center-time {
+    white-space: nowrap;
+  }
+
+  .center-pace {
+    display: flex;
+    justify-content: center;
+  }
+
+  .pace-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* Odds table tweaks for logos */
+  .odds-head,
+  .odds-row {
+    grid-template-columns: 32px 1fr 1fr 1fr;
+  }
+
+  .odds-team-logo {
+    width: 18px;
+    height: 18px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .odds-row .c-team {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
 }
 
 

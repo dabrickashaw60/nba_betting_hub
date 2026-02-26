@@ -19,7 +19,7 @@ class HomeController < ApplicationController
 
     @todays_games =
       Game.where(date: @date, season_id: season_id)
-          .includes(:visitor_team, :home_team)
+          .includes(:visitor_team, :home_team, :game_odds)
 
     # ------------------------------------------------------------
     # Game Lines (DETERMINISTIC from player distribution means)
@@ -249,17 +249,21 @@ class HomeController < ApplicationController
     Rails.logger.info "[update_injuries] injuries scraped/updated"
 
     # -------------------------
+    # 1b) Update odds (ESPN -> GameOdds)
+    # -------------------------
+    odds_result = Odds::Importer.import_espn!(date: date)
+    Rails.logger.info "[update_injuries] odds imported: #{odds_result.inspect}"
+
+    # -------------------------
     # 2) Players (baseline + player MC distributions)
     # -------------------------
-    # wipe baseline for the day
     Projection.where(date: date).delete_all
     ProjectionRun.where(date: date, model_version: Projections::BaselineModel::MODEL_VERSION).delete_all
 
     run = Projections::BaselineModel.new(date: date).run!
     Rails.logger.info "[update_injuries] baseline projections: #{Projection.where(date: date).count}"
 
-    # player MC distributions (must match what views/services query)
-    player_mc_model = Projections::DistributionSimulator::MODEL_VERSION # "proj_mc_v1"
+    player_mc_model = Projections::DistributionSimulator::MODEL_VERSION
     ProjectionDistribution.where(date: date, model_version: player_mc_model).delete_all
 
     dist_count =
@@ -272,7 +276,7 @@ class HomeController < ApplicationController
     # -------------------------
     # 3) Games (deterministic from player MC MEANS)
     # -------------------------
-    sim_model_means = Simulations::GameFromPlayerMeans::MODEL_VERSION # "game_from_player_mc_means_v1"
+    sim_model_means = Simulations::GameFromPlayerMeans::MODEL_VERSION
 
     GameSimulation.where(date: date, model_version: sim_model_means).delete_all
 
@@ -290,14 +294,12 @@ class HomeController < ApplicationController
     games_count = games.count
 
     redirect_to root_path(date: date),
-      notice: "Injuries updated. Projections rebuilt (#{run.projections_count} players). Player MC dists: #{dist_count}. Game lines built for #{games_count} games."
+      notice: "Injuries updated. Odds imported (#{odds_result[:imported]} saved, #{odds_result[:skipped]} skipped). Projections rebuilt (#{run.projections_count} players). Player MC dists: #{dist_count}. Game lines built for #{games_count} games."
   rescue => e
     Rails.logger.error "[update_injuries] Failed: #{e.class}: #{e.message}\n#{e.backtrace.first(20).join("\n")}"
     redirect_to root_path(date: (params[:date] rescue nil)),
                 alert: "Injury update/projection/sim failed: #{e.message}"
   end
-
-
 
   def scrape_previous_day_games
     require 'rake'

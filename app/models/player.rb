@@ -106,7 +106,9 @@ class Player < ApplicationRecord
     "Jordan Miller" => "https://www.basketball-reference.com/req/202106291/images/headshots/millejo02.jpg",
     "Jeremiah Robinson-Earl" => "https://www.basketball-reference.com/req/202106291/images/headshots/robinje02.jpg",
     "Jaden McDaniels" => "https://www.basketball-reference.com/req/202106291/images/headshots/mcdanja02.jpg",
-    "Mark Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willima07.jpg"
+    "Mark Williams" => "https://www.basketball-reference.com/req/202106291/images/headshots/willima07.jpg",
+    "Devin Carter" => "https://www.basketball-reference.com/req/202106291/images/headshots/cartede02.jpg",
+    "Taylor Hendricks" => "https://www.basketball-reference.com/req/202106291/images/headshots/hendrta01.jpg"
 
   }
 
