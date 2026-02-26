@@ -277,6 +277,313 @@
 
 }
 
+/* ===== Player Modal Header (hero) ===== */
+
+/* ===== Player Modal Header (Hero) ===== */
+
+#playerModalHeader.modal-header {
+  border-bottom: 0;
+  padding: 0;
+}
+
+/* Sticky header container */
+#playerModalHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1056;
+  background: #fff;
+}
+
+/* Main hero wrapper */
+.player-modal-hero {
+  position: relative;
+  width: 100%;
+  padding: 14px 16px 12px 16px;
+  overflow: hidden;
+}
+
+/* Faded team logo background */
+.player-modal-hero__bg {
+  position: absolute;
+  inset: 0;
+  background-image: var(--team-logo-url);
+  background-repeat: no-repeat;
+  background-size: 350px auto;
+  background-position: 50px -50px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+/* Top row: close button */
+.player-modal-hero__top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* Two-column layout: left=player, right=next game + metrics table */
+.player-modal-hero__grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr; /* gives the right side more room */
+  gap: 18px;
+  align-items: start;
+}
+
+/* LEFT */
+.player-modal-hero__left {
+  min-width: 0;
+}
+
+.player-modal-hero__headshot {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+.player-modal-hero__info {
+  min-width: 0;
+}
+
+.player-modal-hero__name {
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.player-modal-hero__meta {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+/* Stack H/W/Age/Status vertically (as you want) */
+.player-modal-hero__meta--stack {
+  display: grid;
+  gap: 4px;
+}
+
+/* RIGHT */
+.player-modal-hero__right {
+  min-width: 0;
+  width: 100%;
+}
+
+.pm-nextgame {
+  width: 100%;
+}
+
+/* Section title */
+.pm-section-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+/* Combined metrics table (Projection + DvP) */
+.pm-compact-metrics {
+  width: 100%;
+  margin-top: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pm-compact-metrics th,
+.pm-compact-metrics td {
+  text-align: center;
+  white-space: nowrap;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+/* Keep header labels compact */
+.pm-compact-metrics thead th {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid rgba(0,0,0,0.10);
+}
+
+/* Numbers */
+.pm-compact-metrics tbody td {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Optional second DvP row styling */
+.pm-compact-metrics .pm-subrow td {
+  font-size: 11px;
+  font-weight: 700;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Make the table look clean in the header (no extra borders) */
+.pm-compact-metrics.table > :not(caption) > * > * {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* Blend into tabs below */
+#playerModal .modal-body .nav-tabs {
+  margin-top: 6px;
+}
+
+/* Allow the modal to scroll normally; header stays sticky */
+#playerModal .modal-content {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+/* L5 header layout */
+.l5-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.l5-title{
+  font-weight:700;
+  white-space:nowrap;
+}
+
+/* Controls default */
+.l5-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+.l5-teammate-select{
+  width:220px;
+}
+
+/* ===== Responsive ===== */
+
+/* Stack columns for tablets/smaller screens */
+@media (max-width: 992px) {
+  .player-modal-hero__grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .player-modal-hero__bg {
+    background-size: auto 100%;
+  }
+
+  .player-modal-hero__headshot {
+    width: 66px;
+    height: 66px;
+  }
+
+  .player-modal-hero__name {
+    font-size: 19px;
+  }
+}
+
+/* Tight mobile header so tabs don’t get pushed down */
+@media (max-width: 625px) {
+  .player-modal-hero {
+    padding: 10px 10px 10px 10px;
+  }
+
+  .player-modal-hero__top {
+    margin-bottom: 4px;
+  }
+
+  // .player-modal-hero__bg {
+  //   background-size: 140px auto;
+  //   background-position: 8px 8px;
+  //   opacity: 0.06;
+  // }
+
+  .player-modal-hero__headshot {
+    width: 56px;
+    height: 56px;
+  }
+
+  .player-modal-hero__name {
+    font-size: 18px;
+  }
+
+  /* Keep H/W/Age/Status compact on mobile */
+  .player-modal-hero__meta {
+    font-size: 12px;
+  }
+
+  /* Tighten table further on mobile */
+  .pm-compact-metrics thead th {
+    font-size: 10px;
+  }
+
+  .pm-compact-metrics tbody td {
+    font-size: 11px;
+  }
+
+  .pm-compact-metrics th,
+  .pm-compact-metrics td {
+    padding: 3px 4px;
+  }
+  .player-modal-hero__meta--stack > div:nth-child(-n+3) {
+    display: none;
+  }
+
+  /* Header row */
+  .l5-header{
+    display: flex;
+    align-items: center;              /* ✅ vertical center */
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* Title alignment */
+  .l5-title{
+    display: flex;
+    align-items: center;              /* ✅ center text + icon */
+    gap: 6px;
+    margin: 0;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* Controls container (scrollable row) */
+  .l5-controls{
+    display: flex;
+    align-items: center;              /* ✅ vertical center */
+    gap: 8px;
+
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+
+    max-width: 100%;
+    padding-bottom: 2px;              /* prevents bottom cut-off */
+  }
+
+  /* Scrollbar styling */
+  .l5-controls::-webkit-scrollbar{
+    height: 6px;
+  }
+
+  /* Keep items from shrinking */
+  .l5-teammate-select{
+    width: 170px;
+    flex: 0 0 auto;
+  }
+
+  .l5-controls .btn,
+  .l5-controls i{
+    flex: 0 0 auto;
+  }
+
+}
+
 
 #gameFilterDropdown li{
   text-align: center;

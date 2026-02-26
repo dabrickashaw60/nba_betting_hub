@@ -3,33 +3,34 @@
 <div class="row g-3 mt-2">
   <div class="col-lg-8">
     <div class="card" style="box-shadow: 0px 4px 8px #3a3a3a;">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>L5 Games</span>
+      <div class="card-header">
+        <div class="l5-header">
+          <span class="l5-title">L5 Games</span>
 
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-info-circle text-info"
-             data-bs-toggle="tooltip"
-             data-bs-placement="top"
-             title="Select a teammate to see box scores with that teammate Out."></i>
+          <div class="l5-controls">
+            <i class="bi bi-info-circle text-info"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="Select a teammate to see box scores with that teammate Out."></i>
 
-          <select data-role="teammate-select" class="form-select form-select-sm" style="width: 220px;">
-            <option value="" selected disabled>Select a Teammate</option>
-            <% team.players.each do |teammate| %>
-              <option value="<%= teammate.id %>"><%= teammate.name %></option>
-            <% end %>
-          </select>
+            <select data-role="teammate-select" class="form-select form-select-sm l5-teammate-select">
+              <option value="" selected disabled>Select a Teammate</option>
+              <% team.players.each do |teammate| %>
+                <option value="<%= teammate.id %>"><%= teammate.name %></option>
+              <% end %>
+            </select>
 
-          <button
-            type="button"
-            class="btn btn-primary btn-sm"
-            data-role="go-button"
-            data-filter-url="<%= filter_games_team_player_path(team, player) %>">
-            Go
-          </button>
+            <button type="button"
+                    class="btn btn-primary btn-sm"
+                    data-role="go-button"
+                    data-filter-url="<%= filter_games_team_player_path(team, player) %>">
+              Go
+            </button>
 
-          <button type="button" class="btn btn-secondary btn-sm" data-role="undo-button">
-            Undo
-          </button>
+            <button type="button" class="btn btn-secondary btn-sm" data-role="undo-button">
+              Undo
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,198 @@
+<% age = player.birth_date ? ((Date.today - player.birth_date).to_i / 365.25).floor : nil %>
+<% status_suffix = health_status(player.health&.status) %>
+
+<div
+  class="player-modal-hero player-modal-hero--with-right"
+  data-player-modal-header
+  style="--team-logo-url: url('https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2026.png');"
+>
+  <div class="player-modal-hero__bg" aria-hidden="true"></div>
+
+  <div class="player-modal-hero__top">
+    <div></div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+
+  <div class="player-modal-hero__grid">
+    <!-- LEFT: PLAYER IDENTITY -->
+    <div class="player-modal-hero__left">
+      <div class="d-flex align-items-start gap-3">
+        <img
+          src="<%= player.profile_picture_url %>"
+          alt="<%= player.name %>"
+          class="player-modal-hero__headshot"
+        >
+
+        <div class="player-modal-hero__info">
+          <div class="player-modal-hero__name">
+            <%= player.name %>
+            <span class="<%= status_suffix.include?('(O)') ? 'text-danger' : status_suffix.include?('(DTD)') ? 'text-warning' : '' %>">
+              <%= status_suffix %>
+            </span>
+          </div>
+
+          <div class="text-muted">
+            <%= team.name %>
+            <% if player.position.present? %>
+              <span class="mx-1">|</span><%= player.position %>
+            <% end %>
+            <% if player.respond_to?(:jersey_number) && player.jersey_number.present? %>
+              <span class="mx-1">|</span>#<%= player.jersey_number %>
+            <% end %>
+          </div>
+
+          <div class="player-modal-hero__meta player-modal-hero__meta--stack">
+            <% if player.height.present? %>
+              <div><strong>H:</strong> <%= player.height %></div>
+            <% end %>
+
+            <% if player.weight.present? %>
+              <div><strong>W:</strong> <%= player.weight %> lbs</div>
+            <% end %>
+
+            <% if age.present? %>
+              <div><strong>Age:</strong> <%= age %></div>
+            <% end %>
+
+            <% if player.health.present? %>
+              <div class="d-flex align-items-center gap-1">
+                <strong>Status:</strong>
+                <span class="<%= player.health.status == 'Out' ? 'text-danger' : player.health.status == 'Day-To-Day' ? 'text-warning' : 'text-success' %>">
+                  <%= player.health.status %>
+                </span>
+
+                <% if player.health.description.present? %>
+                  <i class="bi bi-info-circle text-muted ms-1"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    title="<%= player.health.description %>"></i>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-modal-hero__right">
+
+      <% if next_game && opponent_team.present? %>
+        <div class="pm-nextgame">
+
+          <div class="pm-section-title d-flex align-items-center justify-content-between">
+            <span>Next Game</span>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <img
+                src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= team.abbreviation %>-2026.png"
+                width="30" height="auto"
+                alt="<%= team.name %> logo"
+              >
+              <span class="text-muted fw-bold">vs</span>
+              <img
+                src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opponent_team.abbreviation %>-2026.png"
+                width="30" height="auto"
+                alt="<%= opponent_team.name %> logo"
+              >
+
+              <div class="ms-2">
+                <div class="fw-bold"><%= opponent_team.name %></div>
+                <div class="text-muted small">
+                  <%= next_game.date.strftime("%m/%d/%y") %>
+                  <% if next_game.location.present? %>
+                    <span class="mx-1">|</span><%= next_game.location %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%# Combined Projection + DvP (single table, full width) %>
+          <%
+            relevant_positions =
+              case player.position
+              when "PG" then ["PG", "G"]
+              when "SG" then ["SG", "G"]
+              when "SF" then ["SF", "F"]
+              when "PF" then ["PF", "F"]
+              when "C"  then ["C"]
+              else []
+              end
+
+            dvp_rows = []
+            if defense_vs_position.is_a?(Hash)
+              dvp_rows = defense_vs_position.select { |pos, _| relevant_positions.include?(pos) }.to_a
+            end
+
+            primary_pos, primary_stats = dvp_rows[0]
+            flex_pos, flex_stats       = dvp_rows[1]
+          %>
+
+          <div class="mt-2">
+            <table class="table table-sm mb-0 pm-compact-metrics w-100">
+              <thead>
+                <tr>
+                  <th class="text-muted">MIN</th>
+                  <th class="text-muted">P</th>
+                  <th class="text-muted">R</th>
+                  <th class="text-muted">A</th>
+
+                  <th class="text-muted">DvP P</th>
+                  <th class="text-muted">DvP R</th>
+                  <th class="text-muted">DvP A</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <%# Projection cells %>
+                  <td class="fw-bold">
+                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.expected_minutes, precision: 0) : "—" %>
+                  </td>
+                  <td class="fw-bold">
+                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_points, precision: 1) : "—" %>
+                  </td>
+                  <td class="fw-bold">
+                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_rebounds, precision: 1) : "—" %>
+                  </td>
+                  <td class="fw-bold">
+                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_assists, precision: 1) : "—" %>
+                  </td>
+
+                  <%# DvP cells (primary relevant position only) %>
+                  <% if primary_stats.present? %>
+                    <td style="<%= rank_color_class(primary_stats["points_rank"]) %>"><%= primary_stats["points_rank"] || "—" %></td>
+                    <td style="<%= rank_color_class(primary_stats["rebounds_rank"]) %>"><%= primary_stats["rebounds_rank"] || "—" %></td>
+                    <td style="<%= rank_color_class(primary_stats["assists_rank"]) %>"><%= primary_stats["assists_rank"] || "—" %></td>
+                  <% else %>
+                    <td class="text-muted">—</td>
+                    <td class="text-muted">—</td>
+                    <td class="text-muted">—</td>
+                  <% end %>
+                </tr>
+
+                <%# Optional second DvP row (G/F). Keep if you like. %>
+                <% if flex_stats.present? %>
+                  <tr class="pm-subrow">
+                    <td colspan="4" class="text-muted small text-end">
+                      DvP (<%= flex_pos %>)
+                    </td>
+                    <td style="<%= rank_color_class(flex_stats["points_rank"]) %>"><%= flex_stats["points_rank"] || "—" %></td>
+                    <td style="<%= rank_color_class(flex_stats["rebounds_rank"]) %>"><%= flex_stats["rebounds_rank"] || "—" %></td>
+                    <td style="<%= rank_color_class(flex_stats["assists_rank"]) %>"><%= flex_stats["assists_rank"] || "—" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      <% else %>
+        <div class="text-muted small">No upcoming game found.</div>
+      <% end %>
+
+    </div>
+  </div>
+</div>

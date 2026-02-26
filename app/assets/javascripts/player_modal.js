@@ -7,8 +7,15 @@
     const frame = document.getElementById("player_modal_frame");
     if (frame) frame.innerHTML = '<div class="p-4 text-muted">Loading...</div>';
 
-    const title = document.getElementById("playerModalTitle");
-    if (title) title.textContent = "Player";
+    const header = document.getElementById("playerModalHeader");
+    if (header) {
+      header.innerHTML = `
+        <div class="w-100 d-flex align-items-center justify-content-between">
+          <div class="text-muted small">Loading...</div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      `;
+    }
   }
 
   function initTooltips(root) {
@@ -149,16 +156,35 @@
     });
   }
 
+  function swapModalHeaderFromFrame(frame) {
+    const modalHeader = document.getElementById("playerModalHeader");
+    if (!modalHeader) return;
+
+    const headerNode = frame.querySelector("[data-player-modal-header]");
+    if (!headerNode) return;
+
+    // clone the whole node so we keep classes + inline style vars
+    const clone = headerNode.cloneNode(true);
+
+    // replace header contents with the cloned node
+    modalHeader.replaceChildren(clone);
+
+    // remove original from the frame so it doesn't show twice
+    headerNode.remove();
+
+    // tooltips now live in modal header
+    initTooltips(modalHeader);
+  }
+
   function handleFrameLoad(event) {
     const frame = event.target;
     if (!frame || frame.id !== "player_modal_frame") return;
 
+    swapModalHeaderFromFrame(frame);
+
     const root = frame.querySelector("[data-player-modal-root]");
     if (!root) return;
-
-    const playerName = root.getAttribute("data-player-modal-name");
-    const title = document.getElementById("playerModalTitle");
-    if (title && playerName) title.textContent = playerName;
+    
 
     initTooltips(root);
     initTeammateFilter(root);
