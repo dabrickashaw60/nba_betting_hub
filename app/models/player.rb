@@ -14,6 +14,19 @@ class Player < ApplicationRecord
     team.name
   end
 
+  def short_name
+    parts = name.to_s.split
+    return name if parts.size < 2
+
+    suffixes = %w[Jr. Sr. II III IV V]
+
+    if suffixes.include?(parts.last)
+      "#{parts.first.first}. #{parts[-2]} #{parts.last}"
+    else
+      "#{parts.first.first}. #{parts.last}"
+    end
+  end
+
   def profile_picture_url
 
   # Define a hash of specific URLs for players with unique headshot formats

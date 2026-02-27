@@ -616,6 +616,41 @@
   display: block;
 }
 
+/* Game preview tables: force horizontal scroll instead of bleeding */
+.pm-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Keep the table from shrinking columns too much */
+.pm-table-scroll table {
+  width: 100%;
+  min-width: 980px; /* adjust if you have more/less columns */
+  margin-bottom: 0;
+  table-layout: auto;
+}
+
+/* If DataTables wrapper exists, constrain it too */
+.pm-table-scroll .dataTables_wrapper {
+  width: 100%;
+}
+
+/* Ensure DT scroll containers don't overflow the card/container */
+.pm-table-scroll .dataTables_scroll {
+  overflow: hidden;
+}
+
+.pm-table-scroll .dataTables_scrollBody {
+  overflow-x: auto !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#players-over-15-minutes-table_info{
+  display: none !important;
+}
 
 #gameFilterDropdown li{
   text-align: center;

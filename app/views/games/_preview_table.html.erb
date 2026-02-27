@@ -61,9 +61,15 @@
 
       <tr>
         <td class="sticky-col">
-          <%= link_to team_player_path(p.team, p), data: { turbo: false } do %>
+          <%= link_to "#",
+                class: "player-modal-link text-decoration-none",
+                data: {
+                  player_url: team_player_path(p.team, p),
+                  bs_toggle: "modal",
+                  bs_target: "#playerModal"
+                } do %>
             <img src="<%= p.profile_picture_url %>" width="20" class="rounded-circle me-2">
-            <%= "#{p.name.split.first[0]}. #{p.name.split.drop(1).join(' ')}" %>
+            <%= p.short_name %>
           <% end %>
         </td>
 

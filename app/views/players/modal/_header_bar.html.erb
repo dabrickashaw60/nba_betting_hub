@@ -55,18 +55,43 @@
             <% end %>
 
             <% if player.health.present? %>
-              <div class="d-flex align-items-center gap-1">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
                 <strong>Status:</strong>
-                <span class="<%= player.health.status == 'Out' ? 'text-danger' : player.health.status == 'Day-To-Day' ? 'text-warning' : 'text-success' %>">
-                  <%= player.health.status %>
-                </span>
+
+                <%= form_with url: manual_health_player_path(player),
+                              method: :patch,
+                              scope: :health,
+                              local: true,
+                              class: "d-flex align-items-center gap-2 mb-0" do |f| %>
+
+                  <%= f.select :manual_status,
+                        options_for_select(
+                          ["Healthy", "Day-To-Day", "Out", "Out For Season"],
+                          player.health.status
+                        ),
+                        {},
+                        class: "form-select form-select-sm #{case player.health.status
+                                                              when 'Out' then 'text-danger'
+                                                              when 'Day-To-Day' then 'text-warning'
+                                                              else 'text-success'
+                                                              end}",
+                        onchange: "this.form.submit();" %>
+
+                  <%= f.hidden_field :manual_description, value: player.health.description %>
+
+                <% end %>
+
+                <% if player.health.manual_override_on == Date.today %>
+                  <span class="badge bg-warning text-dark">Manual today</span>
+                <% end %>
 
                 <% if player.health.description.present? %>
-                  <i class="bi bi-info-circle text-muted ms-1"
+                  <i class="bi bi-info-circle text-muted"
                     data-bs-toggle="tooltip"
                     data-bs-placement="right"
                     title="<%= player.health.description %>"></i>
                 <% end %>
+
               </div>
             <% end %>
           </div>
