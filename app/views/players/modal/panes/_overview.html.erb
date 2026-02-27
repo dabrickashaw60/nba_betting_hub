@@ -75,7 +75,19 @@
 
             <% if proj.present? || dist.present? %>
               <tr class="table-info fw-bold">
-                <td colspan="2">Next Game Projection</td>
+                <td class="fw-bold">Proj.</td>
+
+                <td>
+                  <% if @opponent_team.present? %>
+                    <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @opponent_team.abbreviation %>-2026.png"
+                        alt="<%= @opponent_team.name %>"
+                        width="20"
+                        height="auto">
+                  <% else %>
+                    —
+                  <% end %>
+                </td>
+
                 <td><%= number_with_precision(proj_mp, precision: 0) %></td>
                 <td><%= number_with_precision(proj_pts, precision: 1) %></td>
                 <td><%= number_with_precision(proj_reb, precision: 1) %></td>
