@@ -90,6 +90,14 @@ response.headers["X-Player-Modal-Debug"] = "hit-show"
                 .order(:date)
                 .first
 
+    @proj_by_player_id = Projection.where(date: Date.today, player_id: @player.id).index_by(&:player_id)
+
+    @proj_dist_by_player_id = ProjectionDistribution.where(
+      date: Date.today,
+      player_id: @player.id,
+      model_version: Projections::DistributionSimulator::MODEL_VERSION
+    ).index_by(&:player_id)
+
     if turbo_frame_request?
       expires_now
       response.headers["Cache-Control"] = "no-store"

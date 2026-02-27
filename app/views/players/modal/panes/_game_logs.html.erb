@@ -1,53 +1,59 @@
 <%# app/views/players/modal/panes/_game_logs.html.erb %>
+<% if game_logs.any? %>
+  <div class="table-responsive border rounded mb-2" style="background:#fff; max-height: 60vh; overflow-y:auto;">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Opp</th>
+          <th>Pts</th>
+          <th>Rbs</th>
+          <th>Asts</th>
+          <th>Mins</th>
+          <th>FG</th>
+          <th>3P</th>
+          <th>FT</th>
+          <th>+/-</th>
+        </tr>
+      </thead>
 
-<div class="card mt-3" style="box-shadow: 0px 4px 8px #3a3a3a;">
-  <div class="card-header">Game Logs</div>
-  <div class="card-body p-0">
-    <% if game_logs.any? %>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Date</th>
-              <th>Opp</th>
-              <th>Pts</th>
-              <th>Rbs</th>
-              <th>Asts</th>
-              <th>Mins</th>
-              <th>FG</th>
-              <th>3P</th>
-              <th>FT</th>
-              <th>+/-</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% game_logs.each do |box_score| %>
-              <tr>
-                <td><%= link_to box_score.game.date.strftime("%m/%d/%y"), game_path(box_score.game), class: "text-decoration-none", data: { turbo: false } %></td>
-                <td>
-                  <% player_team_at_game_time = box_score.team %>
-                  <% opp = box_score.game.visitor_team_id == player_team_at_game_time.id ? box_score.game.home_team : box_score.game.visitor_team %>
+      <tbody>
+        <% game_logs.each do |box_score| %>
+          <tr>
+            <td>
+              <%= link_to box_score.game.date.strftime("%m/%d/%y"),
+                          game_path(box_score.game),
+                          class: "text-decoration-none",
+                          data: { turbo: false } %>
+            </td>
 
-                  <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opp.abbreviation %>-2026.png"
-                       alt="<%= opp.name %> logo"
-                       width="20" height="auto" class="me-2">
-                  <%= opp.abbreviation %>
-                </td>
-                <td><%= box_score.points %></td>
-                <td><%= box_score.total_rebounds %></td>
-                <td><%= box_score.assists %></td>
-                <td><%= box_score.minutes_played %></td>
-                <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
-                <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
-                <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
-                <td><%= box_score.plus_minus %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    <% else %>
-      <div class="p-3 text-muted">No game logs available.</div>
-    <% end %>
+            <td>
+              <% player_team_at_game_time = box_score.team %>
+              <% opp = box_score.game.visitor_team_id == player_team_at_game_time.id ?
+                       box_score.game.home_team :
+                       box_score.game.visitor_team %>
+
+              <img src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= opp.abbreviation %>-2026.png"
+                   alt="<%= opp.name %> logo"
+                   width="20"
+                   height="auto"
+                   class="me-2">
+              <%= opp.abbreviation %>
+            </td>
+
+            <td><%= box_score.points %></td>
+            <td><%= box_score.total_rebounds %></td>
+            <td><%= box_score.assists %></td>
+            <td><%= box_score.minutes_played %></td>
+            <td><%= box_score.field_goals %>/<%= box_score.field_goals_attempted %></td>
+            <td><%= box_score.three_point_field_goals %>/<%= box_score.three_point_field_goals_attempted %></td>
+            <td><%= box_score.free_throws %>/<%= box_score.free_throws_attempted %></td>
+            <td><%= box_score.plus_minus %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
-</div>
+<% else %>
+  <div class="text-muted py-2">No game logs available.</div>
+<% end %>

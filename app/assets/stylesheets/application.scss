@@ -436,7 +436,6 @@
 /* Allow the modal to scroll normally; header stays sticky */
 #playerModal .modal-content {
   max-height: calc(100vh - 2rem);
-  overflow-y: auto;
 }
 
 /* L5 header layout */
@@ -497,12 +496,6 @@
     margin-bottom: 4px;
   }
 
-  // .player-modal-hero__bg {
-  //   background-size: 140px auto;
-  //   background-position: 8px 8px;
-  //   opacity: 0.06;
-  // }
-
   .player-modal-hero__headshot {
     width: 56px;
     height: 56px;
@@ -530,6 +523,7 @@
   .pm-compact-metrics td {
     padding: 3px 4px;
   }
+
   .player-modal-hero__meta--stack > div:nth-child(-n+3) {
     display: none;
   }
@@ -537,7 +531,7 @@
   /* Header row */
   .l5-header{
     display: flex;
-    align-items: center;              /* ✅ vertical center */
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
   }
@@ -545,7 +539,7 @@
   /* Title alignment */
   .l5-title{
     display: flex;
-    align-items: center;              /* ✅ center text + icon */
+    align-items: center;
     gap: 6px;
     margin: 0;
     line-height: 1;
@@ -555,7 +549,7 @@
   /* Controls container (scrollable row) */
   .l5-controls{
     display: flex;
-    align-items: center;              /* ✅ vertical center */
+    align-items: center;
     gap: 8px;
 
     overflow-x: auto;
@@ -563,15 +557,13 @@
     white-space: nowrap;
 
     max-width: 100%;
-    padding-bottom: 2px;              /* prevents bottom cut-off */
+    padding-bottom: 2px;
   }
 
-  /* Scrollbar styling */
   .l5-controls::-webkit-scrollbar{
     height: 6px;
   }
 
-  /* Keep items from shrinking */
   .l5-teammate-select{
     width: 170px;
     flex: 0 0 auto;
@@ -582,6 +574,46 @@
     flex: 0 0 auto;
   }
 
+  #playerModal .modal-dialog {
+    margin: 0;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  #playerModal .modal-content {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  #playerModal .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Chart sizing on mobile */
+  .chart-wrap{
+    position: relative;
+    height: 210px;
+  }
+
+  .chart-wrap canvas{
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+  }
+}
+
+/* Default chart height on desktop (outside media query) */
+.chart-wrap{
+  position: relative;
+  height: 260px;
+}
+
+.chart-wrap canvas{
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 

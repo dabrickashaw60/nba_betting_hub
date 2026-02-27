@@ -1,77 +1,87 @@
 <%# app/views/players/modal/panes/_charts.html.erb %>
 
-<div class="card mt-3" style="box-shadow: 0px 4px 8px #3a3a3a;">
-  <div class="card-header d-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-2">
-      <select data-role="game-range-dropdown" class="form-select form-select-sm w-auto">
-        <option value="last5" selected>Last 5 Games</option>
-        <option value="last10">Last 10 Games</option>
-        <option value="all">All Games</option>
-      </select>
+<div class="p-3 bg-white">
+  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <select data-role="game-range-dropdown" class="form-select form-select-sm w-auto">
+      <option value="last5" selected>Last 5</option>
+      <option value="last10">Last 10</option>
+      <option value="all">All</option>
+    </select>
 
-      <select data-role="stat-dropdown" class="form-select form-select-sm w-auto">
-        <option value="points">P</option>
-        <option value="rebounds">R</option>
-        <option value="assists">A</option>
-        <option value="threes">3s</option>
-        <option value="points_assists">P+A</option>
-        <option value="points_rebounds">P+R</option>
-        <option value="rebounds_assists">R+A</option>
-        <option value="points_rebounds_assists">P+R+A</option>
-      </select>
+    <select data-role="stat-dropdown" class="form-select form-select-sm w-auto">
+      <option value="points">P</option>
+      <option value="rebounds">R</option>
+      <option value="assists">A</option>
+      <option value="threes">3s</option>
+      <option value="points_assists">P+A</option>
+      <option value="points_rebounds">P+R</option>
+      <option value="rebounds_assists">R+A</option>
+      <option value="points_rebounds_assists">P+R+A</option>
+    </select>
 
-      <input
-        type="number"
-        data-role="threshold-input"
-        class="form-control form-control-sm"
-        style="width: 140px;"
-        placeholder="Threshold"
-      >
-    </div>
+    <input
+      type="number"
+      data-role="threshold-input"
+      class="form-control form-control-sm"
+      style="width: 110px;"
+      placeholder="Line"
+    >
   </div>
 
-  <div class="card-body">
-    <canvas data-role="player-line-chart" style="height: 300px;"></canvas>
-    <p class="mt-2 text-center" data-role="hit-rate-summary"></p>
-
-    <%# JSON payloads consumed by JS %>
-    <script type="application/json" data-role="games-last5-json">
-      <%= last_five_games.map { |g|
-            {
-              date: g.game.date.strftime("%m/%d"),
-              opponent: g.game.opponent_for(player.team).abbreviation,
-              points: g.points,
-              rebounds: g.total_rebounds,
-              assists: g.assists,
-              threes: g.three_point_field_goals
-            }
-          }.reverse.to_json.html_safe %>
-    </script>
-
-    <script type="application/json" data-role="games-last10-json">
-      <%= last_ten_games.map { |g|
-            {
-              date: g.game.date.strftime("%m/%d"),
-              opponent: g.game.opponent_for(player.team).abbreviation,
-              points: g.points,
-              rebounds: g.total_rebounds,
-              assists: g.assists,
-              threes: g.three_point_field_goals
-            }
-          }.reverse.to_json.html_safe %>
-    </script>
-
-    <script type="application/json" data-role="games-all-json">
-      <%= all_games.map { |g|
-            {
-              date: g.game.date.strftime("%m/%d"),
-              opponent: g.game.opponent_for(player.team).abbreviation,
-              points: g.points,
-              rebounds: g.total_rebounds,
-              assists: g.assists,
-              threes: g.three_point_field_goals
-            }
-          }.reverse.to_json.html_safe %>
-    </script>
+  <div class="chart-wrap">
+    <canvas data-role="player-line-chart"></canvas>
   </div>
+
+  <p class="mt-2 text-center small fw-semibold mb-0" data-role="hit-rate-summary"></p>
+
+  <%# JSON payloads consumed by JS %>
+
+  <script type="application/json" data-role="proj-defaults-json">
+    <%= {
+      minutes:  (proj_dist_by_player_id&.[](player.id)&.minutes_mean  || proj_by_player_id&.[](player.id)&.expected_minutes),
+      points:   (proj_dist_by_player_id&.[](player.id)&.points_mean   || proj_by_player_id&.[](player.id)&.proj_points),
+      rebounds: (proj_dist_by_player_id&.[](player.id)&.rebounds_mean || proj_by_player_id&.[](player.id)&.proj_rebounds),
+      assists:  (proj_dist_by_player_id&.[](player.id)&.assists_mean  || proj_by_player_id&.[](player.id)&.proj_assists),
+      threes:   (proj_dist_by_player_id&.[](player.id)&.threes_mean   || proj_by_player_id&.[](player.id)&.proj_threes)
+    }.to_json.html_safe %>
+  </script>
+
+  <script type="application/json" data-role="games-last5-json">
+    <%= last_five_games.map { |g|
+          {
+            date: g.game.date.strftime("%m/%d"),
+            opponent: g.game.opponent_for(player.team).abbreviation,
+            points: g.points,
+            rebounds: g.total_rebounds,
+            assists: g.assists,
+            threes: g.three_point_field_goals
+          }
+        }.reverse.to_json.html_safe %>
+  </script>
+
+  <script type="application/json" data-role="games-last10-json">
+    <%= last_ten_games.map { |g|
+          {
+            date: g.game.date.strftime("%m/%d"),
+            opponent: g.game.opponent_for(player.team).abbreviation,
+            points: g.points,
+            rebounds: g.total_rebounds,
+            assists: g.assists,
+            threes: g.three_point_field_goals
+          }
+        }.reverse.to_json.html_safe %>
+  </script>
+
+  <script type="application/json" data-role="games-all-json">
+    <%= all_games.map { |g|
+          {
+            date: g.game.date.strftime("%m/%d"),
+            opponent: g.game.opponent_for(player.team).abbreviation,
+            points: g.points,
+            rebounds: g.total_rebounds,
+            assists: g.assists,
+            threes: g.three_point_field_goals
+          }
+        }.reverse.to_json.html_safe %>
+  </script>
 </div>

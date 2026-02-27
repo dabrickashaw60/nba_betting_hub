@@ -1,138 +1,137 @@
 <%# app/views/players/modal/panes/_overview.html.erb %>
 
-<div class="row g-3 mt-2">
+<div class="row g-3">
   <div class="col-lg-8">
-    <div class="card" style="box-shadow: 0px 4px 8px #3a3a3a;">
-      <div class="card-header">
-        <div class="l5-header">
-          <span class="l5-title">L5 Games</span>
 
-          <div class="l5-controls">
-            <i class="bi bi-info-circle text-info"
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title="Select a teammate to see box scores with that teammate Out."></i>
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mt-2 mb-2">
+      <div class="fw-semibold">L5 Games</div>
 
-            <select data-role="teammate-select" class="form-select form-select-sm l5-teammate-select">
-              <option value="" selected disabled>Select a Teammate</option>
-              <% team.players.each do |teammate| %>
-                <option value="<%= teammate.id %>"><%= teammate.name %></option>
-              <% end %>
-            </select>
+      <div class="l5-controls d-flex align-items-center" style="gap: 8px;">
+        <i class="bi bi-info-circle text-info"
+           data-bs-toggle="tooltip"
+           data-bs-placement="top"
+           title="Select a teammate to see box scores with that teammate Out."></i>
 
-            <button type="button"
-                    class="btn btn-primary btn-sm"
-                    data-role="go-button"
-                    data-filter-url="<%= filter_games_team_player_path(team, player) %>">
-              Go
-            </button>
+        <select data-role="teammate-select" class="form-select form-select-sm l5-teammate-select">
+          <option value="" selected disabled>Select a Teammate</option>
+          <% team.players.each do |teammate| %>
+            <option value="<%= teammate.id %>"><%= teammate.name %></option>
+          <% end %>
+        </select>
 
-            <button type="button" class="btn btn-secondary btn-sm" data-role="undo-button">
-              Undo
-            </button>
-          </div>
-        </div>
-      </div>
+        <button type="button"
+                class="btn btn-primary btn-sm"
+                data-role="go-button"
+                data-filter-url="<%= filter_games_team_player_path(team, player) %>">
+          Go
+        </button>
 
-      <div class="card-body p-0">
-        <% if last_five_games.any? %>
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Opp</th>
-                  <th>Mins</th>
-                  <th>P</th>
-                  <th>R</th>
-                  <th>A</th>
-                  <th>FG</th>
-                  <th>3P</th>
-                  <th>FT</th>
-                  <th>+/-</th>
-                </tr>
-              </thead>
-
-              <tbody data-role="last-five-body">
-                <%= render partial: "players/game_rows", locals: { games: last_five_games } %>
-
-                <% if next_game_projection.present? %>
-                  <tr class="table-info fw-bold">
-                    <td colspan="2">Next Game Projection</td>
-                    <td><%= number_with_precision(next_game_projection.expected_minutes, precision: 0) %></td>
-                    <td><%= number_with_precision(next_game_projection.proj_points, precision: 1) %></td>
-                    <td><%= number_with_precision(next_game_projection.proj_rebounds, precision: 1) %></td>
-                    <td><%= number_with_precision(next_game_projection.proj_assists, precision: 1) %></td>
-                    <td>-</td>
-                    <td><%= number_with_precision(next_game_projection.proj_threes, precision: 1) %></td>
-                    <td>-</td>
-                    <td><%= number_with_precision(next_game_projection.proj_plus_minus, precision: 1) %></td>
-                  </tr>
-                <% end %>
-
-                <tr class="table-secondary fw-bold">
-                  <td colspan="2">Last 5 Avg</td>
-                  <td><%= last_five_averages[:minutes_played] %></td>
-                  <td><%= number_with_precision(last_five_averages[:points], precision: 1) %></td>
-                  <td><%= number_with_precision(last_five_averages[:rebounds], precision: 1) %></td>
-                  <td><%= number_with_precision(last_five_averages[:assists], precision: 1) %></td>
-                  <td><%= last_five_averages[:field_goals] %></td>
-                  <td><%= last_five_averages[:three_pointers] %></td>
-                  <td><%= last_five_averages[:free_throws] %></td>
-                  <td><%= number_with_precision(last_five_averages[:plus_minus], precision: 1) %></td>
-                </tr>
-
-                <% if player_stats.any? %>
-                  <% player_stats.each do |stat| %>
-                    <tr class="table-secondary fw-bold">
-                      <td colspan="2"><%= current_season.name %></td>
-                      <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
-                      <td><%= number_with_precision(stat.points, precision: 1) %></td>
-                      <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
-                      <td><%= number_with_precision(stat.assists, precision: 1) %></td>
-                      <td><%= "#{number_with_precision(stat.field_goals, precision: 1)}/#{number_with_precision(stat.field_goals_attempted, precision: 1)}" %></td>
-                      <td><%= "#{number_with_precision(stat.three_point_field_goals, precision: 1)}/#{number_with_precision(stat.three_point_field_goals_attempted, precision: 1)}" %></td>
-                      <td><%= "#{number_with_precision(stat.free_throws, precision: 1)}/#{number_with_precision(stat.free_throws_attempted, precision: 1)}" %></td>
-                      <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
-                    </tr>
-                  <% end %>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        <% else %>
-          <div class="p-3 text-muted">No recent games available.</div>
-        <% end %>
+        <button type="button" class="btn btn-secondary btn-sm" data-role="undo-button">
+          Undo
+        </button>
       </div>
     </div>
-  </div>
 
-  <div class="col-lg-4">
-    <div class="card mb-3" style="box-shadow: 0px 4px 8px #3a3a3a;">
-      <div class="card-header">Last 5 Hit Rates</div>
-      <div class="card-body p-0">
+    <% if last_five_games.any? %>
+      <div class="table-responsive border rounded mb-2" style="background: #fff;">
+
+        <%
+          proj = proj_by_player_id && proj_by_player_id[player.id]
+          dist = proj_dist_by_player_id && proj_dist_by_player_id[player.id]
+
+          # Baseline
+          base_mp  = proj&.expected_minutes
+          base_pts = proj&.proj_points
+          base_reb = proj&.proj_rebounds
+          base_ast = proj&.proj_assists
+          base_3s  = proj&.proj_threes
+
+          # Preferred (Distribution mean if present, else baseline)
+          proj_mp  = dist&.minutes_mean  || base_mp
+          proj_pts = dist&.points_mean   || base_pts
+          proj_reb = dist&.rebounds_mean || base_reb
+          proj_ast = dist&.assists_mean  || base_ast
+          proj_3s  = dist&.threes_mean   || base_3s
+        %>
+
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>Ps</th>
-              <th>As</th>
-              <th>Rs</th>
-              <th>3s</th>
+              <th>Date</th>
+              <th>Opp</th>
+              <th>Mins</th>
+              <th>P</th>
+              <th>R</th>
+              <th>A</th>
+              <th>FG</th>
+              <th>3P</th>
+              <th>FT</th>
+              <th>+/-</th>
             </tr>
           </thead>
-          <tbody>
-            <% [10, 15, 20, 25, 30].zip([2, 4, 6, 8, 10], [2, 4, 6, 8, 10], [1, 2, 3, 4, 5]).each_with_index do |(p, a, r, t), i| %>
-              <tr>
-                <td><%= "#{p}+ (#{((betting_info[:points][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{a}+ (#{((betting_info[:assists][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{r}+ (#{((betting_info[:rebounds][i] / 5.0) * 100).to_i}%)" %></td>
-                <td><%= "#{t}+ (#{((betting_info[:threes][i] / 5.0) * 100).to_i}%)" %></td>
+
+          <tbody data-role="last-five-body">
+            <%= render partial: "players/game_rows", locals: { games: last_five_games } %>
+
+            <% if proj.present? || dist.present? %>
+              <tr class="table-info fw-bold">
+                <td colspan="2">Next Game Projection</td>
+                <td><%= number_with_precision(proj_mp, precision: 0) %></td>
+                <td><%= number_with_precision(proj_pts, precision: 1) %></td>
+                <td><%= number_with_precision(proj_reb, precision: 1) %></td>
+                <td><%= number_with_precision(proj_ast, precision: 1) %></td>
+                <td>-</td>
+                <td><%= number_with_precision(proj_3s, precision: 1) %></td>
+                <td>-</td>
+                <td><%= number_with_precision(next_game_projection&.proj_plus_minus, precision: 1) %></td>
               </tr>
+            <% end %>
+
+            <tr class="table-secondary fw-bold">
+              <td colspan="2">Last 5 Avg</td>
+              <td><%= last_five_averages[:minutes_played] %></td>
+              <td><%= number_with_precision(last_five_averages[:points], precision: 1) %></td>
+              <td><%= number_with_precision(last_five_averages[:rebounds], precision: 1) %></td>
+              <td><%= number_with_precision(last_five_averages[:assists], precision: 1) %></td>
+              <td><%= last_five_averages[:field_goals] %></td>
+              <td><%= last_five_averages[:three_pointers] %></td>
+              <td><%= last_five_averages[:free_throws] %></td>
+              <td><%= number_with_precision(last_five_averages[:plus_minus], precision: 1) %></td>
+            </tr>
+
+            <% if player_stats.any? %>
+              <% player_stats.each do |stat| %>
+                <tr class="table-secondary fw-bold">
+                  <td colspan="2"><%= current_season.name %></td>
+                  <td><%= number_with_precision(stat.minutes_played, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.points, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.total_rebounds, precision: 1) %></td>
+                  <td><%= number_with_precision(stat.assists, precision: 1) %></td>
+                  <td><%= "#{number_with_precision(stat.field_goals, precision: 1)}/#{number_with_precision(stat.field_goals_attempted, precision: 1)}" %></td>
+                  <td><%= "#{number_with_precision(stat.three_point_field_goals, precision: 1)}/#{number_with_precision(stat.three_point_field_goals_attempted, precision: 1)}" %></td>
+                  <td><%= "#{number_with_precision(stat.free_throws, precision: 1)}/#{number_with_precision(stat.free_throws_attempted, precision: 1)}" %></td>
+                  <td><%= number_with_precision(stat.plus_minus, precision: 1) %></td>
+                </tr>
+              <% end %>
             <% end %>
           </tbody>
         </table>
       </div>
-    </div>
+    <% else %>
+      <div class="text-muted py-2">No recent games available.</div>
+    <% end %>
 
+  </div>
+
+  <div class="col-lg-4">
+    <%= render "players/modal/panes/charts",
+      player: player,
+      team: team,
+      last_five_games: last_five_games,
+      last_ten_games: last_ten_games,
+      all_games: all_games,
+      proj_by_player_id: proj_by_player_id,
+      proj_dist_by_player_id: proj_dist_by_player_id
+    %>
   </div>
 </div>

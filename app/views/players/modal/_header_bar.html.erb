@@ -128,6 +128,20 @@
 
             primary_pos, primary_stats = dvp_rows[0]
             flex_pos, flex_stats       = dvp_rows[1]
+
+            proj = proj_by_player_id && proj_by_player_id[player.id]
+            dist = proj_dist_by_player_id && proj_dist_by_player_id[player.id]
+
+            base_mp  = proj&.expected_minutes
+            base_pts = proj&.proj_points
+            base_reb = proj&.proj_rebounds
+            base_ast = proj&.proj_assists
+
+            proj_mp  = dist&.minutes_mean  || base_mp
+            proj_pts = dist&.points_mean   || base_pts
+            proj_reb = dist&.rebounds_mean || base_reb
+            proj_ast = dist&.assists_mean  || base_ast
+
           %>
 
           <div class="mt-2">
@@ -149,16 +163,16 @@
                 <tr>
                   <%# Projection cells %>
                   <td class="fw-bold">
-                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.expected_minutes, precision: 0) : "—" %>
+                    <%= proj_mp.present? ? number_with_precision(proj_mp, precision: 0) : "—" %>
                   </td>
                   <td class="fw-bold">
-                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_points, precision: 1) : "—" %>
+                    <%= proj_pts.present? ? number_with_precision(proj_pts, precision: 1) : "—" %>
                   </td>
                   <td class="fw-bold">
-                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_rebounds, precision: 1) : "—" %>
+                    <%= proj_reb.present? ? number_with_precision(proj_reb, precision: 1) : "—" %>
                   </td>
                   <td class="fw-bold">
-                    <%= next_game_projection.present? ? number_with_precision(next_game_projection.proj_assists, precision: 1) : "—" %>
+                    <%= proj_ast.present? ? number_with_precision(proj_ast, precision: 1) : "—" %>
                   </td>
 
                   <%# DvP cells (primary relevant position only) %>
