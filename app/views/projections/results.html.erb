@@ -1,4 +1,114 @@
 <div class="container-fluid">
+  <%
+    quick_guide_chart_keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp]
+
+    quick_guide_chart_labels = quick_guide_chart_keys.map do |key|
+      (@guide_metric_boxes[key] || {})[:label] || key.to_s.upcase
+    end
+
+    quick_guide_chart_mae = quick_guide_chart_keys.map do |key|
+      ((@guide_metric_boxes[key] || {})[:mae] || 0).to_f.round(2)
+    end
+
+    quick_guide_chart_bias = quick_guide_chart_keys.map do |key|
+      ((@guide_metric_boxes[key] || {})[:bias] || 0).to_f.round(2)
+    end
+
+    away_chart_keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp]
+
+    away_chart_labels = away_chart_keys.map do |key|
+      (@away_metric_boxes[key] || {})[:label] || key.to_s.upcase
+    end
+
+    away_chart_mae = away_chart_keys.map do |key|
+      ((@away_metric_boxes[key] || {})[:mae] || 0).to_f.round(2)
+    end
+
+    away_chart_bias = away_chart_keys.map do |key|
+      ((@away_metric_boxes[key] || {})[:bias] || 0).to_f.round(2)
+    end
+
+    home_chart_keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp]
+
+    home_chart_labels = home_chart_keys.map do |key|
+      (@home_metric_boxes[key] || {})[:label] || key.to_s.upcase
+    end
+
+    home_chart_mae = home_chart_keys.map do |key|
+      ((@home_metric_boxes[key] || {})[:mae] || 0).to_f.round(2)
+    end
+
+    home_chart_bias = home_chart_keys.map do |key|
+      ((@home_metric_boxes[key] || {})[:bias] || 0).to_f.round(2)
+    end
+
+    away_minutes_buckets = @away_minutes_buckets || {}
+    away_bucket_labels   = away_minutes_buckets.keys
+    away_bucket_mae      = away_minutes_buckets.values.map { |b| (b[:mae] || 0).to_f.round(2) }
+    away_bucket_proj     = away_minutes_buckets.values.map { |b| (b[:avg_proj] || 0).to_f.round(2) }
+    away_bucket_actual   = away_minutes_buckets.values.map { |b| (b[:avg_actual] || 0).to_f.round(2) }
+
+    home_minutes_buckets = @home_minutes_buckets || {}
+    home_bucket_labels   = home_minutes_buckets.keys
+    home_bucket_mae      = home_minutes_buckets.values.map { |b| (b[:mae] || 0).to_f.round(2) }
+    home_bucket_proj     = home_minutes_buckets.values.map { |b| (b[:avg_proj] || 0).to_f.round(2) }
+    home_bucket_actual   = home_minutes_buckets.values.map { |b| (b[:avg_actual] || 0).to_f.round(2) }
+
+    game_minutes_buckets = {}
+
+    if @selected_game.present?
+      combined_minutes_buckets = {
+        "0-10"  => [],
+        "10-20" => [],
+        "20-30" => [],
+        "30-40" => [],
+        "40+"   => []
+      }
+
+      [@away_minutes_buckets || {}, @home_minutes_buckets || {}].each do |bucket_hash|
+        bucket_hash.each do |bucket_name, vals|
+          combined_minutes_buckets[bucket_name] ||= []
+
+          count = vals[:count].to_i
+          next if count <= 0
+
+          count.times do
+            combined_minutes_buckets[bucket_name] << {
+              proj: vals[:avg_proj].to_f,
+              actual: vals[:avg_actual].to_f
+            }
+          end
+        end
+      end
+
+      game_minutes_buckets = combined_minutes_buckets.transform_values do |vals|
+        if vals.empty?
+          {
+            count: 0,
+            mae: 0.0,
+            avg_proj: 0.0,
+            avg_actual: 0.0
+          }
+        else
+          abs_errors = vals.map { |v| (v[:actual] - v[:proj]).abs }
+
+          {
+            count: vals.size,
+            mae: (abs_errors.sum / vals.size.to_f),
+            avg_proj: (vals.sum { |v| v[:proj] } / vals.size.to_f),
+            avg_actual: (vals.sum { |v| v[:actual] } / vals.size.to_f)
+          }
+        end
+      end
+    end
+
+    bucket_labels = game_minutes_buckets.keys
+    bucket_mae    = game_minutes_buckets.values.map { |b| (b[:mae] || 0).to_f.round(2) }
+    bucket_proj   = game_minutes_buckets.values.map { |b| (b[:avg_proj] || 0).to_f.round(2) }
+    bucket_actual = game_minutes_buckets.values.map { |b| (b[:avg_actual] || 0).to_f.round(2) }
+
+  %>
+
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h3 class="mb-0">Projection Results & Metrics</h3>
 
@@ -75,7 +185,7 @@
               </div>
             <% end %>
 
-            <div class="col-6 col-md-3">
+            <div style="flex: 1 1 0; min-width: 0;">
               <div class="border rounded p-2 bg-white h-100">
                 <div class="d-flex justify-content-between align-items-center">
                   <strong>NO PROJ</strong>
@@ -91,9 +201,25 @@
                 </div>
               </div>
             </div>
+
+            <div style="flex: 1 1 0; min-width: 0;">
+              <div class="border rounded p-2 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>DNP PROJ</strong>
+                  <span class="text-muted" style="font-size: 11px;">proj only</span>
+                </div>
+
+                <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                  <%= @guide_dnp_projection_count %>
+                </div>
+
+                <div class="text-muted" style="font-size: 12px;">
+                  did not play
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Desktop / large screens: single row that fills width -->
           <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
             <% keys.each do |k| %>
               <% m = @guide_metric_boxes[k] || {} %>
@@ -140,10 +266,49 @@
                 </div>
               </div>
             </div>
+
+            <div style="flex: 1 1 0; min-width: 0;">
+              <div class="border rounded p-2 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>DNP PROJ</strong>
+                  <span class="text-muted" style="font-size: 11px;">proj only</span>
+                </div>
+
+                <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                  <%= @guide_dnp_projection_count %>
+                </div>
+
+                <div class="text-muted" style="font-size: 12px;">
+                  did not play
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card the-shadow mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Quick Guide Visual Summary</strong>
+            <span class="text-muted ms-2" style="font-size: 12px;">
+              MAE vs Bias by stat
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div style="position: relative; height: 340px;">
+            <canvas id="quickGuideMetricsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -162,7 +327,7 @@
             <% @games.each do |g| %>
               <% active = (@selected_game && @selected_game.id == g.id) %>
 
-              <%= link_to results_projections_path(date: @date, game_id: g.id),
+              <%= link_to "#{results_projections_path(date: @date, game_id: g.id)}#selected-game-section",
                           class: "text-decoration-none flex-shrink-0",
                           style: "min-width: 125px;" do %>
 
@@ -171,7 +336,6 @@
                         d-flex flex-column align-items-center justify-content-center
                         <%= active ? 'border-danger border-2' : 'border-secondary' %>">
 
-                  <!-- TEAM LOGOS -->
                   <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
                     <img
                       src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= g.visitor_team&.abbreviation %>-2026.png"
@@ -186,78 +350,70 @@
                     >
                   </div>
 
-                  <!-- FINAL SCORE -->
                   <% if g.home_points.present? && g.visitor_points.present? %>
-                    <div
-                      class="text-center"
-                      style="font-size: 12px;"
-                    >
+                    <div class="text-center" style="font-size: 12px;">
                       Final: <%= g.visitor_points %>-<%= g.home_points %>
                     </div>
                   <% end %>
 
-              <% sim = @sim_by_game_id[g.id] %>
+                  <% sim = @sim_by_game_id[g.id] %>
 
-              <!-- PROJECTED SCORE + MARKET-STYLE NUMBERS -->
-              <% if sim.present? %>
-                <%
-                  raw_meta = sim.meta
-                  meta_hash =
-                    case raw_meta
-                    when Hash
-                      raw_meta
-                    when String
-                      begin
-                        JSON.parse(raw_meta)
-                      rescue
-                        {}
-                      end
-                    else
-                      {}
-                    end
+                  <% if sim.present? %>
+                    <%
+                      raw_meta = sim.meta
+                      meta_hash =
+                        case raw_meta
+                        when Hash
+                          raw_meta
+                        when String
+                          begin
+                            JSON.parse(raw_meta)
+                          rescue
+                            {}
+                          end
+                        else
+                          {}
+                        end
 
-                  out = meta_hash["outputs"] || {}
+                      out = meta_hash["outputs"] || {}
 
-                  sim_home_mean = (out["home_points_mean"].presence || sim.home_baseline_points).to_f
-                  sim_away_mean = (out["visitor_points_mean"].presence || sim.visitor_baseline_points).to_f
+                      sim_home_mean = (out["home_points_mean"].presence || sim.home_baseline_points).to_f
+                      sim_away_mean = (out["visitor_points_mean"].presence || sim.visitor_baseline_points).to_f
 
-                  sim_total = (out["total_mean"].presence || (sim_home_mean + sim_away_mean)).to_f
-                  sim_spread_home = (out["spread_mean"].presence || (sim_home_mean - sim_away_mean)).to_f
+                      sim_total = (out["total_mean"].presence || (sim_home_mean + sim_away_mean)).to_f
+                      sim_spread_home = (out["spread_mean"].presence || (sim_home_mean - sim_away_mean)).to_f
 
-                  spread_market =
-                    if sim_spread_home < 0
-                      "#{g.visitor_team.abbreviation} -#{sim_spread_home.abs.round(1)}"
-                    elsif sim_spread_home > 0
-                      "#{g.home_team.abbreviation} -#{sim_spread_home.round(1)}"
-                    else
-                      "PK"
-                    end
-                %>
+                      spread_market =
+                        if sim_spread_home < 0
+                          "#{g.visitor_team.abbreviation} -#{sim_spread_home.abs.round(1)}"
+                        elsif sim_spread_home > 0
+                          "#{g.home_team.abbreviation} -#{sim_spread_home.round(1)}"
+                        else
+                          "PK"
+                        end
+                    %>
 
-                <div class="text-center mt-1" style="font-size: 12px;">
-                  Proj: <%= sim_away_mean.round %>-<%= sim_home_mean.round %>
-                </div>
+                    <div class="text-center mt-1" style="font-size: 12px;">
+                      Proj: <%= sim_away_mean.round %>-<%= sim_home_mean.round %>
+                    </div>
 
-                <div class="text-center text-muted" style="font-size: 11px; line-height: 1.1;">
-                  <%= spread_market %> / <%= sim_total.round(1) %>
-                </div>
-              <% else %>
-                <div class="text-center text-muted mt-1" style="font-size: 11px;">
-                  Proj: —
-                </div>
-              <% end %>
-
+                    <div class="text-center text-muted" style="font-size: 11px; line-height: 1.1;">
+                      <%= spread_market %> / <%= sim_total.round(1) %>
+                    </div>
+                  <% else %>
+                    <div class="text-center text-muted mt-1" style="font-size: 11px;">
+                      Proj: —
+                    </div>
+                  <% end %>
 
                 </div>
 
               <% end %>
-
             <% end %>
           </div>
         </div>
       </div>
 
-      <!-- SELECTED GAME CONTENT -->
       <% if @selected_game.nil? %>
         <div class="card the-shadow">
           <div class="card-body">
@@ -266,18 +422,16 @@
         </div>
       <% else %>
 
-        <!-- IMPORTANT: both sides MUST be inside the SAME .row for Bootstrap to place them side-by-side -->
-        <div class="row g-3 align-items-start">
+        <div id="selected-game-section" class="row g-3 align-items-start">
           <!-- AWAY COLUMN -->
           <div class="col-12 col-lg-6">
             <div class="card the-shadow mb-3">
               <div class="card-header d-flex justify-content-between align-items-center">
-                    <img
-                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
-
-                      alt="<%= @selected_game.visitor_team&.name %>"
-                      style="height: 22px;"
-                    >                
+                <img
+                  src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                  alt="<%= @selected_game.visitor_team&.name %>"
+                  style="height: 22px;"
+                >
                 <strong>Metrics</strong>
                 <span class="text-muted" style="font-size: 12px;">Projections date = <%= @date %></span>
               </div>
@@ -285,7 +439,6 @@
               <div class="card-body">
                 <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
 
-                <!-- Mobile/tablet grid -->
                 <div class="row g-2 d-lg-none">
                   <% keys.each do |k| %>
                     <% m = (@away_metric_boxes || {})[k] || {} %>
@@ -315,7 +468,7 @@
                     </div>
                   <% end %>
 
-                  <div class="col-6 col-md-3">
+                  <div style="flex: 1 1 0; min-width: 0;">
                     <div class="border rounded p-2 bg-white h-100">
                       <div class="d-flex justify-content-between align-items-center">
                         <strong>NO PROJ</strong>
@@ -330,9 +483,24 @@
                       </div>
                     </div>
                   </div>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>DNP PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @away_dnp_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        did not play
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Desktop: single row fill -->
                 <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
                   <% keys.each do |k| %>
                     <% m = (@away_metric_boxes || {})[k] || {} %>
@@ -377,20 +545,34 @@
                       </div>
                     </div>
                   </div>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>DNP PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @away_dnp_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        did not play
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
             </div>
 
-            <!-- AWAY BOX SCORE -->
             <div class="card the-shadow">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <img
-                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
-                      alt="<%= @selected_game.visitor_team&.name %>"
-                      style="height: 22px;"
-                    >                  
+                  <img
+                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                    alt="<%= @selected_game.visitor_team&.name %>"
+                    style="height: 22px;"
+                  >
                   <strong class="ms-2">Box Score vs Projections</strong>
                   <i
                     class="bi bi-info-circle ms-2 text-muted"
@@ -425,7 +607,7 @@
 
                         <tr class="<%= row[:type] == :proj_only ? 'table-warning' : '' %>">
                           <td class="sticky-col">
-                            <% player = bs&.player || proj&.player %>
+                            <% player = bs&.player || proj&.dig(:player) %>
                             <% if player.present? %>
                               <%= link_to team_player_path(player.team, player),
                                           data: { turbo: false, bs_toggle: "tooltip", bs_placement: "right", bs_title: "View player profile" },
@@ -438,50 +620,50 @@
 
                           <td class="text-end">
                             <%= bs ? bs.minutes_played.to_s : "" %>
-                            <% if proj&.expected_minutes.present? %>
-                              (<%= proj.expected_minutes.round(1) %>)
+                            <% if proj && proj[:expected_minutes].present? %>
+                              (<%= proj[:expected_minutes].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.points.to_i : "" %>
-                            <% if proj&.proj_points.present? %>
-                              (<%= proj.proj_points.round(2) %>)
+                            <% if proj && proj[:proj_points].present? %>
+                              (<%= proj[:proj_points].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.total_rebounds.to_i : "" %>
-                            <% if proj&.proj_rebounds.present? %>
-                              (<%= proj.proj_rebounds.round(2) %>)
+                            <% if proj && proj[:proj_rebounds].present? %>
+                              (<%= proj[:proj_rebounds].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.assists.to_i : "" %>
-                            <% if proj&.proj_assists.present? %>
-                              (<%= proj.proj_assists.round(2) %>)
+                            <% if proj && proj[:proj_assists].present? %>
+                              (<%= proj[:proj_assists].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
-                            <% if proj&.usage_pct.present? %>
-                              (<%= proj.usage_pct.round(1) %>)
+                            <% if proj && proj[:usage_pct].present? %>
+                              (<%= proj[:usage_pct].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
-                            <% if proj&.rebound_pct.present? %>
-                              (<%= proj.rebound_pct.round(1) %>)
+                            <% if proj && proj[:rebound_pct].present? %>
+                              (<%= proj[:rebound_pct].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
-                            <% if proj&.assist_pct.present? %>
-                              (<%= proj.assist_pct.round(1) %>)
+                            <% if proj && proj[:assist_pct].present? %>
+                              (<%= proj[:assist_pct].round(1) %>)
                             <% end %>
                           </td>
                         </tr>
@@ -500,17 +682,85 @@
                 </div>
               </div>
             </div>
+
+                <div class="card the-shadow mt-3 mb-3">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>
+                        <img
+                          src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                          alt="<%= @selected_game.visitor_team&.name %>"
+                          style="height: 22px;"
+                        > Visual Summary</strong>
+                      <span class="text-muted ms-2" style="font-size: 12px;">MAE vs Bias</span>
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                      <canvas id="awayMetricsChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card the-shadow mt-3 mb-3">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>
+                        <img
+                          src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                          alt="<%= @selected_game.visitor_team&.name %>"
+                          style="height: 22px;"
+                        >
+                        Minutes Accuracy by Range
+                      </strong>
+                      <span class="text-muted ms-2" style="font-size: 12px;">
+                        Average minutes projection error grouped by projected minutes range
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                      <canvas id="awayMinutesRangeChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card the-shadow mt-3 mb-3">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>
+                        <img
+                          src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.visitor_team&.abbreviation %>-2026.png"
+                          alt="<%= @selected_game.visitor_team&.name %>"
+                          style="height: 22px;"
+                        >
+                        Minutes Calibration
+                      </strong>
+                      <span class="text-muted ms-2" style="font-size: 12px;">
+                        Compares projected minutes to actual minutes to show over/under projection bias
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                      <canvas id="awayMinutesCalibrationChart"></canvas>
+                    </div>
+                  </div>
+                </div>            
           </div>
 
           <!-- HOME COLUMN -->
           <div class="col-12 col-lg-6">
             <div class="card the-shadow mb-3">
               <div class="card-header d-flex justify-content-between align-items-center">
-                      <img
-                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
-                      alt="<%= @selected_game.home_team&.name %>"
-                      style="height: 22px;"
-                    >              
+                <img
+                  src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                  alt="<%= @selected_game.home_team&.name %>"
+                  style="height: 22px;"
+                >
                 <strong>Metrics</strong>
                 <span class="text-muted" style="font-size: 12px;">Projections date = <%= @date %></span>
               </div>
@@ -518,7 +768,6 @@
               <div class="card-body">
                 <% keys = [:min, :pts, :reb, :ast, :usg, :rebp, :astp] %>
 
-                <!-- Mobile/tablet grid -->
                 <div class="row g-2 d-lg-none">
                   <% keys.each do |k| %>
                     <% m = (@home_metric_boxes || {})[k] || {} %>
@@ -548,7 +797,7 @@
                     </div>
                   <% end %>
 
-                  <div class="col-6 col-md-3">
+                  <div style="flex: 1 1 0; min-width: 0;">
                     <div class="border rounded p-2 bg-white h-100">
                       <div class="d-flex justify-content-between align-items-center">
                         <strong>NO PROJ</strong>
@@ -563,9 +812,24 @@
                       </div>
                     </div>
                   </div>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>DNP PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @home_dnp_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        did not play
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Desktop: single row fill -->
                 <div class="d-none d-lg-flex gap-2 w-100" style="flex-wrap: nowrap;">
                   <% keys.each do |k| %>
                     <% m = (@home_metric_boxes || {})[k] || {} %>
@@ -610,20 +874,35 @@
                       </div>
                     </div>
                   </div>
+
+                  <div style="flex: 1 1 0; min-width: 0;">
+                    <div class="border rounded p-2 bg-white h-100">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong>DNP PROJ</strong>
+                      </div>
+
+                      <div style="font-size: 20px; line-height: 1.15;" class="mt-1">
+                        <%= @home_dnp_projection_count.to_i %>
+                      </div>
+
+                      <div class="text-muted" style="font-size: 12px;">
+                        did not play
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
             </div>
 
-            <!-- HOME BOX SCORE -->
+
             <div class="card the-shadow">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <img
-                      src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
-                      alt="<%= @selected_game.home_team&.name %>"
-                      style="height: 22px;"
-                    >                  
+                  <img
+                    src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                    alt="<%= @selected_game.home_team&.name %>"
+                    style="height: 22px;"
+                  >
                   <strong class="ms-2">Box Score vs Projections</strong>
                   <i
                     class="bi bi-info-circle ms-2 text-muted"
@@ -633,7 +912,7 @@
                     style="cursor: pointer;"
                   ></i>
                 </div>
-              </div>
+              </div>            
 
               <div class="card-body p-0">
                 <div class="table-responsive">
@@ -658,7 +937,7 @@
 
                         <tr class="<%= row[:type] == :proj_only ? 'table-warning' : '' %>">
                           <td class="sticky-col">
-                            <% player = bs&.player || proj&.player %>
+                            <% player = bs&.player || proj&.dig(:player) %>
                             <% if player.present? %>
                               <%= link_to team_player_path(player.team, player),
                                           data: { turbo: false, bs_toggle: "tooltip", bs_placement: "right", bs_title: "View player profile" },
@@ -671,50 +950,50 @@
 
                           <td class="text-end">
                             <%= bs ? bs.minutes_played.to_s : "" %>
-                            <% if proj&.expected_minutes.present? %>
-                              (<%= proj.expected_minutes.round(1) %>)
+                            <% if proj && proj[:expected_minutes].present? %>
+                              (<%= proj[:expected_minutes].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.points.to_i : "" %>
-                            <% if proj&.proj_points.present? %>
-                              (<%= proj.proj_points.round(2) %>)
+                            <% if proj && proj[:proj_points].present? %>
+                              (<%= proj[:proj_points].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.total_rebounds.to_i : "" %>
-                            <% if proj&.proj_rebounds.present? %>
-                              (<%= proj.proj_rebounds.round(2) %>)
+                            <% if proj && proj[:proj_rebounds].present? %>
+                              (<%= proj[:proj_rebounds].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs ? bs.assists.to_i : "" %>
-                            <% if proj&.proj_assists.present? %>
-                              (<%= proj.proj_assists.round(2) %>)
+                            <% if proj && proj[:proj_assists].present? %>
+                              (<%= proj[:proj_assists].round(2) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.usage_pct.present? ? bs.usage_pct.to_f.round(1) : "" %>
-                            <% if proj&.usage_pct.present? %>
-                              (<%= proj.usage_pct.round(1) %>)
+                            <% if proj && proj[:usage_pct].present? %>
+                              (<%= proj[:usage_pct].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.total_rebound_pct.present? ? bs.total_rebound_pct.to_f.round(1) : "" %>
-                            <% if proj&.rebound_pct.present? %>
-                              (<%= proj.rebound_pct.round(1) %>)
+                            <% if proj && proj[:rebound_pct].present? %>
+                              (<%= proj[:rebound_pct].round(1) %>)
                             <% end %>
                           </td>
 
                           <td class="text-end">
                             <%= bs&.assist_pct.present? ? bs.assist_pct.to_f.round(1) : "" %>
-                            <% if proj&.assist_pct.present? %>
-                              (<%= proj.assist_pct.round(1) %>)
+                            <% if proj && proj[:assist_pct].present? %>
+                              (<%= proj[:assist_pct].round(1) %>)
                             <% end %>
                           </td>
                         </tr>
@@ -733,6 +1012,75 @@
                 </div>
               </div>
             </div>
+
+              <div class="card the-shadow mt-3 mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>
+                      <img
+                        src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                        alt="<%= @selected_game.home_team&.name %>"
+                        style="height: 22px;"
+                        > Visual Summary</strong>
+                    <span class="text-muted ms-2" style="font-size: 12px;">MAE vs Bias</span>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div style="position: relative; height: 300px;">
+                    <canvas id="homeMetricsChart"></canvas>
+                  </div>
+                </div>
+              </div> 
+
+              <div class="card the-shadow mt-3 mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>
+                      <img
+                        src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                        alt="<%= @selected_game.home_team&.name %>"
+                        style="height: 22px;"
+                      >
+                      Minutes Accuracy by Range
+                    </strong>
+                    <span class="text-muted ms-2" style="font-size: 12px;">
+                      Average minutes projection error grouped by projected minutes range
+                    </span>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div style="position: relative; height: 300px;">
+                    <canvas id="homeMinutesRangeChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card the-shadow mt-3 mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>
+                      <img
+                        src="https://cdn.ssref.net/req/202410231/tlogo/bbr/<%= @selected_game.home_team&.abbreviation %>-2026.png"
+                        alt="<%= @selected_game.home_team&.name %>"
+                        style="height: 22px;"
+                      >
+                      Minutes Calibration
+                    </strong>
+                    <span class="text-muted ms-2" style="font-size: 12px;">
+                      Compares projected minutes to actual minutes to show over/under projection bias
+                    </span>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div style="position: relative; height: 300px;">
+                    <canvas id="homeMinutesCalibrationChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
           </div>
         </div>
       <% end %>
@@ -742,16 +1090,12 @@
 </div>
 
 <script>
-  // ----------------------------
-  // Tooltips (auto-hide after 5s)
-  // ----------------------------
   function initTooltips() {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
       if (bootstrap.Tooltip.getInstance(el)) return;
 
       const tip = new bootstrap.Tooltip(el);
 
-      // auto-hide after 5s (prevents mobile lingering)
       el.addEventListener("shown.bs.tooltip", function () {
         const inst = bootstrap.Tooltip.getInstance(el);
         if (!inst) return;
@@ -764,9 +1108,6 @@
     });
   }
 
-  // ----------------------------
-  // Sticky first column
-  // ----------------------------
   function applyStickyColumn(tableSelector, backgroundColor) {
     const $table = $(tableSelector);
     if ($table.length === 0) return;
@@ -788,18 +1129,386 @@
     });
   }
 
-  // ----------------------------
-  // Init on load (Turbo-safe)
-  // ----------------------------
+  function initQuickGuideMetricsChart() {
+    const canvas = document.getElementById("quickGuideMetricsChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const labels = <%= raw quick_guide_chart_labels.to_json %>;
+    const maeData = <%= raw quick_guide_chart_mae.to_json %>;
+    const biasData = <%= raw quick_guide_chart_bias.to_json %>;
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "MAE",
+            data: maeData
+          },
+          {
+            label: "Bias",
+            data: biasData
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            beginAtZero: false,
+            ticks: {
+              precision: 0
+            }
+          },
+          y: {
+            ticks: {
+              autoSkip: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.raw}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function initAwayMetricsChart() {
+    const canvas = document.getElementById("awayMetricsChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const labels = <%= raw away_chart_labels.to_json %>;
+    const maeData = <%= raw away_chart_mae.to_json %>;
+    const biasData = <%= raw away_chart_bias.to_json %>;
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "MAE",
+            data: maeData
+          },
+          {
+            label: "Bias",
+            data: biasData
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            beginAtZero: false
+          },
+          y: {
+            ticks: {
+              autoSkip: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
+  function initHomeMetricsChart() {
+    const canvas = document.getElementById("homeMetricsChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const labels = <%= raw home_chart_labels.to_json %>;
+    const maeData = <%= raw home_chart_mae.to_json %>;
+    const biasData = <%= raw home_chart_bias.to_json %>;
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "MAE",
+            data: maeData
+          },
+          {
+            label: "Bias",
+            data: biasData
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            beginAtZero: false
+          },
+          y: {
+            ticks: {
+              autoSkip: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
+  function initAwayMinutesRangeChart() {
+    const canvas = document.getElementById("awayMinutesRangeChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const labels = <%= raw away_bucket_labels.to_json %>;
+    const maeData = <%= raw away_bucket_mae.to_json %>;
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "MAE",
+            data: maeData
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
+  function initAwayMinutesCalibrationChart() {
+    const canvas = document.getElementById("awayMinutesCalibrationChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const proj = <%= raw away_bucket_proj.to_json %>;
+    const actual = <%= raw away_bucket_actual.to_json %>;
+
+    const data = proj.map(function(p, i) {
+      return { x: p, y: actual[i] };
+    });
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: "Projection vs Actual",
+            data: data
+          },
+          {
+            label: "Perfect Calibration",
+            data: [
+              { x: 0, y: 0 },
+              { x: 45, y: 45 }
+            ],
+            type: "line",
+            pointRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Projected Minutes"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Actual Minutes"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
+  function initHomeMinutesRangeChart() {
+    const canvas = document.getElementById("homeMinutesRangeChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const labels = <%= raw home_bucket_labels.to_json %>;
+    const maeData = <%= raw home_bucket_mae.to_json %>;
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "MAE",
+            data: maeData
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
+  function initHomeMinutesCalibrationChart() {
+    const canvas = document.getElementById("homeMinutesCalibrationChart");
+    if (!canvas) return;
+
+    if (canvas._chartInstance) {
+      canvas._chartInstance.destroy();
+    }
+
+    const proj = <%= raw home_bucket_proj.to_json %>;
+    const actual = <%= raw home_bucket_actual.to_json %>;
+
+    const data = proj.map(function(p, i) {
+      return { x: p, y: actual[i] };
+    });
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: "Projection vs Actual",
+            data: data
+          },
+          {
+            label: "Perfect Calibration",
+            data: [
+              { x: 0, y: 0 },
+              { x: 45, y: 45 }
+            ],
+            type: "line",
+            pointRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Projected Minutes"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Actual Minutes"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top"
+          }
+        }
+      }
+    });
+  }
+
   document.addEventListener("turbo:load", function () {
     applyStickyColumn("#away-box-score-table", "white");
     applyStickyColumn("#home-box-score-table", "white");
     initTooltips();
+    initQuickGuideMetricsChart();
+    initAwayMetricsChart();
+    initHomeMetricsChart();
+    initAwayMinutesRangeChart();
+    initAwayMinutesCalibrationChart();
+    initHomeMinutesRangeChart();
+    initHomeMinutesCalibrationChart();    
   });
 
-  // ----------------------------
-  // Turbo cache cleanup (prevents duplicates)
-  // ----------------------------
   document.addEventListener("turbo:before-cache", function () {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
       const tip = bootstrap.Tooltip.getInstance(el);
@@ -807,5 +1516,48 @@
       if (el._tooltipTimeout) clearTimeout(el._tooltipTimeout);
       el._tooltipTimeout = null;
     });
+
+    const quickGuideCanvas = document.getElementById("quickGuideMetricsChart");
+    if (quickGuideCanvas && quickGuideCanvas._chartInstance) {
+      quickGuideCanvas._chartInstance.destroy();
+      quickGuideCanvas._chartInstance = null;
+    }
+
+    const awayCanvas = document.getElementById("awayMetricsChart");
+    if (awayCanvas && awayCanvas._chartInstance) {
+      awayCanvas._chartInstance.destroy();
+      awayCanvas._chartInstance = null;
+    }
+
+    const homeCanvas = document.getElementById("homeMetricsChart");
+    if (homeCanvas && homeCanvas._chartInstance) {
+      homeCanvas._chartInstance.destroy();
+      homeCanvas._chartInstance = null;
+    }
+
+    const awayMinutesRangeCanvas = document.getElementById("awayMinutesRangeChart");
+    if (awayMinutesRangeCanvas && awayMinutesRangeCanvas._chartInstance) {
+      awayMinutesRangeCanvas._chartInstance.destroy();
+      awayMinutesRangeCanvas._chartInstance = null;
+    }
+
+    const awayMinutesCalibrationCanvas = document.getElementById("awayMinutesCalibrationChart");
+    if (awayMinutesCalibrationCanvas && awayMinutesCalibrationCanvas._chartInstance) {
+      awayMinutesCalibrationCanvas._chartInstance.destroy();
+      awayMinutesCalibrationCanvas._chartInstance = null;
+    }
+
+    const homeMinutesRangeCanvas = document.getElementById("homeMinutesRangeChart");
+    if (homeMinutesRangeCanvas && homeMinutesRangeCanvas._chartInstance) {
+      homeMinutesRangeCanvas._chartInstance.destroy();
+      homeMinutesRangeCanvas._chartInstance = null;
+    }
+
+    const homeMinutesCalibrationCanvas = document.getElementById("homeMinutesCalibrationChart");
+    if (homeMinutesCalibrationCanvas && homeMinutesCalibrationCanvas._chartInstance) {
+      homeMinutesCalibrationCanvas._chartInstance.destroy();
+      homeMinutesCalibrationCanvas._chartInstance = null;
+    }
+
   });
 </script>

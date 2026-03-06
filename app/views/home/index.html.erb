@@ -283,14 +283,29 @@
       </h4>
 
       <div class="d-flex align-items-center mb-2">
+        <%
+          last_run_text =
+            if @last_projection_run
+              "#{time_ago_in_words(@last_projection_run)} ago"
+            else
+              "Never"
+            end
+        %>
+
         <%= button_to update_injuries_path(date: @date), method: :post,
             class: "btn btn-link p-0 me-2 text-primary",
             form: {
               "data-turbo-confirm": "Run injury update now?",
               "data-loading-overlay": "true"
             },
-            data: { bs_toggle: "tooltip", bs_placement: "right", bs_title: "Refresh Injuries and Projections" } do %>
+            data: {
+              bs_toggle: "tooltip",
+              bs_placement: "right",
+              bs_title: "Refresh Injuries and Projections — Last run: #{last_run_text}"
+            } do %>
+
           <i class="bi bi-arrow-clockwise" style="font-size: 1.2rem;"></i>
+
         <% end %>
 
         <button id="toggle-out-players"

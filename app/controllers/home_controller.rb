@@ -149,6 +149,7 @@ class HomeController < ApplicationController
       Standing.where(season_id: season_id)
               .includes(:team)
               .order(win_percentage: :desc)
+    @last_projection_run = ProjectionDistribution.maximum(:created_at)
   end
 
 

@@ -48,4 +48,10 @@ module ApplicationHelper
       ""
     end
   end
+
+  def last_projection_run_display
+    return "Never" unless @last_projection_run
+    @last_projection_run.strftime("%b %d, %I:%M %p")
+  end
+
 end
