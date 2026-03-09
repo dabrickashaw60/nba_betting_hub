@@ -9,8 +9,8 @@ namespace :scrapers do
       next
     end
 
-    start_id = 1733
-    end_id   = 1757
+    start_id = 2509
+    end_id   = 2520
 
     games = Game.where(id: start_id..end_id, season_id: current_season.id).order(:id)
 

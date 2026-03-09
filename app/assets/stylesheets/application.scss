@@ -277,6 +277,76 @@
 
 }
 
+.scoreboard-strip{
+  margin-bottom: 1rem;
+}
+
+.scoreboard-strip-inner{
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.scoreboard-date-tile{
+  flex: 0 0 165px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.scoreboard-date-label{
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.scoreboard-date-input{
+  width: 100%;
+}
+
+.scoreboard-games-rail{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#game-card .horizontal-scroll-wrapper{
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+#game-card .horizontal-scroll-wrapper::-webkit-scrollbar{
+  height: 8px;
+}
+
+#game-card .horizontal-scroll-wrapper::-webkit-scrollbar-thumb{
+  background: #b8b8b8;
+  border-radius: 999px;
+}
+
+@media (max-width: 768px){
+  .scoreboard-strip-inner{
+    flex-direction: column;
+  }
+
+  .scoreboard-date-tile{
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
+
 /* ===== Player Modal Header (hero) ===== */
 
 /* ===== Player Modal Header (Hero) ===== */
